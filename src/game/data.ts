@@ -17,7 +17,7 @@ export interface LicenseUpgradeDef { id: LicenseUpgradeId; name: string; costs: 
 export const LOCATIONS: LocationDef[] = [
   { id: 'creek', name: 'Creek', unlockCost: 0, maxDepth: 1, junkWeight: 1 },
   { id: 'river', name: 'River', unlockCost: 1000, maxDepth: 2, junkWeight: 0.8 },
-  { id: 'bigRiver', name: 'Big River', unlockCost: 15000, maxDepth: 2, junkWeight: 0.6 },
+  { id: 'bigRiver', name: 'Big River', unlockCost: 12000, maxDepth: 2, junkWeight: 0.6 },
   { id: 'mountainLake', name: 'Mountain Lake', unlockCost: 200000, maxDepth: 3, junkWeight: 0.5 },
   { id: 'greatLake', name: 'Great Lake', unlockCost: 2500000, maxDepth: 3, junkWeight: 0.4 },
 ]
@@ -84,7 +84,7 @@ export const LICENSE_UPGRADES: LicenseUpgradeDef[] = [
   { id: 'startLocation', name: 'Start one place further', costs: [3, 10, 30, 80], perLevel: 1 },
 ]
 
-export const TIMING = { biteMinMs: 1_500, biteMaxMs: 4_000, reelMs: 800, benchTieMs: 4_000, buyerIntervalMs: 5_000, maxTickMs: 250 }
+export const TIMING = { biteMinMs: 1_500, biteMaxMs: 4_000, reelMs: 800, benchTieMs: 10_000, buyerIntervalMs: 5_000, maxTickMs: 250 }
 export const HELPERS = {
   angler: { baseCost: 40, growth: 1.4 },
   bench: { baseCost: 30, growth: 1.6 },
@@ -94,5 +94,5 @@ export const HELPERS = {
 // fish size multiplier = 1 + rand * (spread + sizeBonus)
 export const SIZE = { spread: 1 }
 export const SEASON = { minEarnings: 5e7, licenseDivisor: 5e5 }
-// the bench stops tying when flyBox.length >= anglers.length * this
-export const BENCH_BOX_PER_ANGLER = 3
+// each bench past the first cuts the tie cooldown by this fraction
+export const BENCH_SPEEDUP = 0.25

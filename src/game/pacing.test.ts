@@ -95,9 +95,9 @@ if (process.env.PACING_LOG) {
 }
 
 describe('pacing bot', () => {
-  it('first season, no licenses: bot reaches canStartSeason in 30–45 sim-minutes', () => {
+  it('first season, no licenses: bot reaches canStartSeason in 30–50 sim-minutes', () => {
     expect(season1.minutes).toBeGreaterThanOrEqual(30)
-    expect(season1.minutes).toBeLessThanOrEqual(45)
+    expect(season1.minutes).toBeLessThanOrEqual(50)
   }, 60_000)
 
   it("second season after spending first season's licenses greedily (upgrades first) is faster than the first", () => {

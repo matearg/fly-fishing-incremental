@@ -1,5 +1,5 @@
 import { rollCatch } from './catch'
-import { BENCH_BOX_PER_ANGLER, TIMING } from './data'
+import { BENCH_SPEEDUP, TIMING } from './data'
 import { sellAll } from './economy'
 import { basicRecipe, tieFly } from './flies'
 import type { Angler, GameState } from './state'
@@ -34,18 +34,18 @@ function stepAngler(state: GameState, a: Angler, dt: number, rand: () => number)
   }
 }
 
+export function benchCooldownMs(state: GameState): number {
+  return TIMING.benchTieMs * (1 - BENCH_SPEEDUP) ** (state.bench - 1)
+}
+
 export function tick(state: GameState, dtMs: number, rand: () => number): void {
   // Clamp so a hidden tab or laptop sleep can't produce a burst of catches.
   const dt = Math.min(dtMs, TIMING.maxTickMs)
   for (const a of state.anglers) stepAngler(state, a, dt, rand)
-  if (state.bench > 0) {
-    state.benchTimerMs += dt
-    const every = TIMING.benchTieMs / state.bench
-    while (state.benchTimerMs >= every) {
-      state.benchTimerMs -= every
-      // An unaffordable tie is skipped silently.
-      if (state.flyBox.length < state.anglers.length * BENCH_BOX_PER_ANGLER) tieFly(state)
-    }
+  // The box holds one fly per angler; the cooldown pauses while it's full.
+  if (state.bench > 0 && state.flyBox.length < state.anglers.length && (state.benchTimerMs += dt) >= benchCooldownMs(state)) {
+    state.benchTimerMs = 0
+    tieFly(state) // an unaffordable tie is skipped silently
   }
   if (state.buyer && (state.buyerTimerMs += dt) >= TIMING.buyerIntervalMs) {
     state.buyerTimerMs -= TIMING.buyerIntervalMs

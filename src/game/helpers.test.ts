@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { helperCost, buyHelper } from './helpers'
-import { tick } from './sim'
+import { benchCooldownMs, tick } from './sim'
 import { newGame, type GameState } from './state'
-import { BENCH_BOX_PER_ANGLER, HELPERS, LICENSE_UPGRADES, PATTERNS, TIMING } from './data'
+import { HELPERS, LICENSE_UPGRADES, PATTERNS, TIMING } from './data'
 import { seqRand } from './testutil'
 
 const run = (s: GameState, ms: number, r = seqRand(0.1, 0.3, 0.5)) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
@@ -33,15 +33,25 @@ describe('helper costs', () => {
 })
 
 describe('helpers in tick', () => {
-  it('bench ties flies up to the box cap', () => {
+  it('bench ties one fly per cooldown, up to one per angler', () => {
     const s = newGame()
     s.money = 1e9
     s.bench = 1
     s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1e12, fly: null }) // busy, never takes a fly
-    run(s, TIMING.benchTieMs + 100)
+    run(s, TIMING.benchTieMs - 100)
+    expect(s.flyBox).toHaveLength(0)
+    run(s, 200)
     expect(s.flyBox).toHaveLength(1)
     run(s, TIMING.benchTieMs * 50)
-    expect(s.flyBox).toHaveLength(s.anglers.length * BENCH_BOX_PER_ANGLER)
+    expect(s.flyBox).toHaveLength(s.anglers.length)
+    expect(s.benchTimerMs).toBe(0) // paused while full
+  })
+  it('each extra bench cuts the cooldown by 25%', () => {
+    const s = newGame()
+    s.bench = 1
+    expect(benchCooldownMs(s)).toBe(TIMING.benchTieMs)
+    s.bench = 3
+    expect(benchCooldownMs(s)).toBeCloseTo(TIMING.benchTieMs * 0.75 ** 2)
   })
   it('sorter drops landed junk', () => {
     const s = newGame()
