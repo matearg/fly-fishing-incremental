@@ -1,4 +1,5 @@
 import { MATERIALS, PATTERNS } from './data'
+import { spend } from './economy'
 import { licenseEffects } from './license'
 import type { GameState, Recipe } from './state'
 
@@ -24,8 +25,7 @@ export function basicRecipe(): Recipe {
 
 export function tieFly(state: GameState, recipe: Recipe = state.recipe): boolean {
   const st = flyStats(state, recipe)
-  if (state.money < st.tieCost) return false
-  state.money -= st.tieCost
+  if (!spend(state, st.tieCost)) return false
   state.flyBox.push({ patternId: recipe.patternId, materialIds: [...recipe.materialIds], wearLeft: st.wear })
   return true
 }
