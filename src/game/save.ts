@@ -29,23 +29,27 @@ function sanitize(raw: GameState): GameState {
   return s
 }
 
-// Anything missing, corrupt or from another version starts a fresh season instead of crashing.
-export function deserialize(raw: string | null): GameState {
+// Anything missing, corrupt or from another version is not a save.
+export function parseSave(raw: string | null): GameState | null {
   try {
     const s = JSON.parse(raw ?? 'null')
     const ok = s?.version === SAVE_VERSION && Number.isFinite(s.money)
       && Array.isArray(s.anglers) && s.anglers.length > 0 && Array.isArray(s.basket) && Array.isArray(s.flyBox)
-    return ok ? sanitize(s) : newGame()
+    return ok ? sanitize(s) : null
   } catch {
-    return newGame()
+    return null
   }
 }
 
-// Storage can throw (private mode, quota, blocked site data).
-export function saveToStorage(state: GameState): void {
-  try { localStorage.setItem(SAVE_KEY, serialize(state)) } catch { /* nothing to do; next autosave retries */ }
+// A bad save starts a fresh season instead of crashing.
+export function deserialize(raw: string | null): GameState {
+  return parseSave(raw) ?? newGame()
 }
 
-export function loadFromStorage(): GameState {
-  try { return deserialize(localStorage.getItem(SAVE_KEY)) } catch { return newGame() }
+export interface SaveStore { read(): string | null; write(raw: string): void }
+
+// Storage can throw (private mode, quota, blocked site data).
+export const localStore: SaveStore = {
+  read() { try { return localStorage.getItem(SAVE_KEY) } catch { return null } },
+  write(raw) { try { localStorage.setItem(SAVE_KEY, raw) } catch { /* nothing to do; next autosave retries */ } },
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { serialize, deserialize } from './save'
+import { serialize, deserialize, parseSave } from './save'
 import { newGame } from './state'
 import { buyHelper } from './helpers'
 import { basicRecipe, flyStats, tieFly } from './flies'
@@ -23,6 +23,15 @@ describe('save', () => {
     ['JSON null', 'null'],
   ])('corrupt save (%s) → fresh game', (_, raw) => {
     expect(deserialize(raw)).toEqual(newGame())
+  })
+  it.each([
+    ['null', null],
+    ['bad JSON', '{oops'],
+    ['wrong version', JSON.stringify({ version: 999 })],
+    ['non-number money', JSON.stringify({ version: 1, money: 'lots' })],
+    ['JSON null', 'null'],
+  ])('parseSave returns null for corrupt save (%s)', (_, raw) => {
+    expect(parseSave(raw)).toBeNull()
   })
 })
 

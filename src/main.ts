@@ -1,25 +1,21 @@
 import Phaser from 'phaser'
 import { FishingScene, VIEW_H, VIEW_W } from './scene/FishingScene'
 import { castPlayer, reelPlayer, tick } from './game/sim'
-import { deserialize, loadFromStorage, SAVE_KEY, saveToStorage } from './game/save'
+import { localStore, SAVE_KEY } from './game/save'
 import type { GameState } from './game/state'
+import { Session } from './session'
 import { mountPanel } from './ui/panel'
 import './ui/style.css'
 
-let state: GameState = loadFromStorage()
+const session = new Session(localStore)
+session.continueGame()
 
 function act(fn: (s: GameState) => unknown): void {
-  fn(state)
+  fn(session.state)
   panel.render()
 }
 
-function setState(s: GameState): void {
-  state = s
-  saveToStorage(state)
-  panel.render()
-}
-
-const panel = mountPanel(document.getElementById('ui')!, () => state, act, setState)
+const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() })
 setInterval(() => panel.render(), 250)
 
 new Phaser.Game({
@@ -31,7 +27,7 @@ new Phaser.Game({
   backgroundColor: '#000000',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: new FishingScene({
-    getState: () => state,
+    getState: () => session.state,
     onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
   }),
 })
@@ -41,8 +37,12 @@ const speed = import.meta.env.DEV ? Math.max(1, Math.floor(Number(new URLSearchP
 
 let last: number | null = null
 function frame(now: number): void {
-  if (last !== null) for (let i = 0; i < speed; i++) tick(state, now - last, Math.random)
-  last = now
+  // Paused off the game; restarting the clock on return means no catch-up.
+  if (session.mode !== 'game') last = null
+  else {
+    if (last !== null) for (let i = 0; i < speed; i++) tick(session.state, now - last, Math.random)
+    last = now
+  }
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)
@@ -52,15 +52,18 @@ requestAnimationFrame(frame)
 // which another tab may have advanced meanwhile.
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    saveToStorage(state)
+    session.save()
     last = null
-  } else setState(loadFromStorage())
+  } else {
+    session.adopt(localStore.read())
+    panel.render()
+  }
 })
 // Adopt saves written by another tab (e.g. its final save when the player switches back here).
 addEventListener('storage', e => {
   if (e.key !== SAVE_KEY) return
-  state = deserialize(e.newValue)
+  session.adopt(e.newValue)
   panel.render()
 })
-addEventListener('pagehide', () => { if (!document.hidden) saveToStorage(state) })
-setInterval(() => { if (!document.hidden) saveToStorage(state) }, 5_000)
+addEventListener('pagehide', () => { if (!document.hidden) session.save() })
+setInterval(() => { if (!document.hidden) session.save() }, 5_000)
