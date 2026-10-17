@@ -8,6 +8,8 @@ body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template
 #game { grid-column: 1; grid-row: 1; min-height: 0; overflow: hidden; }
 #game canvas { image-rendering: pixelated; }
 #ui { display: contents; }
+.title-mode .side, .title-mode .basket { display: none; }
+.title-mode #game { grid-column: 1 / -1; grid-row: 1 / -1; }
 .side { grid-column: 2; grid-row: 1 / span 2; overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line); padding: 12px; }
 .money { font-size: 32px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
 section { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 6px; }

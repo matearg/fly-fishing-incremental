@@ -18,6 +18,27 @@ function act(fn: (s: GameState) => unknown): void {
 const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() })
 setInterval(() => panel.render(), 250)
 
+// The title takes the whole window; panels show only in game. The canvas must re-fit either way.
+function titleMode(on: boolean): void {
+  document.body.classList.toggle('title-mode', on)
+  game.scale.getParentBounds() // refresh() alone reuses the cached parent size
+  game.scale.refresh()
+}
+
+const title = new TitleScene({
+  session,
+  enterGame: kind => {
+    if (kind === 'new') session.startNewGame()
+    else session.continueGame()
+    titleMode(false)
+    panel.render()
+    game.scene.switch('title', 'fishing')
+  },
+  // Document fullscreen, not the canvas, so the side panel stays visible in game.
+  toggleFullscreen: () => void (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}),
+  isFullscreen: () => !!document.fullscreenElement,
+})
+
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
@@ -27,18 +48,15 @@ const game = new Phaser.Game({
   backgroundColor: '#000000',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: [
-    new TitleScene({
-      session,
-      enterGame: kind => {
-        if (kind === 'new') session.startNewGame()
-        else session.continueGame()
-        panel.render()
-        game.scene.switch('title', 'fishing')
-      },
-    }),
+    title,
     new FishingScene({
       getState: () => session.state,
       onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
+      onMenu: () => {
+        session.toMenu()
+        titleMode(true)
+        game.scene.switch('fishing', 'title')
+      },
     }),
   ],
 })
@@ -76,5 +94,7 @@ addEventListener('storage', e => {
   session.adopt(e.newValue)
   panel.render()
 })
+// The browser's own Esc/F11 can leave fullscreen too.
+document.addEventListener('fullscreenchange', () => title.refreshMenu())
 addEventListener('pagehide', () => { if (!document.hidden) session.save() })
 setInterval(() => { if (!document.hidden) session.save() }, 5_000)
