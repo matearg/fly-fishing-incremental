@@ -5,24 +5,28 @@ import { newGame, type GameState } from './game/state'
 export class Session {
   mode: 'title' | 'game' = 'title'
   state: GameState
+  // A run started in this tab counts as a save even if storage is blocked.
+  private played = false
 
   constructor(private store: SaveStore) {
     this.state = deserialize(store.read())
   }
 
   hasSave(): boolean {
-    return parseSave(this.store.read()) !== null
+    return this.played || parseSave(this.store.read()) !== null
   }
 
   // Re-read: another tab may have advanced the save while this one sat on the menu.
   continueGame(): void {
-    this.state = deserialize(this.store.read())
+    this.state = parseSave(this.store.read()) ?? this.state
     this.mode = 'game'
+    this.played = true
   }
 
   startNewGame(): void {
     this.state = newGame()
     this.mode = 'game'
+    this.played = true
     this.save()
   }
 

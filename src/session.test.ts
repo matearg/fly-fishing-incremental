@@ -52,6 +52,15 @@ describe('Session', () => {
     expect(s.state.money).toBe(999)
     expect(s.mode).toBe('game')
   })
+  it('blocked storage: going back to the menu keeps the run', () => {
+    const s = new Session({ read: () => null, write: () => {} })
+    s.startNewGame()
+    s.state.money = 50
+    s.toMenu()
+    expect(s.hasSave()).toBe(true)
+    s.continueGame()
+    expect(s.state.money).toBe(50)
+  })
   it('blocked storage', () => {
     const s = new Session({ read: () => null, write: () => {} })
     expect(s.hasSave()).toBe(false)

@@ -86,6 +86,7 @@ document.addEventListener('visibilitychange', () => {
   } else {
     session.adopt(localStore.read())
     panel.render()
+    title.refreshMenu() // Continue may have appeared or gone
   }
 })
 // Adopt saves written by another tab (e.g. its final save when the player switches back here).
@@ -93,6 +94,7 @@ addEventListener('storage', e => {
   if (e.key !== SAVE_KEY) return
   session.adopt(e.newValue)
   panel.render()
+  title.refreshMenu()
 })
 // The browser's own Esc/F11 can leave fullscreen too.
 document.addEventListener('fullscreenchange', () => title.refreshMenu())
