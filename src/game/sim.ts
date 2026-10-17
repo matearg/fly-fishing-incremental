@@ -1,5 +1,6 @@
 import { rollCatch } from './catch'
-import { TIMING } from './data'
+import { BENCH_BOX_PER_ANGLER, TIMING } from './data'
+import { sellAll } from './economy'
 import { basicRecipe, tieFly } from './flies'
 import type { Angler, GameState } from './state'
 
@@ -9,7 +10,8 @@ function startWaiting(a: Angler, rand: () => number): void {
 }
 
 function land(state: GameState, a: Angler, rand: () => number): void {
-  state.basket.push({ id: state.nextCatchId++, ...rollCatch(state, a.fly!, rand) })
+  const c = rollCatch(state, a.fly!, rand)
+  if (!(state.sorter && c.kind === 'junk')) state.basket.push({ id: state.nextCatchId++, ...c })
   if (--a.fly!.wearLeft <= 0) a.fly = null
   a.phase = 'idle'
 }
@@ -36,6 +38,19 @@ export function tick(state: GameState, dtMs: number, rand: () => number): void {
   // Clamp so a hidden tab or laptop sleep can't produce a burst of catches.
   const dt = Math.min(dtMs, TIMING.maxTickMs)
   for (const a of state.anglers) stepAngler(state, a, dt, rand)
+  if (state.bench > 0) {
+    state.benchTimerMs += dt
+    const every = TIMING.benchTieMs / state.bench
+    while (state.benchTimerMs >= every) {
+      state.benchTimerMs -= every
+      // An unaffordable tie is skipped silently.
+      if (state.flyBox.length < state.anglers.length * BENCH_BOX_PER_ANGLER) tieFly(state)
+    }
+  }
+  if (state.buyer && (state.buyerTimerMs += dt) >= TIMING.buyerIntervalMs) {
+    state.buyerTimerMs -= TIMING.buyerIntervalMs
+    sellAll(state)
+  }
 }
 
 export function castPlayer(state: GameState, rand: () => number): boolean {

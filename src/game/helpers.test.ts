@@ -1,0 +1,62 @@
+import { describe, it, expect } from 'vitest'
+import { helperCost, buyHelper } from './helpers'
+import { tick } from './sim'
+import { newGame, type GameState } from './state'
+import { BENCH_BOX_PER_ANGLER, HELPERS, LICENSE_UPGRADES, PATTERNS, TIMING } from './data'
+import { seqRand } from './testutil'
+
+const run = (s: GameState, ms: number, r = seqRand(0.1, 0.3, 0.5)) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
+
+describe('helper costs', () => {
+  it('angler cost grows and license discount applies', () => {
+    const s = newGame()
+    s.money = 1e9
+    expect(buyHelper(s, 'angler')).toBe(true)
+    expect(s.anglers).toHaveLength(2)
+    expect(s.anglers[1].auto).toBe(true)
+    expect(helperCost(s, 'angler')).toBeCloseTo(HELPERS.angler.baseCost * HELPERS.angler.growth)
+    s.licenseLevels.helperDiscount = 1
+    const per = LICENSE_UPGRADES.find(u => u.id === 'helperDiscount')!.perLevel
+    expect(helperCost(s, 'angler')).toBeCloseTo(HELPERS.angler.baseCost * HELPERS.angler.growth * (1 - per))
+  })
+  it('broke purchase changes nothing; one-offs only once', () => {
+    const s = newGame()
+    const before = structuredClone(s)
+    expect(buyHelper(s, 'angler')).toBe(false)
+    expect(buyHelper(s, 'sorter')).toBe(false)
+    expect(s).toEqual(before)
+    s.money = 1e9
+    expect(buyHelper(s, 'sorter')).toBe(true)
+    expect(buyHelper(s, 'sorter')).toBe(false)
+    expect(helperCost(s, 'sorter')).toBeNull()
+  })
+})
+
+describe('helpers in tick', () => {
+  it('bench ties flies up to the box cap', () => {
+    const s = newGame()
+    s.money = 1e9
+    s.bench = 1
+    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1e12, fly: null }) // busy, never takes a fly
+    run(s, TIMING.benchTieMs + 100)
+    expect(s.flyBox).toHaveLength(1)
+    run(s, TIMING.benchTieMs * 50)
+    expect(s.flyBox).toHaveLength(s.anglers.length * BENCH_BOX_PER_ANGLER)
+  })
+  it('sorter drops landed junk', () => {
+    const s = newGame()
+    s.sorter = true
+    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1, fly: { patternId: PATTERNS[0].id, materialIds: [], wearLeft: 5 } })
+    tick(s, 100, seqRand(0.9999, 0.5))
+    expect(s.anglers[1].phase).toBe('idle')
+    expect(s.basket).toHaveLength(0)
+  })
+  it('buyer sells the basket on its interval', () => {
+    const s = newGame()
+    s.buyer = true
+    s.basket = [{ id: 1, kind: 'fish', defId: 'dace', value: 10, size: 1 }]
+    run(s, TIMING.buyerIntervalMs + 100)
+    expect(s.money).toBe(10)
+    expect(s.basket).toHaveLength(0)
+  })
+})
