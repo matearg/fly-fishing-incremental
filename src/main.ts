@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { FishingScene, VIEW_H, VIEW_W } from './scene/FishingScene'
+import { TitleScene } from './scene/TitleScene'
 import { castPlayer, reelPlayer, tick } from './game/sim'
 import { localStore, SAVE_KEY } from './game/save'
 import type { GameState } from './game/state'
@@ -8,7 +9,6 @@ import { mountPanel } from './ui/panel'
 import './ui/style.css'
 
 const session = new Session(localStore)
-session.continueGame()
 
 function act(fn: (s: GameState) => unknown): void {
   fn(session.state)
@@ -18,7 +18,7 @@ function act(fn: (s: GameState) => unknown): void {
 const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() })
 setInterval(() => panel.render(), 250)
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   width: VIEW_W,
@@ -26,10 +26,21 @@ new Phaser.Game({
   pixelArt: true,
   backgroundColor: '#000000',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: new FishingScene({
-    getState: () => session.state,
-    onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
-  }),
+  scene: [
+    new TitleScene({
+      session,
+      enterGame: kind => {
+        if (kind === 'new') session.startNewGame()
+        else session.continueGame()
+        panel.render()
+        game.scene.switch('title', 'fishing')
+      },
+    }),
+    new FishingScene({
+      getState: () => session.state,
+      onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
+    }),
+  ],
 })
 
 // Dev-only fast-forward: ?speed=20 runs 20 clamped sub-ticks per frame.
