@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { FishingScene, VIEW_H, VIEW_W } from './scene/FishingScene'
 import { castPlayer, reelPlayer, tick } from './game/sim'
-import { loadFromStorage, saveToStorage } from './game/save'
+import { deserialize, loadFromStorage, SAVE_KEY, saveToStorage } from './game/save'
 import type { GameState } from './game/state'
 import { mountPanel } from './ui/panel'
 import './ui/style.css'
@@ -48,11 +48,19 @@ function frame(now: number): void {
 requestAnimationFrame(frame)
 
 // No catch-up: pause while hidden and restart the clock on return.
+// A hidden tab's state never changes, so it never autosaves; on return it reloads the save,
+// which another tab may have advanced meanwhile.
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     saveToStorage(state)
     last = null
-  }
+  } else setState(loadFromStorage())
 })
-addEventListener('pagehide', () => saveToStorage(state))
-setInterval(() => saveToStorage(state), 5_000)
+// Adopt saves written by another tab (e.g. its final save when the player switches back here).
+addEventListener('storage', e => {
+  if (e.key !== SAVE_KEY) return
+  state = deserialize(e.newValue)
+  panel.render()
+})
+addEventListener('pagehide', () => { if (!document.hidden) saveToStorage(state) })
+setInterval(() => { if (!document.hidden) saveToStorage(state) }, 5_000)

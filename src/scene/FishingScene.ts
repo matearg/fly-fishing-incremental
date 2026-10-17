@@ -30,7 +30,8 @@ export class FishingScene extends Phaser.Scene {
     this.placeText = this.add.text(VIEW_W - 6, 6, '', font).setOrigin(1, 0)
     this.input.on('pointerdown', () => this.hooks.onWaterClick())
     // Keyboard access to the main action.
-    this.input.keyboard?.on('keydown-SPACE', () => this.hooks.onWaterClick())
+    // Space on a focused panel button belongs to that button, not the line.
+    this.input.keyboard?.on('keydown-SPACE', () => { if (!document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
   }
 
   update(time: number): void {

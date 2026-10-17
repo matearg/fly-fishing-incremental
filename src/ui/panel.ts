@@ -17,6 +17,32 @@ function btn(action: string, id: string, label: string, opts: { disabled?: boole
   return `<button data-action="${action}" data-id="${id}"${opts.disabled ? ' disabled' : ''}${pressed} class="${opts.cls ?? ''}">${label}</button>`
 }
 
+// Update a section in place so the button under the cursor is never swapped mid-click
+// (a replaced node loses the click when mousedown and mouseup land on different elements).
+function patch(el: Element, html: string): void {
+  const tpl = document.createElement('template')
+  tpl.innerHTML = html
+  morph(el, tpl.content)
+}
+
+function morph(from: ParentNode, to: ParentNode): void {
+  const olds = [...from.childNodes]
+  const news = [...to.childNodes]
+  news.forEach((n, i) => {
+    const o = olds[i]
+    if (!o) return from.appendChild(n)
+    const same = o.nodeName === n.nodeName && (!(o instanceof Element) || (o.getAttribute('data-action') === (n as Element).getAttribute('data-action') && o.getAttribute('data-id') === (n as Element).getAttribute('data-id')))
+    if (!same) return from.replaceChild(n, o)
+    if (o instanceof Element) {
+      const ne = n as Element
+      for (const a of [...o.attributes]) if (!ne.hasAttribute(a.name)) o.removeAttribute(a.name)
+      for (const a of [...ne.attributes]) if (o.getAttribute(a.name) !== a.value) o.setAttribute(a.name, a.value)
+      morph(o, ne)
+    } else if (o.nodeValue !== n.nodeValue) o.nodeValue = n.nodeValue
+  })
+  for (const o of olds.slice(news.length)) o.remove()
+}
+
 export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void): { render(): void } {
   let confirmSeason = false
   let dragging = false
@@ -123,7 +149,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       const html = fn(s)
       if (last[name] === html) continue
       last[name] = html
-      root.querySelector(`[data-sec="${name}"]`)!.innerHTML = html
+      patch(root.querySelector(`[data-sec="${name}"]`)!, html)
     }
     if (!dragging) renderBasket(s)
     if (fKey && !root.contains(focused)) {
@@ -152,6 +178,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       case 'sell': return act(s => sellAll(s))
       case 'trash': return act(s => trash(s, Number(id)))
       case 'season':
+        if (e.detail > 1) return // a double-click must not skip the confirmation
         if (!confirmSeason) { confirmSeason = true; return render() }
         confirmSeason = false
         return setState(startNewSeason(getState()))
