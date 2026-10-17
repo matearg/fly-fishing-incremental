@@ -44,7 +44,7 @@ Mateo has worked with TypeScript, Java, and Python but has never built a game. T
 
 ## Screen layout (Mateo picked option A, "side view, under the surface")
 
-(The wireframe lives in the gitignored `.superpowers/brainstorm/` folder. This text is the source of truth.)
+(The original wireframe was a throwaway mockup. This text is the source of truth.)
 
 - **Scene (left/main):** the angler stands on a bank on the left. The water is shown in cross-section, so fish are visible swimming at different depths. Money is shown large in a corner.
 - **Right panel:** the current fly (name and wear bar), the shop (materials, patterns), helpers, location travel, and New Season.
