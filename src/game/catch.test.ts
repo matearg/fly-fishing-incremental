@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { rollCatch } from './catch'
 import { newGame, type Fly } from './state'
-import { LOCATIONS, SPECIES, TIERS } from './data'
+import { LICENSE_UPGRADES, LOCATIONS, SPECIES, TIERS } from './data'
 import { seqRand, lcg } from './testutil'
 
 const fly = (patternId: string, materialIds: string[] = []): Fly => ({ patternId, materialIds, wearLeft: 1 })
@@ -69,6 +69,6 @@ describe('rollCatch', () => {
     s.licenseLevels.valueMult = 2
     const boosted = rollCatch(s, fly('basicDry'), seqRand(0, 0.5))
     expect(base.kind).toBe('fish')
-    expect(boosted.value).toBeCloseTo(base.value * 1.5)
+    expect(boosted.value).toBeCloseTo(base.value * (1 + 2 * LICENSE_UPGRADES.find(u => u.id === 'valueMult')!.perLevel))
   })
 })
