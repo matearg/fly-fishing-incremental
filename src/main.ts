@@ -3,13 +3,24 @@ import { FishingScene, VIEW_H, VIEW_W } from './scene/FishingScene'
 import { castPlayer, reelPlayer, tick } from './game/sim'
 import { loadFromStorage, saveToStorage } from './game/save'
 import type { GameState } from './game/state'
+import { mountPanel } from './ui/panel'
 import './ui/style.css'
 
 let state: GameState = loadFromStorage()
 
 function act(fn: (s: GameState) => unknown): void {
   fn(state)
+  panel.render()
 }
+
+function setState(s: GameState): void {
+  state = s
+  saveToStorage(state)
+  panel.render()
+}
+
+const panel = mountPanel(document.getElementById('ui')!, () => state, act, setState)
+setInterval(() => panel.render(), 250)
 
 new Phaser.Game({
   type: Phaser.AUTO,
