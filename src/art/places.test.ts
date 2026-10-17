@@ -12,6 +12,10 @@ describe('place looks', () => {
       expect(look.riverH).toBeLessThanOrEqual(230)
     }
   })
+  it('no two places share a look', () => {
+    const keys = LOCATIONS.map(l => `${PLACE_LOOKS[l.id].water[0]}/${PLACE_LOOKS[l.id].bank}`)
+    expect(new Set(keys).size).toBe(LOCATIONS.length)
+  })
   it('paint accepts every decor grid with its palette', () => {
     for (const loc of LOCATIONS) for (const d of PLACE_LOOKS[loc.id].decor) expect(() => paint(d.grid, d.palette)).not.toThrow()
   })
