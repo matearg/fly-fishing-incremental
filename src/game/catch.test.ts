@@ -1,0 +1,74 @@
+import { describe, it, expect } from 'vitest'
+import { rollCatch } from './catch'
+import { newGame, type Fly } from './state'
+import { LOCATIONS, SPECIES, TIERS } from './data'
+import { seqRand, lcg } from './testutil'
+
+const fly = (patternId: string, materialIds: string[] = []): Fly => ({ patternId, materialIds, wearLeft: 1 })
+const depthOf = (id: string) => SPECIES.find(s => s.id === id)!.depth
+const fishIds = (state: ReturnType<typeof newGame>, f: Fly, n: number, rand: () => number) => {
+  const ids = new Set<string>()
+  for (let i = 0; i < n; i++) {
+    const c = rollCatch(state, f, rand)
+    if (c.kind === 'fish') ids.add(c.defId)
+  }
+  return ids
+}
+
+describe('rollCatch', () => {
+  it('dry fly never reaches below the surface', () => {
+    const s = newGame()
+    for (let i = 0; i < 500; i++) {
+      const c = rollCatch(s, fly('basicDry'), Math.random)
+      if (c.kind === 'fish') expect(depthOf(c.defId)).toBe(0)
+    }
+  })
+  it('streamer is capped by the location depth', () => {
+    const s = newGame()
+    const max = LOCATIONS[0].maxDepth
+    for (const id of fishIds(s, fly('zonker', ['goldBead']), 500, Math.random)) expect(depthOf(id)).toBeLessThanOrEqual(max)
+  })
+  it('deeper fly reaches a superset of species (ladder)', () => {
+    const s = newGame()
+    s.location = 'river'
+    const dry = fishIds(s, fly('basicDry'), 2000, lcg(1))
+    const streamer = fishIds(s, fly('woollyBugger'), 2000, lcg(2))
+    for (const id of dry) expect(streamer.has(id)).toBe(true)
+    expect(streamer.size).toBeGreaterThan(dry.size)
+  })
+  it('odds bonus raises the share of rarer tiers', () => {
+    const s = newGame()
+    const share = (f: Fly) => {
+      const rand = lcg(7)
+      let rare = 0
+      for (let i = 0; i < 2000; i++) {
+        const c = rollCatch(s, f, rand)
+        if (c.kind === 'fish' && TIERS.indexOf(SPECIES.find(x => x.id === c.defId)!.tier) > 0) rare++
+      }
+      return rare
+    }
+    expect(share(fly('elkHair', ['peacockHerl', 'flashabou']))).toBeGreaterThan(share(fly('basicDry')))
+  })
+  it('license species only after bought', () => {
+    const s = newGame()
+    s.location = 'mountainLake'
+    const f = fly('zonker', ['goldBead'])
+    expect(fishIds(s, f, 3000, lcg(3)).has('tigerTrout')).toBe(false)
+    s.licenseSpecies.push('tigerTrout')
+    expect(fishIds(s, f, 3000, lcg(3)).has('tigerTrout')).toBe(true)
+  })
+  it('junk has size 1 and value <= 0', () => {
+    const c = rollCatch(newGame(), fly('basicDry'), seqRand(0.9999, 0.5))
+    expect(c.kind).toBe('junk')
+    expect(c.size).toBe(1)
+    expect(c.value).toBeLessThanOrEqual(0)
+  })
+  it('license valueMult multiplies fish value', () => {
+    const s = newGame()
+    const base = rollCatch(s, fly('basicDry'), seqRand(0, 0.5))
+    s.licenseLevels.valueMult = 2
+    const boosted = rollCatch(s, fly('basicDry'), seqRand(0, 0.5))
+    expect(base.kind).toBe('fish')
+    expect(boosted.value).toBeCloseTo(base.value * 1.5)
+  })
+})
