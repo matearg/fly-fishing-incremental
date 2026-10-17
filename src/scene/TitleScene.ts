@@ -4,6 +4,7 @@ import { bakeLogo } from '../art/logo'
 import { paint, stylize } from '../art/pixels'
 import type { Session } from '../session'
 import { CONFIRM_PROMPT, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
+import { RiverBackdrop } from './RiverBackdrop'
 import { addBitmap } from './textures'
 import { VIEW_H, VIEW_W } from './FishingScene'
 
@@ -33,6 +34,7 @@ export class TitleScene extends Phaser.Scene {
   private items!: Phaser.GameObjects.Container
   private menu: MenuState = { page: 'attract', index: 0 }
   private busy = false
+  private river?: RiverBackdrop
 
   constructor(private hooks: TitleHooks) {
     super('title')
@@ -41,10 +43,10 @@ export class TitleScene extends Phaser.Scene {
   create(): void {
     addBitmap(this, 'logo', bakeLogo())
     addBitmap(this, 'cursor', paint(CURSOR, { o: 0x2a0a3d, b: 0xff8a3a, e: 0x10222b }))
-    this.add.rectangle(0, 0, VIEW_W, VIEW_H, 0x2a7499).setOrigin(0) // placeholder water until the river backdrop
-    this.logo = this.add.image(VIEW_W / 2, LOGO_Y, 'logo').setOrigin(0.5, 0)
-    this.press = this.add.image(VIEW_W / 2, VIEW_H - 40, this.text('PRESS START', false)).setOrigin(0.5)
-    this.items = this.add.container(0, 0)
+    this.buildRiver()
+    this.logo = this.add.image(VIEW_W / 2, LOGO_Y, 'logo').setOrigin(0.5, 0).setDepth(10)
+    this.press = this.add.image(VIEW_W / 2, VIEW_H - 40, this.text('PRESS START', false)).setOrigin(0.5).setDepth(10)
+    this.items = this.add.container(0, 0).setDepth(10)
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.key(KEYS[e.code] ?? 'any'))
     this.input.on('pointerdown', () => { if (this.menu.page === 'attract') this.key('any') })
     // Coming back from the game lands on the main menu, not the attract screen.
@@ -52,12 +54,14 @@ export class TitleScene extends Phaser.Scene {
       this.busy = false
       this.menu = { page: 'main', index: 0 }
       this.logo.y = LOGO_Y_MENU
+      this.buildRiver() // the player may have moved to another place
       this.cameras.main.fadeIn(300)
       this.refreshMenu()
     })
   }
 
   update(time: number): void {
+    this.river?.update(time)
     const base = this.menu.page === 'attract' ? LOGO_Y : LOGO_Y_MENU
     if (!this.tweens.isTweening(this.logo)) this.logo.y = base + Math.round(Math.sin(time / 500) * 2)
     this.press.setVisible(this.menu.page === 'attract' && Math.floor(time / 625) % 2 === 0)
@@ -81,6 +85,12 @@ export class TitleScene extends Phaser.Scene {
       if (sel) this.items.add(this.add.image(img.x - img.width / 2 - 6, y, 'cursor').setOrigin(1, 0.5))
       y += LINE_H
     })
+  }
+
+  private buildRiver(): void {
+    this.river?.destroy()
+    const s = this.hooks.session.state
+    this.river = new RiverBackdrop(this, s.location, s.licenseSpecies)
   }
 
   private ctx() {
