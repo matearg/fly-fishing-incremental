@@ -61,6 +61,13 @@ describe('Session', () => {
     s.continueGame()
     expect(s.state.money).toBe(50)
   })
+  it('adopting an unreadable save keeps the current run', () => {
+    const s = new Session({ read: () => null, write: () => {} })
+    s.startNewGame()
+    s.state.money = 50
+    s.adopt(null)
+    expect(s.state.money).toBe(50)
+  })
   it('blocked storage', () => {
     const s = new Session({ read: () => null, write: () => {} })
     expect(s.hasSave()).toBe(false)

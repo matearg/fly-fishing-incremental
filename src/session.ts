@@ -45,6 +45,6 @@ export class Session {
   }
 
   adopt(raw: string | null): void {
-    this.state = deserialize(raw)
+    this.state = parseSave(raw) ?? this.state
   }
 }
