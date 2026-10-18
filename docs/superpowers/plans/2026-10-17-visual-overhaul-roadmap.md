@@ -49,6 +49,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - **Art (approved 2026-10-18):** a `back` pose for both figures (sprites have 6 px left / 8 px top padding; place them at `x - BODY_X`), and a line-fly sprite per pattern (`src/art/sprites/flies.ts`, falls back to Basic Dry).
 - **Basket:** always 3 tile rows tall (tiles 32 px), extra rows scroll; Sell all sits on the first row (user's request).
 - **HUD text:** place name, helper count and bite "!" use the pixel font via `addText` (`src/scene/textures.ts`), shared with the title.
+- **Deferred minors (final review):** the helper's back-cast line runs up to 21 px off the world's left edge at non-dock places; `fit()` calls `setGameSize` even when the size is unchanged (possible one-frame clear while dragging the window, not seen); `lineFlyBitmap`'s `in` check would also match prototype keys (unreachable after `sanitize`).
 
 ### Saving
 - No manual save button. The user said "leave the save as it is": autosave every 5 s, plus saving on tab hide, page close, and going back to the menu. Nothing is saved while the title or menu is up.
