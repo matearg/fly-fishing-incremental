@@ -9,7 +9,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 1 | Tying bench rework | **Done**, merged to `master` (`cc389c0`) |
 | 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec and plan deleted once done; in git history up to `3a27cc7` (spec) and `c8cc002` (plan) |
 | 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec, mockup and plans deleted once done; in git history up to `3a27cc7` |
-| 4 | Panel icons + owned-unlock styling | Not started |
+| 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar) | Design approved 2026-10-18: `docs/superpowers/specs/2026-10-18-panel-journal-style-design.md`. Plan next |
 
 ## Decisions already made (carry into pieces 3 and 4)
 
@@ -30,7 +30,8 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 ### Piece 4: panels (user's requirements)
 - **Add icons** to the shop, helpers, places, season and basket panels.
 - **Owned unlocks should clearly look owned**, not just like a disabled button.
-- *Proposed:* show the bench cooldown as a progress bar.
+- Bench cooldown progress bar: confirmed. No bar for the hired anglers (user dropped it).
+- Brainstorm 2026-10-18 added: whole panel and basket in a "field journal" pixel style (Silkscreen + Pixelify Sans from Google Fonts, approved by the user as the one outside asset), a unique icon per item with flies drawn like the real patterns, and a basket stacked by kind that opens to list catches. Details in the spec.
 
 ### Bench (piece 1, as built)
 - A 10 s cooldown, cut by 25% per extra bench. It ties 1 fly per cooldown. The box holds at most 1 fly per angler, you included. The cooldown pauses while the box is full. Big River was made cheaper (12,000) to keep the pacing test smooth. The first season now takes about 47 minutes for the test bot.
@@ -47,4 +48,4 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - The scene code that hides a landed fish (`Chosen.lastPhase` passed to `releaseOffscreen`) is only checked by a manual run, because the scene has no unit-test harness.
 
 ## How to resume
-Piece 3 is merged to `master`. Work continues on `develop`. Next: piece 4 (panel icons and owned-unlock styling), starting with a brainstorm.
+Piece 3 is merged to `master`. Work continues on `develop`. Next: piece 4. Design approved; write the plan from `docs/superpowers/specs/2026-10-18-panel-journal-style-design.md`.
