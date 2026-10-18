@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { JUNK, LOCATIONS, TIMING, type LocationId } from '../game/data'
+import { placeSpecies } from '../game/catch'
 import { flyStats } from '../game/flies'
 import { hashString, lcg } from '../game/rand'
 import type { Angler, GameState, Pending } from '../game/state'
@@ -8,7 +9,7 @@ import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../art/fish'
 import { JUNK_SNAG, junkBitmap } from '../art/junk'
 import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../art/places'
 import { blank, mix, paint } from '../art/pixels'
-import { approach, approachTarget, CAST_MS, NOTICE_SHARE, sameCatch, schoolKey, schoolSpecies, trackCatch, type Track } from './choreo'
+import { approach, approachTarget, CAST_MS, NOTICE_SHARE, sameCatch, schoolKey, trackCatch, type Track } from './choreo'
 import { addBitmap } from './textures'
 
 export const VIEW_W = 480
@@ -114,7 +115,7 @@ export class FishingScene extends Phaser.Scene {
     this.chosen = null
     const rand = lcg(hashString(s.location) + 13)
     const band = (VIEW_H - WATER_Y) / (place.maxDepth + 1)
-    for (const sp of schoolSpecies(s)) for (let k = 0; k < TIER_SCHOOL[sp.tier]; k++) {
+    for (const sp of placeSpecies(s.location, s.licenseSpecies)) for (let k = 0; k < TIER_SCHOOL[sp.tier]; k++) {
       const against = rand() < 0.3
       this.addSwimmer(sp.id, rand() * VIEW_W, this.depthY(sp.depth, place) + (rand() - 0.5) * band * 0.5, (8 + rand() * 12) * (against ? -1 : 1), rand() * 6)
     }

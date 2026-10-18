@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
-import { SPECIES, type LocationId } from '../game/data'
+import { placeSpecies } from '../game/catch'
+import type { LocationId } from '../game/data'
 import { hashString, lcg } from '../game/rand'
 import { fishBitmaps, TIER_SCHOOL } from '../art/fish'
 import { bakeBank, placeLook } from '../art/places'
@@ -35,7 +36,7 @@ export class RiverBackdrop {
     })
     this.objs.push(water)
 
-    for (const sp of SPECIES.filter(s => s.location === location && (!s.licenseCost || licensed.includes(s.id)))) {
+    for (const sp of placeSpecies(location, licensed)) {
       const [a, b] = fishBitmaps(sp.id)
       const frames: [string, string] = [`fish:${sp.id}:0`, `fish:${sp.id}:1`]
       addBitmap(scene, frames[0], a); addBitmap(scene, frames[1], b)

@@ -28,6 +28,7 @@ function sanitize(raw: GameState): GameState {
   for (const a of s.anglers) {
     if (a.fly && !validRecipe(a.fly)) { a.fly = null; a.phase = 'idle'; a.pending = null }
     a.pending ??= null
+    if (!a.fly && a.phase !== 'idle') { a.phase = 'idle'; a.pending = null }
     if (a.pending && !has(a.pending.kind === 'fish' ? SPECIES : JUNK, a.pending.defId)) a.pending = null
   }
   return s

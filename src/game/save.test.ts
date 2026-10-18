@@ -106,4 +106,13 @@ describe('save with a pending catch', () => {
     sellAll(l)
     expect(l.money).toBe(50)
   })
+
+  it.each(['waiting', 'bite', 'reeling'] as const)('a %s angler with no fly loads idle and ticks safely', phase => {
+    const s = newGame()
+    s.anglers[0] = { auto: false, phase, timerMs: 10, fly: null, pending: { kind: 'junk', defId: 'can', value: 0, size: 1, location: 'creek' } }
+    const l = parseSave(serialize(s))!
+    expect(l.anglers[0]).toMatchObject({ phase: 'idle', pending: null })
+    expect(() => tick(l, 100, Math.random)).not.toThrow()
+    expect(l.basket).toHaveLength(0)
+  })
 })

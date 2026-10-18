@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rollCatch } from './catch'
+import { placeSpecies, rollCatch } from './catch'
 import { newGame, type Fly } from './state'
 import { LICENSE_UPGRADES, LOCATIONS, SPECIES, TIERS } from './data'
 import { seqRand, lcg } from './testutil'
@@ -70,5 +70,11 @@ describe('rollCatch', () => {
     const boosted = rollCatch(s, fly('basicDry'), seqRand(0, 0.5))
     expect(base.kind).toBe('fish')
     expect(boosted.value).toBeCloseTo(base.value * (1 + 2 * LICENSE_UPGRADES.find(u => u.id === 'valueMult')!.perLevel))
+  })
+
+  it('placeSpecies hides licence species until bought', () => {
+    expect(placeSpecies('mountainLake', []).map(s => s.id)).not.toContain('tigerTrout')
+    expect(placeSpecies('mountainLake', ['tigerTrout']).map(s => s.id)).toContain('tigerTrout')
+    expect(placeSpecies('mountainLake', ['tigerTrout']).every(s => s.location === 'mountainLake')).toBe(true)
   })
 })

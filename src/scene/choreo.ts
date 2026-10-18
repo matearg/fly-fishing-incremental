@@ -1,5 +1,5 @@
 // Pure timing for the fishing scene's animations; the scene reads sim state and asks these what to draw.
-import { SPECIES, type SpeciesDef } from '../game/data'
+import { placeSpecies } from '../game/catch'
 import type { Angler, GameState, Pending } from '../game/state'
 
 export const APPROACH_MS = 2000 // the chosen fish's notice + swim to the fly, ending at the bite
@@ -20,13 +20,8 @@ export function castPose(waitMs: number, remainingMs: number): boolean {
   return waitMs - remainingMs < CAST_MS
 }
 
-// The species swimming at the current place (licence species only once bought).
-export function schoolSpecies(state: GameState): SpeciesDef[] {
-  return SPECIES.filter(s => s.location === state.location && (!s.licenseCost || state.licenseSpecies.includes(s.id)))
-}
-
 export function schoolKey(state: GameState): string {
-  return `${state.location}:${schoolSpecies(state).map(s => s.id).join(',')}`
+  return `${state.location}:${placeSpecies(state.location, state.licenseSpecies).map(s => s.id).join(',')}`
 }
 
 // What the scene remembers per visible angler: the catch it last saw, the wait remaining when it appeared, and the last timer seen.
