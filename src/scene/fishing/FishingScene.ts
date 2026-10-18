@@ -284,7 +284,7 @@ export class FishingScene extends Phaser.Scene {
     this.moveJunk(pending, p, ptr, aim)
 
     const helpers = s.anglers.length - 1
-    this.helperText.setVisible(helpers > 0).setTexture(addText(this, `HELPERS ${helpers}`, TEXT_WHITE))
+    this.helperText.setVisible(helpers > 0).setTexture(addText(this, `HELPERS: ${helpers}`, TEXT_WHITE))
     this.placeText.setTexture(addText(this, LOCATIONS.find(l => l.id === s.location)!.name.toUpperCase(), TEXT_WHITE))
   }
 
