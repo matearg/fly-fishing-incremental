@@ -13,7 +13,7 @@
 ## Status (2026-10-17)
 
 - Tasks 1–6 are built on branch `fishing-scene` (`c291519..6e2e6b4`). Review stops 1–3 are approved; at stop 3 the user also asked for unique El Cuero and Nahuelito shapes (`75938f2`).
-- The final whole-branch review found 0 critical, 2 important and 7 minor issues. Both important ones are fixed (`6e2e6b4`). The minors have their own plan: `plans/2026-10-17-fishing-scene-minors.md`.
+- The final whole-branch review found 0 critical, 2 important and 7 minor issues. Both important ones are fixed (`6e2e6b4`). The minors have their own plan, `plans/2026-10-17-fishing-scene-minors.md`. It is done (`e96f9fc..beec9b0`), and its fresh review found 0 critical and 0 important issues.
 - **Open:** Task 6 Step 8 (review stop 4, the animations in the running game) and Step 9 (close-out and merge).
 
 ## Global Constraints
