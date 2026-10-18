@@ -30,7 +30,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 button[aria-pressed="true"], button[aria-pressed="true"]:hover, button[aria-expanded="true"] { background: var(--ink); color: var(--paper); box-shadow: none; }
 button.wide, .side section > div > button:not(.row button) { display: flex; width: 100%; }
 button.danger, button.danger:hover:not(:disabled) { background: var(--danger); color: #fff; }
-button small { color: var(--owned); display: block; font-size: 12px; }
+button small, .owned small { color: var(--owned); display: block; font-size: 12px; }
 button b { font: 13px/1 var(--head); color: var(--rust); margin-left: auto; white-space: nowrap; }
 button.danger b, button[aria-pressed="true"] b { color: inherit; }
 .txt { flex: 1; min-width: 0; }
@@ -42,12 +42,12 @@ button.danger b, button[aria-pressed="true"] b { color: inherit; }
 .bar.paused span { background: repeating-linear-gradient(45deg, var(--rule) 0 3px, var(--card) 3px 6px); }
 .basket { grid-column: 1; grid-row: 2; position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; }
 [data-sec="basketHead"] { align-self: stretch; padding-right: 10px; border-right: 2px dashed var(--rule); }
-[data-sec="basketHead"] > button { margin: 0; height: 32px; } /* Sell all lines up with the first tile row */
+[data-sec="basketHead"] > button { display: flex; margin: 0 0 6px; height: 32px; } /* Sell all lines up with the first tile row */
 /* Green like the money readout, so the one action never reads as another catch tile. */
-[data-sec="basketHead"] > button, [data-sec="basketHead"] > button:hover:not(:disabled) { font-family: var(--head); background: var(--money); color: #fff; border-color: var(--stamp-border); box-shadow: 3px 3px 0 var(--stamp-border); }
-[data-sec="basketHead"] > button:hover:not(:disabled) { filter: brightness(1.15); }
-[data-sec="basketHead"] > button:active:not(:disabled) { box-shadow: none; }
-[data-sec="basketHead"] > button b { color: inherit; }
+[data-sec="basketHead"] > [data-action="sell"], [data-sec="basketHead"] > [data-action="sell"]:hover:not(:disabled) { font-family: var(--head); background: var(--money); color: #fff; border-color: var(--stamp-border); box-shadow: 3px 3px 0 var(--stamp-border); }
+[data-sec="basketHead"] > [data-action="sell"]:hover:not(:disabled) { filter: brightness(1.15); }
+[data-sec="basketHead"] > [data-action="sell"]:active:not(:disabled) { box-shadow: none; }
+[data-sec="basketHead"] > [data-action="sell"] b { color: inherit; }
 /* Always 3 tile rows tall (3 × 32 + 2 gaps + padding), so catches never resize the game cell; a 4th row scrolls. */
 .items { flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; list-style: none; margin: 0; padding: 0 4px 4px 0; height: 112px; overflow-y: auto; }
 .items button { margin: 0; height: 32px; } /* fits the tallest catch art (16 px) beside a text line */

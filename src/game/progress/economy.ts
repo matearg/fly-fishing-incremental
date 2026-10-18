@@ -13,13 +13,16 @@ export function earn(state: GameState, amount: number): void {
   state.seasonEarnings += Math.max(0, amount)
 }
 
-// withBonus: only the player's own Sell all pays and uses up the release bonus, and only on a sale with fish.
+// withBonus: only the player's own Sell all pays the release bonus, and it multiplies fish, never junk.
+export function saleValue(state: GameState, withBonus = false): number {
+  const bonus = withBonus ? state.releaseBonus : 0
+  return state.basket.reduce((a, c) => a + c.value * (c.kind === 'fish' ? 1 + bonus : 1), 0)
+}
+
+// A sale with no fish in it leaves the bonus waiting.
 export function sellAll(state: GameState, withBonus = false): number {
-  let sum = state.basket.reduce((a, c) => a + c.value, 0)
-  if (withBonus && state.basket.some(c => c.kind === 'fish')) {
-    sum += state.releaseBonus * state.basket.reduce((a, c) => a + (c.kind === 'fish' ? c.value : 0), 0)
-    state.releaseBonus = 0
-  }
+  const sum = saleValue(state, withBonus)
+  if (withBonus && state.basket.some(c => c.kind === 'fish')) state.releaseBonus = 0
   earn(state, sum)
   state.basket = []
   return sum

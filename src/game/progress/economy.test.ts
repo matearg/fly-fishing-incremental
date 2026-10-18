@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { releaseBonusOf, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
+import { releaseBonusOf, saleValue, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
 import { newGame, type CatchItem } from '../state'
 import { PATTERNS, MATERIALS, RELEASE, SPECIES } from '../data'
 
@@ -128,6 +128,8 @@ describe('catch & release', () => {
   it('manual sell multiplies fish only, then resets', () => {
     const s = newGame(); s.releaseBonus = 0.5
     s.basket = [item(1, 10), item(2, -2, 'junk')]
+    expect(saleValue(s, true)).toBe(13)
+    expect(saleValue(s)).toBe(8)
     expect(sellAll(s, true)).toBe(13)
     expect(s.releaseBonus).toBe(0)
   })
