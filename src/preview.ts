@@ -1,6 +1,7 @@
 // Dev-only art review page: draws baked bitmaps at 2× so the user can approve them.
-import { JUNK, LOCATIONS, SPECIES } from './game/data'
+import { JUNK, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './game/data'
 import { hashString } from './game/util/rand'
+import { FLY_ICONS, MATERIAL_ICONS, iconBitmap, type Icon } from './art/icons'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
 import { blank, blit, mix, paint, type Bitmap } from './art/pixels'
 import { FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
@@ -103,3 +104,12 @@ for (const j of JUNK) {
   blit(card, b, 2, 2)
   show(junk, card, j.name, 4)
 }
+
+// Panel icons on the journal paper, at 3×.
+const icons = section('Panel icons (on paper, 3×)')
+const onPaper = (i: Icon, caption: string) => {
+  show(icons, iconBitmap(i), caption, 3)
+  ;(icons.lastElementChild!.firstElementChild as HTMLCanvasElement).style.background = '#e8d8b0'
+}
+for (const p of PATTERNS) onPaper(FLY_ICONS[p.id], p.name)
+for (const m of MATERIALS) onPaper(MATERIAL_ICONS[m.id], m.name)
