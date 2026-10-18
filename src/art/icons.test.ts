@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS } from '../game/data'
-import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS, ICON_MAX, iconBitmap, type Icon } from './icons'
+import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, SCENE_ICONS, UI_ICONS, ICON_MAX, iconBitmap, type Icon } from './icons'
 
 function checkIcons(name: string, set: Record<string, Icon>, ids: string[]): void {
   it(`${name}: one icon per id`, () => expect(Object.keys(set).sort()).toEqual([...ids].sort()))
@@ -21,4 +21,5 @@ describe('icons', () => {
   checkIcons('helpers', HELPER_ICONS, ['angler', 'bench', 'bulkTrash', 'sorter', 'buyer'])
   checkIcons('licenses', LICENSE_ICONS, LICENSE_UPGRADES.map(u => u.id))
   checkIcons('ui', UI_ICONS, ['coin', 'fly', 'season', 'license', 'basket', 'trash'])
+  checkIcons('scene', SCENE_ICONS, ['menuButton', 'cursor'])
 })

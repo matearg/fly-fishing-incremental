@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { menuInput, menuItems, type MenuCtx, type MenuState } from './menu'
 
-const save: MenuCtx = { hasSave: true, fullscreen: false }
-const noSave: MenuCtx = { hasSave: false, fullscreen: false }
+const save: MenuCtx = { hasSave: true, fullscreen: false, canFullscreen: true }
+const noSave: MenuCtx = { hasSave: false, fullscreen: false, canFullscreen: true }
 const at = (page: MenuState['page'], index = 0): MenuState => ({ page, index })
 const ids = (page: MenuState['page'], ctx: MenuCtx) => menuItems(page, ctx).map(i => i.id)
 
@@ -37,6 +37,10 @@ describe('menu', () => {
     expect(menuInput(at('settings', 0), 'select', save)).toEqual({ next: at('settings', 0), action: 'toggleFullscreen' })
     expect(menuItems('settings', save)[0].label).toBe('FULLSCREEN: OFF')
     expect(menuItems('settings', { ...save, fullscreen: true })[0].label).toBe('FULLSCREEN: ON')
+  })
+  it('settings without the Fullscreen API: only BACK', () => {
+    expect(ids('settings', { ...save, canFullscreen: false })).toEqual(['back'])
+    expect(menuInput(at('settings', 0), 'select', { ...save, canFullscreen: false })).toEqual({ next: at('main', 0) })
   })
   it('back from settings → main; back on main does nothing', () => {
     expect(menuInput(at('settings', 1), 'back', save)).toEqual({ next: at('main', 0) })

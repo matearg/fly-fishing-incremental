@@ -44,17 +44,5 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 ### Saving
 - No manual save button. The user said "leave the save as it is": autosave every 5 s, plus saving on tab hide, page close, and going back to the menu. Nothing is saved while the title or menu is up.
 
-## Deferred minors (from the title screen's final review)
-- Settings → Fullscreen throws a TypeError on iPhone Safari (no `requestFullscreen`). Fix: show the item only when `document.fullscreenEnabled` is true.
-- A Space or Esc pressed on the exact frame the title's fade ends can reach the fishing scene, causing one cast or an instant return to the menu. Fix: ignore input for one frame after `wake`.
-
-## Deferred minors (from the fishing scene's minors review)
-- `MENU_BUTTON` (`src/scene/fishing/FishingScene.ts`) and `CURSOR` (`src/scene/title/TitleScene.ts`) are the only pixel grids with no test. `paint` now throws on ragged rows, so a bad edit to either crashes the game at boot. Fix: one test that paints both, or move them into tested art modules.
-- The scene code that hides a landed fish (`Chosen.lastPhase` passed to `releaseOffscreen`) is only checked by a manual run, because the scene has no unit-test harness.
-
-## Deferred minors (from piece 4's final review)
-- When the box is full and the bench timer sits at 0, the bench bar is an empty outline; only the "Box full" label shows the paused state.
-- Season 1 pacing is 0.02 sim-min under the 50-minute limit (see Piece 4 above).
-
 ## How to resume
 Piece 4 is built on `feat/panel-journal` and approved. Next: merge it into `develop`, then delete its spec and plan as with earlier pieces. All four pieces of the overhaul are then done.

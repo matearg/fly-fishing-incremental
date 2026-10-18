@@ -583,4 +583,16 @@ export const UI_ICONS: Record<UiIconId, Icon> = {
   trash: TRASH_CAN,
 }
 
+// Canvas grids, not panel icons: kept here so the icon test paints them (a ragged row would crash at boot).
+export const SCENE_ICONS = {
+  menuButton: {
+    grid: ['oooooooooooo', 'obbbbbbbbbbo', 'obwwwwwwwwbo', 'obbbbbbbbbbo', 'obbbbbbbbbbo', 'obwwwwwwwwbo', 'obbbbbbbbbbo', 'obbbbbbbbbbo', 'obwwwwwwwwbo', 'obbbbbbbbbbo', 'obbbbbbbbbbo', 'oooooooooooo'],
+    palette: { o: 0x10161c, b: 0x24323f, w: 0xe8edf2 },
+  },
+  cursor: {
+    grid: ['.oooo..', 'obbbbo.', 'obebbbo', '.oooo..'],
+    palette: { o: 0x2a0a3d, b: 0xff8a3a, e: 0x10222b },
+  },
+} satisfies Record<string, Icon>
+
 export const iconBitmap = (icon: Icon): Bitmap => paint(icon.grid, icon.palette)

@@ -8,7 +8,8 @@ import { FEET_Y, figureBitmaps, ROD_TIP, type FigureKind, type Pose } from '../.
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
 import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../../art/places'
-import { blank, mix, paint } from '../../art/pixels'
+import { iconBitmap, SCENE_ICONS } from '../../art/icons'
+import { blank, mix } from '../../art/pixels'
 import { approach, approachTarget, CAST_MS, castPose, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, trackCatch, type Track } from './choreo'
 import { addBitmap } from '../textures'
 
@@ -22,8 +23,6 @@ const WRAP = 30 // off-screen margin so fish leave fully before wrapping
 const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, figures: 6, line: 7, hud: 8 }
 
 export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void }
-
-const MENU_BUTTON = ['oooooooooooo', 'obbbbbbbbbbo', 'obwwwwwwwwbo', 'obbbbbbbbbbo', 'obbbbbbbbbbo', 'obwwwwwwwwbo', 'obbbbbbbbbbo', 'obbbbbbbbbbo', 'obwwwwwwwwbo', 'obbbbbbbbbbo', 'obbbbbbbbbbo', 'oooooooooooo']
 
 // stray: a hooked fish from another place, removed once it lands
 interface Swimmer { img: Phaser.GameObjects.Image; id: string; frames: [string, string]; x0: number; y: number; speed: number; phase: number; w: number; stray?: boolean }
@@ -49,6 +48,8 @@ export class FishingScene extends Phaser.Scene {
   private tracks: [Track, Track] = [{ pending: null, waitMs: 0, castMs: 0, lastMs: 0 }, { pending: null, waitMs: 0, castMs: 0, lastMs: 0 }]
   private chosen: Chosen | null = null
   private rippleDots: { x0: number; y: number; len: number; speed: number }[] = []
+  // True until the first update after create/wake: a key that switched scenes must not also cast or leave.
+  private settling = true
 
   constructor(private hooks: SceneHooks) {
     super('fishing')
@@ -69,16 +70,16 @@ export class FishingScene extends Phaser.Scene {
     this.player = this.add.image(0, 0, 'fig:angler:idle').setOrigin(0).setDepth(Z.figures)
     for (const j of JUNK) addBitmap(this, `junk:${j.id}`, junkBitmap(j.id))
     this.junk = this.add.image(0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
-    addBitmap(this, 'menu-button', paint(MENU_BUTTON, { o: 0x10161c, b: 0x24323f, w: 0xe8edf2 }))
-    this.add.image(VIEW_W - 4, 4, 'menu-button').setOrigin(1, 0).setDepth(Z.hud).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.hooks.onMenu())
+    addBitmap(this, 'menu-button', iconBitmap(SCENE_ICONS.menuButton))
+    this.add.image(VIEW_W - 4, 4, 'menu-button').setOrigin(1, 0).setDepth(Z.hud).setInteractive({ useHandCursor: true }).on('pointerdown', () => { if (!this.settling) this.hooks.onMenu() })
     // A click on the menu button is not a cast.
-    this.input.on('pointerdown', (_: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => { if (!over.length) this.hooks.onWaterClick() })
-    this.input.keyboard?.on('keydown-ESC', () => this.hooks.onMenu())
+    this.input.on('pointerdown', (_: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => { if (!over.length && !this.settling) this.hooks.onWaterClick() })
+    this.input.keyboard?.on('keydown-ESC', () => { if (!this.settling) this.hooks.onMenu() })
     this.cameras.main.fadeIn(300)
-    this.events.on('wake', () => this.cameras.main.fadeIn(300))
+    this.events.on('wake', () => { this.settling = true; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
-    this.input.keyboard?.on('keydown-SPACE', () => { if (!document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
+    this.input.keyboard?.on('keydown-SPACE', () => { if (!this.settling && !document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
   }
 
   // Horizon, water, bank and figure spots for the place; rebuilt on travel.
@@ -199,6 +200,7 @@ export class FishingScene extends Phaser.Scene {
   }
 
   update(time: number): void {
+    this.settling = false
     const s = this.hooks.getState()
     const t = time / 1000
     if (this.place?.id !== s.location) { this.place = this.buildPlace(s.location); this.school = '' }
