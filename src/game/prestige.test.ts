@@ -21,7 +21,7 @@ describe('New Season', () => {
     s.money = 1e9
     s.seasonEarnings = SEASON.licenseDivisor * 16
     s.basket = [{ id: 1, kind: 'fish', defId: 'dace', value: 1, size: 1 }]
-    s.anglers.push({ auto: true, phase: 'idle', timerMs: 0, fly: null })
+    s.anglers.push({ auto: true, phase: 'idle', timerMs: 0, fly: null, pending: null })
     s.bench = 3; s.sorter = true; s.buyer = true
     s.unlockedLocations.push('river'); s.unlockedMaterials.push('copperWire')
     s.licenses = 2; s.licenseLevels.extraWear = 1; s.licenseSpecies = ['tigerTrout']

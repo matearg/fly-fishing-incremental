@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { tick, castPlayer, reelPlayer } from './sim'
 import { newGame, type GameState } from './state'
-import { PATTERNS, TIMING } from './data'
+import { PATTERNS, SPECIES, TIMING } from './data'
+import { travel } from './economy'
 import { seqRand } from './testutil'
 
 const r = seqRand(0.1, 0.3, 0.5)
 const run = (s: GameState, ms: number) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
-const autoAngler = () => ({ auto: true, phase: 'idle' as const, timerMs: 0, fly: null })
+const autoAngler = () => ({ auto: true, phase: 'idle' as const, timerMs: 0, fly: null, pending: null })
 
 describe('player', () => {
   it('broke with an empty box can still cast (never stuck)', () => {
@@ -51,6 +52,48 @@ describe('player', () => {
     run(s, 30_000)
     expect(s.anglers[0].phase).toBe('bite')
     expect(s.basket).toHaveLength(0)
+  })
+})
+
+describe('catch picked at cast', () => {
+  const toBite = (s: GameState) => { castPlayer(s, r); run(s, TIMING.biteMaxMs + 100) }
+  it('the catch is picked at cast and is what lands', () => {
+    const s = newGame()
+    castPlayer(s, r)
+    const p = s.anglers[0].pending!
+    expect(p.location).toBe(s.location)
+    run(s, TIMING.biteMaxMs + 100)
+    reelPlayer(s)
+    run(s, TIMING.reelMs + 100)
+    expect(s.basket[0]).toMatchObject({ kind: p.kind, defId: p.defId, value: p.value, size: p.size })
+    expect(s.anglers[0].pending).toBeNull()
+  })
+  it('travel while waiting re-picks for the new place', () => {
+    const s = newGame()
+    s.unlockedLocations.push('river')
+    castPlayer(s, r)
+    travel(s, 'river')
+    tick(s, 100, r)
+    const p = s.anglers[0].pending!
+    expect(p.location).toBe('river')
+    if (p.kind === 'fish') expect(SPECIES.find(x => x.id === p.defId)!.location).toBe('river')
+  })
+  it('travel during a bite keeps the hooked catch', () => {
+    const s = newGame()
+    s.unlockedLocations.push('river')
+    toBite(s)
+    const p = structuredClone(s.anglers[0].pending)
+    travel(s, 'river')
+    run(s, 1000)
+    expect(s.anglers[0].pending).toEqual(p)
+  })
+  it('helpers pick at cast too', () => {
+    const s = newGame()
+    s.anglers.push(autoAngler())
+    s.flyBox.push({ patternId: PATTERNS[0].id, materialIds: [], wearLeft: 1 })
+    tick(s, 100, r)
+    expect(s.anglers[1].phase).toBe('waiting')
+    expect(s.anglers[1].pending).not.toBeNull()
   })
 })
 

@@ -3,9 +3,11 @@ import { licenseEffects } from './license'
 
 export interface Fly { patternId: string; materialIds: string[]; wearLeft: number }
 export type Phase = 'idle' | 'waiting' | 'bite' | 'reeling'
-export interface Angler { auto: boolean; phase: Phase; timerMs: number; fly: Fly | null }
+// pending: the catch picked at cast, for the place it was picked at; null when none is picked
+export interface Angler { auto: boolean; phase: Phase; timerMs: number; fly: Fly | null; pending: Pending | null }
 // size is 1 for junk
 export interface CatchItem { id: number; kind: 'fish' | 'junk'; defId: string; value: number; size: number }
+export type Pending = Omit<CatchItem, 'id'> & { location: LocationId }
 export interface Recipe { patternId: string; materialIds: string[] }
 export interface GameState {
   version: number; money: number; seasonEarnings: number
@@ -29,7 +31,7 @@ export function newGame(carry?: Carry): GameState {
     location: unlockedLocations[unlockedLocations.length - 1], unlockedLocations,
     unlockedPatterns: PATTERNS.slice(0, 1 + fx.startPatterns).map(p => p.id), unlockedMaterials: [],
     recipe: { patternId: PATTERNS[0].id, materialIds: [] },
-    flyBox: [], anglers: [{ auto: false, phase: 'idle', timerMs: 0, fly: null }],
+    flyBox: [], anglers: [{ auto: false, phase: 'idle', timerMs: 0, fly: null, pending: null }],
     bench: 0, sorter: false, buyer: false, benchTimerMs: 0, buyerTimerMs: 0,
     basket: [], nextCatchId: 1,
     licenses: carry?.licenses ?? 0, licenseLevels: { ...licenseLevels }, licenseSpecies: [...(carry?.licenseSpecies ?? [])],

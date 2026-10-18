@@ -4,13 +4,20 @@ import { sellAll } from './economy'
 import { basicRecipe, tieFly } from './flies'
 import type { Angler, GameState } from './state'
 
-function startWaiting(a: Angler, rand: () => number): void {
+function pick(state: GameState, a: Angler, rand: () => number): void {
+  a.pending = { ...rollCatch(state, a.fly!, rand), location: state.location }
+}
+
+function startWaiting(state: GameState, a: Angler, rand: () => number): void {
   a.phase = 'waiting'
+  pick(state, a, rand)
   a.timerMs = TIMING.biteMinMs + rand() * (TIMING.biteMaxMs - TIMING.biteMinMs)
 }
 
 function land(state: GameState, a: Angler, rand: () => number): void {
-  const c = rollCatch(state, a.fly!, rand)
+  // Fallback for an old save loaded mid-bite or mid-reel, before catches were picked at cast.
+  const { location: _, ...c } = a.pending ?? { ...rollCatch(state, a.fly!, rand), location: state.location }
+  a.pending = null
   if (!(state.sorter && c.kind === 'junk')) state.basket.push({ id: state.nextCatchId++, ...c })
   if (--a.fly!.wearLeft <= 0) a.fly = null
   a.phase = 'idle'
@@ -21,9 +28,11 @@ function stepAngler(state: GameState, a: Angler, dt: number, rand: () => number)
     case 'idle':
       if (!a.auto) return // the player only moves via castPlayer
       a.fly ??= state.flyBox.shift() ?? null
-      if (a.fly) startWaiting(a, rand)
+      if (a.fly) startWaiting(state, a, rand)
       return
     case 'waiting':
+      // Travel re-picks so the catch belongs to this place; also fills null from old saves.
+      if (a.pending?.location !== state.location) pick(state, a, rand)
       if ((a.timerMs -= dt) <= 0) a.phase = 'bite'
       return
     case 'bite':
@@ -61,7 +70,7 @@ export function castPlayer(state: GameState, rand: () => number): boolean {
     if (!state.flyBox.length && !tieFly(state)) tieFly(state, basicRecipe())
     p.fly = state.flyBox.shift()!
   }
-  startWaiting(p, rand)
+  startWaiting(state, p, rand)
   return true
 }
 

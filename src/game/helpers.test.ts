@@ -37,7 +37,7 @@ describe('helpers in tick', () => {
     const s = newGame()
     s.money = 1e9
     s.bench = 1
-    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1e12, fly: null }) // busy, never takes a fly
+    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1e12, fly: null, pending: null }) // busy, never takes a fly
     run(s, TIMING.benchTieMs - 100)
     expect(s.flyBox).toHaveLength(0)
     run(s, 200)
@@ -56,7 +56,7 @@ describe('helpers in tick', () => {
   it('sorter drops landed junk', () => {
     const s = newGame()
     s.sorter = true
-    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1, fly: { patternId: PATTERNS[0].id, materialIds: [], wearLeft: 5 } })
+    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1, fly: { patternId: PATTERNS[0].id, materialIds: [], wearLeft: 5 }, pending: null })
     tick(s, 100, seqRand(0.9999, 0.5))
     expect(s.anglers[1].phase).toBe('idle')
     expect(s.basket).toHaveLength(0)

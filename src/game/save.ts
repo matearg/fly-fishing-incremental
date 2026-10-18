@@ -1,4 +1,4 @@
-import { LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './data'
+import { JUNK, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './data'
 import { basicRecipe } from './flies'
 import { newGame, SAVE_VERSION, type Fly, type GameState, type Recipe } from './state'
 
@@ -25,7 +25,11 @@ function sanitize(raw: GameState): GameState {
   s.licenseSpecies = s.licenseSpecies.filter(id => has(SPECIES, id))
   if (!validRecipe(s.recipe)) s.recipe = basicRecipe()
   s.flyBox = s.flyBox.filter((f: Fly) => validRecipe(f))
-  for (const a of s.anglers) if (a.fly && !validRecipe(a.fly)) { a.fly = null; a.phase = 'idle' }
+  for (const a of s.anglers) {
+    if (a.fly && !validRecipe(a.fly)) { a.fly = null; a.phase = 'idle'; a.pending = null }
+    a.pending ??= null
+    if (a.pending && !has(a.pending.kind === 'fish' ? SPECIES : JUNK, a.pending.defId)) a.pending = null
+  }
   return s
 }
 

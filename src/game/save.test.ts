@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { serialize, deserialize, parseSave } from './save'
-import { newGame } from './state'
+import { newGame, type GameState } from './state'
 import { buyHelper } from './helpers'
 import { basicRecipe, flyStats, tieFly } from './flies'
 import { rollCatch } from './catch'
+import { castPlayer, reelPlayer, tick } from './sim'
+import { TIMING } from './data'
 
 describe('save', () => {
   it('round-trips a mid-game state', () => {
@@ -72,5 +74,27 @@ describe('save with stale ids after a data.ts edit', () => {
     expect(s.unlockedMaterials).toEqual([])
     expect(s.licenseSpecies).toEqual([])
     expect(() => rollCatch(s, { patternId: 'basicDry', materialIds: [], wearLeft: 1 }, Math.random)).not.toThrow()
+  })
+})
+
+describe('save with a pending catch', () => {
+  const run = (s: GameState, ms: number) => { for (let t = 0; t < ms; t += 100) tick(s, 100, Math.random) }
+  it('an old save mid-bite without pending loads and lands', () => {
+    const s = newGame()
+    castPlayer(s, Math.random)
+    run(s, TIMING.biteMaxMs + 100)
+    expect(s.anglers[0].phase).toBe('bite')
+    const raw: any = JSON.parse(serialize(s))
+    delete raw.anglers[0].pending
+    const l = parseSave(JSON.stringify(raw))!
+    expect(l.anglers[0].pending).toBeNull()
+    reelPlayer(l)
+    run(l, TIMING.reelMs + 100)
+    expect(l.basket).toHaveLength(1)
+  })
+  it('drops a pending catch of an unknown species', () => {
+    const s: any = newGame()
+    s.anglers[0].pending = { kind: 'fish', defId: 'noSuchFish', value: 1, size: 1, location: 'creek' }
+    expect(parseSave(JSON.stringify(s))!.anglers[0].pending).toBeNull()
   })
 })
