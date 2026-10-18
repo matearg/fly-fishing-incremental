@@ -18,7 +18,7 @@ export const LOCATIONS: LocationDef[] = [
   { id: 'creek', name: 'Creek', unlockCost: 0, maxDepth: 1, junkWeight: 1 },
   { id: 'river', name: 'River', unlockCost: 1000, maxDepth: 2, junkWeight: 0.8 },
   { id: 'bigRiver', name: 'Big River', unlockCost: 12000, maxDepth: 2, junkWeight: 0.6 },
-  { id: 'mountainLake', name: 'Mountain Lake', unlockCost: 200000, maxDepth: 3, junkWeight: 0.5 },
+  { id: 'mountainLake', name: 'Mountain Lake', unlockCost: 150000, maxDepth: 3, junkWeight: 0.5 },
   { id: 'greatLake', name: 'Great Lake', unlockCost: 2500000, maxDepth: 3, junkWeight: 0.4 },
 ]
 

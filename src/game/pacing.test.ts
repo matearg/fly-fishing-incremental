@@ -27,7 +27,7 @@ function purchaseOptions(s: GameState): { what: string; cost: number; buy: () =>
   if (loc) opts.push({ what: `location ${loc.id}`, cost: loc.unlockCost, buy: () => unlockLocation(s, loc.id) && travel(s, loc.id) })
   opts.push({ what: 'angler', cost: helperCost(s, 'angler')!, buy: () => buyHelper(s, 'angler') })
   if (s.bench * 3 < s.anglers.length - 1) opts.push({ what: 'bench', cost: helperCost(s, 'bench')!, buy: () => buyHelper(s, 'bench') })
-  for (const k of ['bulkTrash', 'sorter', 'buyer'] as const) {
+  for (const k of ['bulkTrash', 'sorter', 'buyer', 'release'] as const) {
     const c = helperCost(s, k)
     if (c !== null) opts.push({ what: k, cost: c, buy: () => buyHelper(s, k) })
   }
@@ -83,7 +83,7 @@ if (process.env.PACING_LOG) {
   const s5 = nextSeason(s4, 5)
   const m = (t: number) => (t / MIN).toFixed(1)
   const r = season1
-  const locs = r.purchases.filter(p => p.what.startsWith('location') || p.what === 'sorter' || p.what === 'buyer').map(p => `${p.what.replace('location ', '')}@${m(p.t)}`).join(' ')
+  const locs = r.purchases.filter(p => p.what.startsWith('location') || ['bulkTrash', 'sorter', 'buyer', 'release'].includes(p.what)).map(p => `${p.what.replace('location ', '')}@${m(p.t)}`).join(' ')
   const times = [0, ...r.purchases.map(p => p.t)]
   const gaps = times.slice(1).map((t, i) => ({ g: t - times[i], at: t })).sort((a, b) => b.g - a.g)[0]
   const W = 2 * MIN
