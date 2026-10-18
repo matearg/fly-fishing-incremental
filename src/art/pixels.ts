@@ -46,7 +46,7 @@ export interface TextStyle { top: number; bottom: number; outline: number; outli
 
 const SHADOW_OFFSET = 2
 const SHADOW_ALPHA = 89 // ≈35%
-const mix = (a: number, b: number, t: number) =>
+export const mix = (a: number, b: number, t: number) =>
   [16, 8, 0].reduce((c, sh) => c | (Math.round(((a >> sh) & 0xff) + (((b >> sh) & 0xff) - ((a >> sh) & 0xff)) * t) << sh), 0)
 
 // Ink gets a 4-step vertical gradient, then a square outline ring, then an optional drop shadow.

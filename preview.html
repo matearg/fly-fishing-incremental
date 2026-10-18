@@ -1,0 +1,20 @@
+<!doctype html>
+<!-- Dev-only art review page (npm run dev → /preview.html). Not part of the build. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Art preview</title>
+    <style>
+      body { background: #1b1f24; color: #e8e8e8; font: 14px system-ui, sans-serif; margin: 16px; }
+      h2 { margin: 24px 0 8px; }
+      .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+      canvas { image-rendering: pixelated; background: #000; }
+      figure { margin: 0; }
+      figcaption { opacity: 0.7; margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <div id="out"></div>
+    <script type="module" src="/src/preview.ts"></script>
+  </body>
+</html>

@@ -6,3 +6,10 @@ export function lcg(seed = 1): () => number {
     return x / 2 ** 32
   }
 }
+
+// FNV-1a: a stable seed from a string (e.g. a place id).
+export function hashString(s: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0
+  return h
+}

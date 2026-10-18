@@ -1,31 +1,30 @@
 import Phaser from 'phaser'
 import { SPECIES, type LocationId } from '../game/data'
-import { lcg } from '../game/rand'
+import { hashString, lcg } from '../game/rand'
 import { fishBitmaps, TIER_SCHOOL } from '../art/fish'
-import { bakeBank, PLACE_LOOKS } from '../art/places'
+import { bakeBank, placeLook } from '../art/places'
 import { paint } from '../art/pixels'
 import { addBitmap } from './textures'
 import { VIEW_H, VIEW_W } from './FishingScene'
 
-const LILY = ['..gggg..', '.gggggg.', 'gggggg..', 'ggggg...', 'gggggg..', '.gggggg.', '..gggg..']
 const WRAP = 30 // off-screen margin so sprites leave fully before wrapping
 const wrapX = (x: number) => (((x + WRAP) % (VIEW_W + WRAP * 2)) + VIEW_W + WRAP * 2) % (VIEW_W + WRAP * 2) - WRAP
 
 interface Swimmer { img: Phaser.GameObjects.Image; frames: [string, string]; x0: number; y: number; speed: number; phase: number }
 interface Drifter { x0: number; y: number; len: number; speed: number }
 
-// Top-down river for the title: banks, banded water, a school of the place's fish, ripples and lily pads.
+// Top-down river for the title: banks, banded water, a school of the place's fish, ripples and the place's drift (foam, leaves, twigs).
 export class RiverBackdrop {
   private objs: Phaser.GameObjects.GameObject[] = []
   private fish: Swimmer[] = []
-  private pads: { img: Phaser.GameObjects.Image; x0: number; speed: number }[] = []
+  private drift: { img: Phaser.GameObjects.Image; x0: number; speed: number }[] = []
   private ripples: Drifter[] = []
   private g: Phaser.GameObjects.Graphics
   private rippleColor: number
 
   constructor(scene: Phaser.Scene, location: LocationId, licensed: string[]) {
-    const look = PLACE_LOOKS[location]
-    const rand = lcg(location.length * 7919 + 1)
+    const look = placeLook(location)
+    const rand = lcg(hashString(location))
     const top = Math.round((VIEW_H - look.riverH) / 2), bottom = top + look.riverH
 
     const water = scene.add.graphics()
@@ -48,10 +47,11 @@ export class RiverBackdrop {
       }
     }
 
-    addBitmap(scene, 'lily', paint(LILY, { g: 0x3f8f3a }))
-    for (let i = 0; i < 4; i++) {
-      const img = scene.add.image(0, top + 10 + rand() * (look.riverH - 20), 'lily')
-      this.pads.push({ img, x0: rand() * VIEW_W, speed: 4 + rand() * 3 })
+    const drift = `drift:${location}`
+    addBitmap(scene, drift, paint(look.drift.grid, look.drift.palette))
+    for (let i = 0; i < look.drift.perBank; i++) {
+      const img = scene.add.image(0, top + 10 + rand() * (look.riverH - 20), drift)
+      this.drift.push({ img, x0: rand() * VIEW_W, speed: 4 + rand() * 3 })
       this.objs.push(img)
     }
 
@@ -72,7 +72,7 @@ export class RiverBackdrop {
       f.img.setPosition(Math.round(wrapX(f.x0 + t * f.speed)), Math.round(f.y + Math.sin(t * 1.3 + f.phase) * 2))
       f.img.setTexture(f.frames[Math.floor(t * 8 + f.phase) % 2]) // ≈4 Hz tail wiggle
     }
-    for (const p of this.pads) p.img.setX(Math.round(wrapX(p.x0 + t * p.speed)))
+    for (const p of this.drift) p.img.setX(Math.round(wrapX(p.x0 + t * p.speed)))
     this.g.clear().fillStyle(this.rippleColor)
     for (const r of this.ripples) this.g.fillRect(Math.floor(wrapX(r.x0 + t * r.speed)), r.y, r.len, 1)
   }
