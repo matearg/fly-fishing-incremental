@@ -3,7 +3,10 @@ import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from 
 import { hashString } from './game/util/rand'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS, iconBitmap, type Icon } from './art/icons'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
-import { blank, blit, mix, paint, type Bitmap } from './art/pixels'
+import { blank, blit, mix, paint, stylize, type Bitmap, type TextStyle } from './art/pixels'
+import { SMALL, textMask } from './art/font'
+import { BAR_SEGMENT, NOTES, SPEAKER, soundIconMask } from './art/soundIcons'
+import { TEXT_GREY, TEXT_WHITE, TEXT_YELLOW } from './scene/textures'
 import { BODY_X, FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
 import { lineFlyBitmap } from './art/sprites/flies'
 import { fishBitmaps, fishSideBitmaps } from './art/sprites/fish'
@@ -127,3 +130,31 @@ for (const l of LOCATIONS) onPaper(PLACE_ICONS[l.id], l.name)
 for (const [k, i] of Object.entries(HELPER_ICONS)) onPaper(i, `helper · ${k}`)
 for (const u of LICENSE_UPGRADES) onPaper(LICENSE_ICONS[u.id], u.name)
 for (const [k, i] of Object.entries(UI_ICONS)) onPaper(i, `ui · ${k}`)
+
+// Settings sound row: icons on the title water, then the whole row as TitleScene lays it out.
+const soundIcons = section('Sound icons (4×, on and muted) and the settings row (2×)')
+const onWater = (b: Bitmap, caption: string, scale: number) => {
+  const card = blank(b.w + 8, b.h + 8)
+  fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
+  blit(card, b, 4, 4)
+  show(soundIcons, card, caption, scale)
+}
+for (const [name, grid] of [['speaker', SPEAKER], ['notes', NOTES]] as const)
+  for (const muted of [false, true])
+    for (const [sname, style] of [['white', TEXT_WHITE], ['yellow', TEXT_YELLOW]] as const)
+      onWater(stylize(soundIconMask(grid, muted), style), `${name} · ${muted ? 'muted' : 'on'} · ${sname}`, 4)
+
+function soundRow(level: number, muted: boolean, style: TextStyle): Bitmap {
+  const icon = stylize(soundIconMask(SPEAKER, muted), style)
+  const label = stylize(textMask(muted ? 'OFF' : `${level * 10}%`, SMALL), style)
+  const seg = (i: number) => stylize(textMask('s', { s: BAR_SEGMENT }), i < level && !muted ? style : TEXT_GREY)
+  const barX = icon.w - 2 + 6, textX = barX + 10 * 4 - 1 + 6
+  const b = blank(textX + label.w, icon.h)
+  blit(b, icon, 0, 0)
+  for (let i = 0; i < 10; i++) blit(b, seg(i), barX + i * 4, 1)
+  blit(b, label, textX, 1)
+  return b
+}
+onWater(soundRow(7, false, TEXT_WHITE), 'row · 70%', 2)
+onWater(soundRow(7, false, TEXT_YELLOW), 'row · 70% · selected', 2)
+onWater(soundRow(7, true, TEXT_WHITE), 'row · muted', 2)

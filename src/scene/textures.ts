@@ -4,6 +4,7 @@ import { stylize, type Bitmap, type TextStyle } from '../art/pixels'
 
 export const TEXT_WHITE: TextStyle = { top: 0xffffff, bottom: 0xffffff, outline: 0x000000, outlineW: 1 }
 export const TEXT_YELLOW: TextStyle = { top: 0xffe45c, bottom: 0xffb02e, outline: 0x2a0a3d, outlineW: 1 }
+export const TEXT_GREY: TextStyle = { top: 0x5a6a78, bottom: 0x4a5866, outline: 0x000000, outlineW: 1 }
 
 export function addBitmap(scene: Phaser.Scene, key: string, bmp: Bitmap): void {
   if (scene.textures.exists(key)) return
