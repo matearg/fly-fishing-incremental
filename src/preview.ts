@@ -3,6 +3,7 @@ import { LOCATIONS } from './game/data'
 import { hashString } from './game/rand'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
 import { blank, blit, mix, paint, type Bitmap } from './art/pixels'
+import { FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/figures'
 
 const W = 480, H = 270, SCALE = 2
 const HORIZON_H = 110 // waterline of the side view
@@ -10,10 +11,10 @@ const BANK_ABOVE_WATER = 8
 
 const out = document.getElementById('out')!
 
-function show(row: HTMLElement, b: Bitmap, caption: string): void {
+function show(row: HTMLElement, b: Bitmap, caption: string, scale = SCALE): void {
   const c = document.createElement('canvas')
   c.width = b.w; c.height = b.h
-  c.style.width = `${b.w * SCALE}px`; c.style.height = `${b.h * SCALE}px`
+  c.style.width = `${b.w * scale}px`; c.style.height = `${b.h * scale}px`
   c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(b.data), b.w, b.h), 0, 0)
   const f = document.createElement('figure')
   f.append(c, Object.assign(document.createElement('figcaption'), { textContent: caption }))
@@ -64,4 +65,18 @@ for (const loc of LOCATIONS) {
   show(places, sideView(loc.id), `${loc.name} · fishing`)
 }
 
-export { section, show, sideView, HORIZON_H, BANK_ABOVE_WATER }
+const POSES: Pose[] = ['idle', 'cast', 'reel']
+const KINDS: FigureKind[] = ['angler', 'helper']
+const sprites = section('Figures — angler and helper, idle / cast / reel (4×)')
+for (const k of KINDS) for (const p of POSES) show(sprites, figureBitmaps(k)[p], `${k} · ${p}`, 4)
+
+// Each place's fishing view with the two figures on the bank (on the dock at the Great Lake), one pose per place.
+const onBank = section('Figures on each bank')
+LOCATIONS.forEach((loc, i) => {
+  const look = placeLook(loc.id), b = sideView(loc.id), pose = POSES[i % POSES.length]
+  // Player at the water's edge (end of the flat ground, or near the end of the dock), helper a step behind.
+  const player = look.dock ? look.shoreX + 70 : look.shoreX - 34, feet = HORIZON_H - BANK_ABOVE_WATER
+  blit(b, figureBitmaps('helper')[pose], player - 24, feet - FEET_Y)
+  blit(b, figureBitmaps('angler')[pose], player, feet - FEET_Y)
+  show(onBank, b, `${loc.name} · ${pose}`)
+})
