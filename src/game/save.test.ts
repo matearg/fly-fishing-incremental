@@ -5,6 +5,7 @@ import { buyHelper } from './helpers'
 import { basicRecipe, flyStats, tieFly } from './flies'
 import { rollCatch } from './catch'
 import { castPlayer, reelPlayer, tick } from './sim'
+import { sellAll } from './economy'
 import { TIMING } from './data'
 
 describe('save', () => {
@@ -96,5 +97,13 @@ describe('save with a pending catch', () => {
     const s: any = newGame()
     s.anglers[0].pending = { kind: 'fish', defId: 'noSuchFish', value: 1, size: 1, location: 'creek' }
     expect(parseSave(JSON.stringify(s))!.anglers[0].pending).toBeNull()
+  })
+  it('a basket fish of a removed species survives load and sells', () => {
+    const s: any = newGame()
+    s.basket = [{ id: 1, kind: 'fish', defId: 'lakeTrout', value: 50, size: 1 }]
+    const l = parseSave(JSON.stringify(s))!
+    expect(l.basket).toEqual(s.basket)
+    sellAll(l)
+    expect(l.money).toBe(50)
   })
 })

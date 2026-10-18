@@ -3,8 +3,8 @@ import { LOCATIONS, SPECIES, TIERS } from '../game/data'
 import { FISH_COLORS, FISH_TOP, fishBitmaps } from './fish'
 
 describe('fish art', () => {
-  it('every species has colours', () => {
-    for (const sp of SPECIES) expect(FISH_COLORS[sp.id], sp.id).toBeDefined()
+  it('colours exist for exactly the current species', () => {
+    expect(Object.keys(FISH_COLORS).sort()).toEqual(SPECIES.map(s => s.id).sort())
   })
   it('fish sprites grow with tier, both frames the same size', () => {
     const widths = TIERS.map(t => FISH_TOP[t][0][0].length)

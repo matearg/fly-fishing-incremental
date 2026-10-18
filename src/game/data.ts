@@ -41,32 +41,30 @@ export const MATERIALS: MaterialDef[] = [
 ]
 
 export const SPECIES: SpeciesDef[] = [
-  { id: 'dace', name: 'Dace', location: 'creek', depth: 0, tier: 'common', weight: 60, baseValue: 2 },
+  { id: 'dace', name: 'Puyen', location: 'creek', depth: 0, tier: 'common', weight: 60, baseValue: 2 },
   { id: 'brookTrout', name: 'Brook Trout', location: 'creek', depth: 0, tier: 'uncommon', weight: 25, baseValue: 8 },
-  { id: 'creekChub', name: 'Creek Chub', location: 'creek', depth: 1, tier: 'common', weight: 40, baseValue: 4 },
+  { id: 'creekChub', name: 'Otuno', location: 'creek', depth: 1, tier: 'common', weight: 40, baseValue: 4 },
   { id: 'brownTrout', name: 'Brown Trout', location: 'creek', depth: 1, tier: 'rare', weight: 8, baseValue: 30 },
 
-  { id: 'grayling', name: 'Grayling', location: 'river', depth: 0, tier: 'common', weight: 60, baseValue: 10 },
+  { id: 'grayling', name: 'Peladilla', location: 'river', depth: 0, tier: 'common', weight: 60, baseValue: 10 },
   { id: 'rainbowTrout', name: 'Rainbow Trout', location: 'river', depth: 0, tier: 'uncommon', weight: 25, baseValue: 40 },
-  { id: 'smallmouthBass', name: 'Smallmouth Bass', location: 'river', depth: 1, tier: 'common', weight: 40, baseValue: 20 },
-  { id: 'pike', name: 'Pike', location: 'river', depth: 2, tier: 'rare', weight: 8, baseValue: 150 },
+  { id: 'pike', name: 'Bigmouth Perch', location: 'river', depth: 2, tier: 'rare', weight: 8, baseValue: 150 },
 
-  { id: 'perch', name: 'Perch', location: 'bigRiver', depth: 0, tier: 'common', weight: 60, baseValue: 35 },
-  { id: 'walleye', name: 'Walleye', location: 'bigRiver', depth: 1, tier: 'uncommon', weight: 25, baseValue: 150 },
-  { id: 'catfish', name: 'Catfish', location: 'bigRiver', depth: 2, tier: 'rare', weight: 10, baseValue: 500 },
-  { id: 'muskie', name: 'Muskie', location: 'bigRiver', depth: 2, tier: 'legendary', weight: 2, baseValue: 2500 },
+  { id: 'perch', name: 'Creole Perch', location: 'bigRiver', depth: 0, tier: 'common', weight: 60, baseValue: 35 },
+  { id: 'walleye', name: 'Chinook Salmon', location: 'bigRiver', depth: 1, tier: 'uncommon', weight: 25, baseValue: 150 },
+  { id: 'catfish', name: 'Velvet Catfish', location: 'bigRiver', depth: 2, tier: 'rare', weight: 10, baseValue: 500 },
+  { id: 'muskie', name: 'Limay King', location: 'bigRiver', depth: 2, tier: 'legendary', weight: 2, baseValue: 2500 },
 
-  { id: 'cutthroat', name: 'Cutthroat Trout', location: 'mountainLake', depth: 0, tier: 'common', weight: 60, baseValue: 180 },
-  { id: 'goldenTrout', name: 'Golden Trout', location: 'mountainLake', depth: 1, tier: 'uncommon', weight: 25, baseValue: 700 },
-  { id: 'lakeTrout', name: 'Lake Trout', location: 'mountainLake', depth: 2, tier: 'rare', weight: 10, baseValue: 2800 },
-  { id: 'arcticChar', name: 'Arctic Char', location: 'mountainLake', depth: 3, tier: 'legendary', weight: 2, baseValue: 14000 },
-  { id: 'tigerTrout', name: 'Tiger Trout', location: 'mountainLake', depth: 3, tier: 'legendary', weight: 2, baseValue: 70000, licenseCost: 5 },
+  { id: 'cutthroat', name: 'Big Puyen', location: 'mountainLake', depth: 0, tier: 'common', weight: 60, baseValue: 180 },
+  { id: 'goldenTrout', name: 'Landlocked Salmon', location: 'mountainLake', depth: 1, tier: 'uncommon', weight: 25, baseValue: 700 },
+  { id: 'arcticChar', name: 'Glacier Trout', location: 'mountainLake', depth: 3, tier: 'legendary', weight: 3, baseValue: 14000 },
+  { id: 'tigerTrout', name: 'Andes Tiger', location: 'mountainLake', depth: 3, tier: 'legendary', weight: 2, baseValue: 70000, licenseCost: 5 },
 
-  { id: 'whitefish', name: 'Whitefish', location: 'greatLake', depth: 0, tier: 'common', weight: 60, baseValue: 900 },
-  { id: 'cisco', name: 'Cisco', location: 'greatLake', depth: 1, tier: 'uncommon', weight: 25, baseValue: 3500 },
-  { id: 'steelhead', name: 'Steelhead', location: 'greatLake', depth: 2, tier: 'rare', weight: 10, baseValue: 14000 },
-  { id: 'lakeSturgeon', name: 'Lake Sturgeon', location: 'greatLake', depth: 3, tier: 'legendary', weight: 2, baseValue: 70000 },
-  { id: 'ghostSturgeon', name: 'Ghost Sturgeon', location: 'greatLake', depth: 3, tier: 'legendary', weight: 1, baseValue: 350000, licenseCost: 15 },
+  { id: 'whitefish', name: 'Pejerrey', location: 'greatLake', depth: 0, tier: 'common', weight: 60, baseValue: 900 },
+  { id: 'cisco', name: 'Steelhead', location: 'greatLake', depth: 1, tier: 'uncommon', weight: 25, baseValue: 3500 },
+  { id: 'steelhead', name: 'Sea-run Brown Trout', location: 'greatLake', depth: 2, tier: 'rare', weight: 10, baseValue: 14000 },
+  { id: 'lakeSturgeon', name: 'El Cuero', location: 'greatLake', depth: 3, tier: 'legendary', weight: 2, baseValue: 70000 },
+  { id: 'ghostSturgeon', name: 'Nahuelito', location: 'greatLake', depth: 3, tier: 'legendary', weight: 1, baseValue: 350000, licenseCost: 15 },
 ]
 
 export const JUNK: JunkDef[] = [

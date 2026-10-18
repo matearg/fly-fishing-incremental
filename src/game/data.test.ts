@@ -36,4 +36,13 @@ describe('content tables', () => {
     expect(Math.min(...nymph)).toBeGreaterThan(0)
     expect(Math.min(...streamer)).toBeGreaterThan(Math.max(...nymph))
   })
+  it('species carry the Patagonian names', () => {
+    expect(SPECIES.map(s => [s.id, s.name])).toEqual([
+      ['dace', 'Puyen'], ['brookTrout', 'Brook Trout'], ['creekChub', 'Otuno'], ['brownTrout', 'Brown Trout'],
+      ['grayling', 'Peladilla'], ['rainbowTrout', 'Rainbow Trout'], ['pike', 'Bigmouth Perch'],
+      ['perch', 'Creole Perch'], ['walleye', 'Chinook Salmon'], ['catfish', 'Velvet Catfish'], ['muskie', 'Limay King'],
+      ['cutthroat', 'Big Puyen'], ['goldenTrout', 'Landlocked Salmon'], ['arcticChar', 'Glacier Trout'], ['tigerTrout', 'Andes Tiger'],
+      ['whitefish', 'Pejerrey'], ['cisco', 'Steelhead'], ['steelhead', 'Sea-run Brown Trout'], ['lakeSturgeon', 'El Cuero'], ['ghostSturgeon', 'Nahuelito'],
+    ])
+  })
 })
