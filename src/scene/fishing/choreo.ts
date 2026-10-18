@@ -4,7 +4,19 @@ import type { Angler, GameState, Pending } from '../../game/state'
 
 export const APPROACH_MS = 2000 // the chosen fish's notice + swim to the fly, ending at the bite
 export const NOTICE_SHARE = 0.4 // first part of the approach: stop and turn toward the fly
-export const CAST_MS = 300 // rod swing at the start of a wait
+// The cast at the start of a wait: back cast, the loop straightening behind, forward cast; then the fly sinks.
+export const BACK_MS = 350
+export const STRAIGHT_MS = 250
+export const FORWARD_MS = 400
+export const CAST_MS = BACK_MS + STRAIGHT_MS + FORWARD_MS
+export const SINK_MS = 400
+export const BACK_LEN = 34 // how far behind the rod tip the line straightens out
+const LOOP = 6 // gap between the legs of the line's U loop
+
+export type Pt = [number, number]
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k
+const lerpPt = (a: Pt, b: Pt, k: number): Pt => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)]
+export const ease = (k: number) => k * k * (3 - 2 * k)
 
 export type ApproachStage = 'cruise' | 'notice' | 'swim'
 
@@ -16,8 +28,31 @@ export function approach(remainingMs: number, waitMs: number): { stage: Approach
   return t < NOTICE_SHARE ? { stage: 'notice', k: t / NOTICE_SHARE } : { stage: 'swim', k: (t - NOTICE_SHARE) / (1 - NOTICE_SHARE) }
 }
 
-export function castPose(waitMs: number, remainingMs: number): boolean {
-  return waitMs - remainingMs < CAST_MS
+// The rod is back through the back cast and the straighten, forward for the forward cast.
+export function castPose(sinceMs: number): 'back' | 'cast' | null {
+  return sinceMs < BACK_MS + STRAIGHT_MS ? 'back' : sinceMs < CAST_MS ? 'cast' : null
+}
+
+// The cast line from the rod tip, as a polyline ending at the fly; null once the fly is down.
+// The loop: tip → front L → bulge → lower leg → fly, with the lower leg `g` below the upper.
+export function castLine(sinceMs: number, tip: Pt, land: Pt): Pt[] | null {
+  const B: Pt = [tip[0] - BACK_LEN, tip[1] + 2]
+  const loop = (front: Pt, g: number, dir: number, fly: Pt): Pt[] =>
+    [tip, front, [front[0] + dir * g / 3, front[1] + g / 2], [front[0], front[1] + g], fly]
+  if (sinceMs < BACK_MS) {
+    const k = sinceMs / BACK_MS, e = ease(k), L = lerpPt(tip, B, e), g = LOOP * e
+    return loop(L, g, -1, [L[0] + (1 - k) * (tip[0] - L[0]), L[1] + g])
+  }
+  if (sinceMs < BACK_MS + STRAIGHT_MS) {
+    const g = LOOP * (1 - (sinceMs - BACK_MS) / STRAIGHT_MS)
+    return loop(B, g, -1, [B[0], B[1] + g])
+  }
+  if (sinceMs < CAST_MS) {
+    const e = ease((sinceMs - BACK_MS - STRAIGHT_MS) / FORWARD_MS), arc = Math.sin(Math.PI * e)
+    const F: Pt = [lerp(tip[0], land[0], e), lerp(tip[1], land[1], e) - arc * 12], g = LOOP * arc
+    return loop(F, g, 1, lerpPt(B, F, e * e))
+  }
+  return null
 }
 
 export function schoolKey(state: GameState): string {

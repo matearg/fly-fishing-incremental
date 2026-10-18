@@ -10,13 +10,13 @@ import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
 import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../../art/places'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import { blank, mix } from '../../art/pixels'
-import { approach, approachTarget, CAST_MS, castPose, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, trackCatch, type Track } from './choreo'
+import { approach, approachTarget, CAST_MS, castLine, castPose, ease, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
+import { LINE_FLY_EYE, lineFlyBitmap } from '../../art/sprites/flies'
 import { addBitmap, addText, TEXT_WHITE, TEXT_YELLOW } from '../textures'
 import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
 const GROUND_Y = WATER_Y - 8 // the row the anglers stand on
-const SINK_MS = 500 // the fly sinking to its depth after the cast
 const WRAP = 30 // off-screen margin so fish leave fully before wrapping
 // Draw order, back to front.
 const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, figures: 6, line: 7, hud: 8 }
@@ -29,7 +29,6 @@ interface Chosen { sw: Swimmer; pending: Pending; from: [number, number] | null;
 interface Place { id: LocationId; look: PlaceLook; maxDepth: number; waterLeft: number; playerX: number; helperX: number; playerFlyX: number; helperFlyX: number }
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k
-const ease = (k: number) => k * k * (3 - 2 * k)
 
 export class FishingScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics
@@ -40,6 +39,8 @@ export class FishingScene extends Phaser.Scene {
   private menuButton!: Phaser.GameObjects.Image
   private player!: Phaser.GameObjects.Image
   private helper!: Phaser.GameObjects.Image
+  // The tied fly at the end of each visible line: player, helper.
+  private flies!: [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
   private junk!: Phaser.GameObjects.Image
   private statics: Phaser.GameObjects.GameObject[] = []
   private fish: Swimmer[] = []
@@ -67,6 +68,7 @@ export class FishingScene extends Phaser.Scene {
     }
     this.helper = this.add.image(0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.figures)
     this.player = this.add.image(0, 0, 'fig:angler:idle').setOrigin(0).setDepth(Z.figures)
+    this.flies = [0, 1].map(() => this.add.image(0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(Z.line + 0.5).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
     for (const j of JUNK) addBitmap(this, `junk:${j.id}`, junkBitmap(j.id))
     this.junk = this.add.image(0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
     addBitmap(this, 'menu-button', iconBitmap(SCENE_ICONS.menuButton))
@@ -153,8 +155,14 @@ export class FishingScene extends Phaser.Scene {
     return [landX, this.depthY(Math.min(flyStats(s, a.fly!).maxDepth, place.maxDepth), place)]
   }
 
+  // The line from the rod tip to the angler's fly (its last point), or null while no line is out.
+  private linePos(s: GameState, a: Angler, tr: Track, tip: Pt, landX: number, place: Place, t: number): Pt[] | null {
+    const fly = this.flyPos(s, a, tr, tip, landX, place, t)
+    return fly && (a.phase === 'waiting' && castLine(tr.castMs - a.timerMs, tip, [landX, WATER_Y]) || [tip, fly])
+  }
+
   // Where the angler's fly is, or null while no line is out.
-  private flyPos(s: GameState, a: Angler, tr: Track, tip: [number, number], landX: number, place: Place, t: number): [number, number] | null {
+  private flyPos(s: GameState, a: Angler, tr: Track, tip: Pt, landX: number, place: Place, t: number): Pt | null {
     if (a.phase === 'idle' || !a.fly) return null
     const depthY = this.depthY(Math.min(flyStats(s, a.fly).maxDepth, place.maxDepth), place)
     if (a.phase === 'bite') return [landX, depthY + Math.sin(t * 25) * 2] // the tug
@@ -163,24 +171,38 @@ export class FishingScene extends Phaser.Scene {
       return [lerp(landX, Math.max(tip[0], place.waterLeft + 6), k), lerp(depthY, WATER_Y + 2, k)]
     }
     const since = tr.castMs - a.timerMs
-    if (since < CAST_MS) {
-      const k = since / CAST_MS
-      return [lerp(tip[0], landX, k), lerp(tip[1], WATER_Y, k) - Math.sin(k * Math.PI) * 24]
-    }
+    if (since < CAST_MS) return castLine(since, tip, [landX, WATER_Y])!.at(-1)!
     if (since < CAST_MS + SINK_MS) return [landX, lerp(WATER_Y, depthY, (since - CAST_MS) / SINK_MS)]
     return [landX, depthY + Math.sin(t * 3.3) * 1.5] // bobbing
   }
 
   private pose(a: Angler | undefined, tr: Track): Pose {
     if (a?.phase === 'reeling') return 'reel'
-    return a?.phase === 'waiting' && castPose(tr.castMs, a.timerMs) ? 'cast' : 'idle'
+    return (a?.phase === 'waiting' && castPose(tr.castMs - a.timerMs)) || 'idle'
   }
 
-  private drawLine(tip: [number, number], fly: [number, number]): void {
-    const entryX = fly[1] > WATER_Y ? fly[0] - 6 : fly[0]
-    this.g.lineStyle(1, 0xf0f0f0, 0.8).lineBetween(tip[0], tip[1], entryX, Math.min(fly[1], WATER_Y))
-    if (fly[1] > WATER_Y) this.g.lineBetween(entryX, WATER_Y, fly[0], fly[1])
-    this.g.fillStyle(0xffe066).fillRect(Math.round(fly[0]) - 1, Math.round(fly[1]) - 1, 2, 2)
+  // The cast's loop as a polyline; a settled line is straight, fainter below the surface. The tied fly sits on its end.
+  private drawLine(pts: Pt[] | null, fly: Phaser.GameObjects.Image, patternId: string | undefined): void {
+    fly.setVisible(!!pts)
+    if (!pts) return
+    this.g.lineStyle(1, 0xf0f0f0, 0.8)
+    const [tip, end] = [pts[0], pts[pts.length - 1]]
+    if (pts.length > 2) for (let i = 1; i < pts.length; i++) this.g.lineBetween(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1])
+    else if (end[1] <= WATER_Y) this.g.lineBetween(tip[0], tip[1], end[0], end[1])
+    else {
+      const cross = lerp(tip[0], end[0], (WATER_Y - tip[1]) / (end[1] - tip[1]))
+      this.g.lineBetween(tip[0], tip[1], cross, WATER_Y)
+      this.g.lineStyle(1, 0xf0f0f0, 0.45).lineBetween(cross, WATER_Y, end[0], end[1])
+    }
+    const id = patternId ?? 'basicDry', [ex, ey] = LINE_FLY_EYE[id] ?? LINE_FLY_EYE.basicDry
+    fly.setTexture(this.lineFly(id)).setPosition(Math.round(end[0]) - ex, Math.round(end[1]) - ey)
+  }
+
+  // An unknown pattern (an old save) gets the Basic Dry's art under its own key.
+  private lineFly(patternId: string): string {
+    const key = `linefly:${patternId}`
+    if (!this.textures.exists(key)) addBitmap(this, key, lineFlyBitmap(patternId))
+    return key
   }
 
   // Top-left for a sprite whose `point` (in unflipped sprite pixels) should sit on `at`.
@@ -232,16 +254,15 @@ export class FishingScene extends Phaser.Scene {
       const hx = place.helperX - BODY_X // sprite left; helperX is where the body starts
       this.helper.setTexture(`fig:helper:${pose}`).setPosition(hx, figY)
       const tip: [number, number] = [hx + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
-      const fly = this.flyPos(s, h, htr, tip, place.helperFlyX, place, t + 1.7)
-      if (fly) this.drawLine(tip, fly)
-    }
+      this.drawLine(this.linePos(s, h, htr, tip, place.helperFlyX, place, t + 1.7), this.flies[1], h.fly?.patternId)
+    } else this.flies[1].setVisible(false)
 
     const pose = this.pose(p, ptr)
     const px = place.playerX - BODY_X
     this.player.setTexture(`fig:angler:${pose}`).setPosition(px, figY)
     const tip: [number, number] = [px + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
-    const fly = this.flyPos(s, p, ptr, tip, place.playerFlyX, place, t)
-    if (fly) this.drawLine(tip, fly)
+    const line = this.linePos(s, p, ptr, tip, place.playerFlyX, place, t), fly = line && line[line.length - 1]
+    this.drawLine(line, this.flies[0], p.fly?.patternId)
     this.biteText.setVisible(p.phase === 'bite').setPosition(place.playerX + 7, figY + BODY_Y - 2)
 
     // The catch picked at cast swims (or drifts) to the fly, bites, and is reeled in.

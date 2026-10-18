@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { approach, approachTarget, castPose, releaseOffscreen, schoolKey, trackCatch, type Track } from './choreo'
+import { approach, approachTarget, BACK_LEN, BACK_MS, CAST_MS, castLine, castPose, releaseOffscreen, schoolKey, SINK_MS, STRAIGHT_MS, trackCatch, type Pt, type Track } from './choreo'
+import { TIMING } from '../../game/data'
 import { newGame } from '../../game/state'
 
 describe('approach', () => {
@@ -25,10 +26,41 @@ describe('approach', () => {
   })
 })
 
-describe('castPose', () => {
-  it('is on only at the start of a wait', () => {
-    expect(castPose(3000, 2900)).toBe(true)
-    expect(castPose(3000, 1000)).toBe(false)
+describe('cast', () => {
+  const tip: Pt = [100, 80], land: Pt = [240, 110]
+  const dist = (a: Pt, b: Pt) => Math.hypot(a[0] - b[0], a[1] - b[1])
+  // Distance from p to the segment a–b.
+  const toSegment = (p: Pt, a: Pt, b: Pt) => {
+    const [dx, dy] = [b[0] - a[0], b[1] - a[1]]
+    const k = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)))
+    return dist(p, [a[0] + k * dx, a[1] + k * dy])
+  }
+
+  it('the fly settles before the earliest bite', () => {
+    expect(CAST_MS + SINK_MS).toBeLessThan(TIMING.biteMinMs)
+  })
+  it('poses back, then forward, then nothing', () => {
+    expect(castPose(0)).toBe('back')
+    expect(castPose(BACK_MS + STRAIGHT_MS - 1)).toBe('back')
+    expect(castPose(BACK_MS + STRAIGHT_MS)).toBe('cast')
+    expect(castPose(CAST_MS)).toBeNull()
+  })
+  it('starts with the fly at the rod tip', () => {
+    expect(castLine(0, tip, land)!.at(-1)).toEqual(tip)
+  })
+  it('trails a U loop behind on the back cast', () => {
+    const pts = castLine(BACK_MS / 2, tip, land)!
+    expect(Math.min(...pts.map(p => p[0]))).toBeLessThan(tip[0])
+    expect(new Set(pts.filter(p => p[0] < tip[0]).map(p => p[1])).size).toBeGreaterThan(1)
+  })
+  it('is straight out behind once the loop unrolls', () => {
+    const pts = castLine(BACK_MS + STRAIGHT_MS - 1, tip, land)!, back: Pt = [tip[0] - BACK_LEN, tip[1] + 2]
+    expect(dist(pts.at(-1)!, back)).toBeLessThanOrEqual(1)
+    for (const p of pts) expect(toSegment(p, tip, back)).toBeLessThanOrEqual(1)
+  })
+  it('lands the fly on the water, then ends', () => {
+    expect(dist(castLine(CAST_MS - 1, tip, land)!.at(-1)!, land)).toBeLessThanOrEqual(2)
+    expect(castLine(CAST_MS, tip, land)).toBeNull()
   })
 })
 
