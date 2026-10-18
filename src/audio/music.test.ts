@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { nextPick, phraseSteps, pickNotes, pitch, tokens, type Pick, type Tune } from './music'
+import { TUNES, nextPick, phraseSteps, pickNotes, pitch, stepMs, tokens, type Pick, type Tune, type TuneId } from './music'
+import { LOCATIONS } from '../game/data'
 import { lcg, seqRand } from '../game/util/testutil'
 
 // 60 bpm → 500 ms eighth notes.
@@ -113,5 +114,53 @@ describe('phrase picker', () => {
   it('repeats phrase 0 in a one-phrase tune', () => {
     const one: Tune = { ...TUNE, phrases: [TUNE.phrases[0]] }
     expect(nextPick(one, full(0), lcg(2)).phrase).toBe(0)
+  })
+})
+
+const TUNE_IDS: TuneId[] = ['title', ...LOCATIONS.map(l => l.id)]
+
+describe('tunes', () => {
+  it('has a tune for the title and every place', () => {
+    expect(Object.keys(TUNES).sort()).toEqual([...TUNE_IDS].sort())
+  })
+
+  it('every tune is slow, long enough, and parses', () => {
+    for (const id of TUNE_IDS) {
+      const t = TUNES[id]
+      expect(t.bpm, id).toBeGreaterThanOrEqual(60)
+      expect(t.bpm, id).toBeLessThanOrEqual(80)
+      expect(t.phrases.length, id).toBeGreaterThanOrEqual(6)
+      expect(t.beats.length, id).toBeGreaterThanOrEqual(2)
+      for (const p of t.phrases) {
+        const steps = phraseSteps(p)
+        expect(steps, id).toBeGreaterThanOrEqual(24) // about 4 bars
+        expect(steps, id).toBeLessThanOrEqual(40)
+        for (const b of t.beats) expect(steps % tokens(b).length, id).toBe(0)
+      }
+      // Bar lines are only for reading, so check they fall where they claim: every bar of a tune is the same length.
+      const bars = t.phrases.flatMap(p => [p.melody, p.bass]).flatMap(part => part.split('|').map(tokens).filter(b => b.length))
+      for (const b of bars) expect(b.length, `${id}: ${b.join(' ')}`).toBe(bars[0].length)
+    }
+  })
+
+  it('every pick of every tune makes valid, quiet notes within its phrase', () => {
+    for (const id of TUNE_IDS) {
+      const t = TUNES[id]
+      t.phrases.forEach((p, phrase) => {
+        const end = phraseSteps(p) * stepMs(t)
+        for (let beat = 0; beat < t.beats.length; beat++) {
+          const notes = pickNotes(t, { phrase, melody: true, beat, drop: null })
+          expect(notes.some(n => n.wave === 'square'), `${id} ${phrase}`).toBe(true)
+          for (const n of notes) {
+            expect(n.at, id).toBeGreaterThanOrEqual(0)
+            expect(n.dur, id).toBeGreaterThan(0)
+            expect(n.freq, id).toBeGreaterThan(0)
+            expect(n.gain, id).toBeLessThanOrEqual(0.15)
+            if (n.attack !== undefined) expect(n.attack, id).toBeLessThan(n.dur)
+            expect(n.at + n.dur, `${id} ${phrase}`).toBeLessThanOrEqual(end + 1)
+          }
+        }
+      })
+    }
   })
 })

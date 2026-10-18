@@ -89,3 +89,125 @@ export function nextPick(t: Tune, prev: Pick | null, rand: () => number): Pick {
   const drop = sounding > 1 && rand() < DROP ? Math.floor(rand() * sounding) : null
   return { phrase, melody, beat, drop }
 }
+
+// Each tune keeps to one key, so its phrases sound like one piece in any order.
+export const TUNES: Record<TuneId, Tune> = {
+  // Warm and welcoming: C major.
+  title: {
+    bpm: 72,
+    phrases: [
+      { melody: 'E5 - - - G5 - E5 - | C5 - - - - - . . | A4 - C5 - F5 - E5 - | D5 - - - - - . .',
+        bass: '  C3 - - - G2 - - - | A2 - - - E3 - - - | F2 - - - C3 - - - | G2 - - - D3 - - -' },
+      { melody: 'G5 - A5 - G5 - E5 - | E5 - D5 - C5 - - - | C5 - D5 - F5 - A5 - | G5 - - - - - - .',
+        bass: '  C3 - - - E3 - G2 - | A2 - - - C3 - E3 - | F2 - - - A2 - C3 - | G2 - - - B2 - D3 -' },
+      { melody: 'A5 - - - G5 - F5 - | D5 - - - B4 - - - | G5 - - - E5 - D5 - | C5 - - - - - . .',
+        bass: '  F2 - - - C3 - - - | G2 - - - D3 - - - | E2 - - - B2 - - - | A2 - - - E3 - - -' },
+      { melody: 'C5 - D5 - F5 - - - | D5 - E5 - G5 - - - | E5 - - - D5 - C5 - | C5 - - - - - . .',
+        bass: '  F2 - - - A2 - - - | G2 - - - B2 - - - | C3 - - - G2 - - - | C3 - - - - - . .' },
+      { melody: '. . E5 - - - C5 - | . . F5 - A5 - - - | G5 - - - E5 - C5 - | D5 - - - . . . .',
+        bass: '  A2 - - - E3 - - - | F2 - - - C3 - - - | C3 - - - G2 - - - | G2 - - - D3 - - -' },
+      { melody: 'C6 - - - G5 - - - | B5 - - - G5 - E5 - | A5 - - - F5 - C5 - | D5 - E5 - D5 - . .',
+        bass: '  C3 - - - G2 - - - | E2 - - - B2 - - - | F2 - - - C3 - - - | G2 - - - D3 - - -' },
+      { melody: 'E5 - - - A5 - - - | G5 - - - B4 - - - | A4 - C5 - F5 - - - | E5 - - - - - . .',
+        bass: '  A2 - - - E3 - - - | E2 - - - B2 - - - | F2 - - - C3 - - - | C3 - - - G2 - - -' },
+    ],
+    beats: ['k . . . h . . .', 'k . h . . . h .', '. . h . . . h .'],
+  },
+  // Light and playful but unhurried: G major, bouncing bass.
+  creek: {
+    bpm: 76,
+    phrases: [
+      { melody: 'D5 - B4 - D5 - G5 - | E5 - - - D5 - - - | A4 - B4 - D5 - A4 - | G4 - - - - - . .',
+        bass: '  G2 - D3 - G2 - D3 - | C3 - G2 - C3 - G2 - | D3 - A2 - D3 - A2 - | G2 - D3 - G2 - - -' },
+      { melody: 'B4 - D5 - E5 - D5 - | B4 - - - G4 - - - | E5 - G5 - E5 - D5 - | A4 - - - - - . .',
+        bass: '  G2 - D3 - G2 - D3 - | E2 - B2 - E2 - B2 - | C3 - G2 - C3 - G2 - | D3 - A2 - D3 - A2 -' },
+      { melody: 'G5 - - - E5 - G5 - | D5 - - - B4 - - - | A4 - - - D5 - E5 - | D5 - B4 - G4 - . .',
+        bass: '  C3 - G2 - C3 - G2 - | G2 - D3 - G2 - D3 - | D3 - A2 - D3 - A2 - | G2 - D3 - G2 - - -' },
+      { melody: '. . B4 - E5 - G5 - | E5 - D5 - . . . . | . . D5 - B4 - D5 - | A4 - - - . . . .',
+        bass: '  E2 - B2 - E2 - B2 - | C3 - G2 - C3 - G2 - | G2 - D3 - G2 - D3 - | D3 - A2 - D3 - A2 -' },
+      { melody: 'G5 - A5 - G5 - E5 - | G5 - - - . . . . | D5 - E5 - D5 - B4 - | A4 - - - . . . .',
+        bass: '  G2 - D3 - G2 - D3 - | C3 - G2 - C3 - G2 - | G2 - D3 - G2 - D3 - | D3 - A2 - D3 - A2 -' },
+      { melody: 'E5 - - - G5 - - - | F#5 - - - A5 - - - | G5 - - - E5 - B4 - | D5 - - - - - . .',
+        bass: '  C3 - G2 - C3 - G2 - | D3 - A2 - D3 - A2 - | E2 - B2 - E2 - B2 - | G2 - D3 - G2 - - -' },
+    ],
+    beats: ['k . h . . . h .', 'k . . . h . . .', '. . h . . . h .'],
+  },
+  // Flowing, with a running bass: D major.
+  river: {
+    bpm: 72,
+    phrases: [
+      { melody: 'F#5 - - - - - E5 - | D5 - - - B4 - - - | D5 - - - G5 - F#5 - | E5 - - - - - . .',
+        bass: '  D2 A2 D3 A2 D2 A2 D3 A2 | B1 F#2 B2 F#2 B1 F#2 B2 F#2 | G1 D2 G2 D2 G1 D2 G2 D2 | A1 E2 A2 E2 A1 E2 A2 E2' },
+      { melody: 'A5 - F#5 - E5 - D5 - | F#5 - - - - - . . | G5 - F#5 - E5 - D5 - | C#5 - - - E5 - - -',
+        bass: '  D2 A2 D3 A2 D2 A2 D3 A2 | B1 F#2 B2 F#2 B1 F#2 B2 F#2 | G1 D2 G2 D2 G1 D2 G2 D2 | A1 E2 A2 E2 A1 E2 A2 E2' },
+      { melody: 'B4 - D5 - G5 - - - | A5 - - - E5 - - - | F#5 - - - C#5 - - - | D5 - - - B4 - - -',
+        bass: '  G1 D2 G2 D2 G1 D2 G2 D2 | A1 E2 A2 E2 A1 E2 A2 E2 | F#2 C#3 F#3 C#3 F#2 C#3 F#3 C#3 | B1 F#2 B2 F#2 B1 F#2 B2 F#2' },
+      { melody: 'G5 - - - E5 - B4 - | C#5 - - - E5 - A4 - | D5 - - - - - - - | . . . . . . . .',
+        bass: '  E2 B2 E3 B2 E2 B2 E3 B2 | A1 E2 A2 E2 A1 E2 A2 E2 | D2 A2 D3 A2 D2 A2 D3 A2 | D2 A2 D3 A2 D2 A2 D3 A2' },
+      { melody: '. . D5 - F#5 - B5 - | A5 - - - G5 - D5 - | . . F#5 - A5 - D6 - | C#6 - - - A5 - - -',
+        bass: '  B1 F#2 B2 F#2 B1 F#2 B2 F#2 | G1 D2 G2 D2 G1 D2 G2 D2 | D2 A2 D3 A2 D2 A2 D3 A2 | A1 E2 A2 E2 A1 E2 A2 E2' },
+      { melody: 'D5 - - - A4 - - - | B4 - - - D5 - - - | F#4 - A4 - D5 - - - | E5 - - - C#5 - - -',
+        bass: '  D2 A2 D3 A2 D2 A2 D3 A2 | G1 D2 G2 D2 G1 D2 G2 D2 | D2 A2 D3 A2 D2 A2 D3 A2 | A1 E2 A2 E2 A1 E2 A2 E2' },
+      { melody: 'D5 - B4 - G4 - - - | F#5 - D5 - B4 - - - | E5 - G5 - B5 - - - | A5 - - - - - . .',
+        bass: '  G1 D2 G2 D2 G1 D2 G2 D2 | B1 F#2 B2 F#2 B1 F#2 B2 F#2 | E2 B2 E3 B2 E2 B2 E3 B2 | A1 E2 A2 E2 A1 E2 A2 E2' },
+    ],
+    beats: ['. . h . . . h .', 'k . . . . . h .', 'k . h . . . h .'],
+  },
+  // Warmer and lower: F major, melody down an octave.
+  bigRiver: {
+    bpm: 66,
+    phrases: [
+      { melody: 'A4 - - - C5 - - - | D5 - - - A4 - - - | A#4 - - - D5 - C5 - | G4 - - - - - . .',
+        bass: '  F2 - - - C3 - - - | D2 - - - A2 - - - | A#1 - - - F2 - - - | C2 - - - G2 - - -' },
+      { melody: 'C5 - A4 - F4 - A4 - | D5 - - - F5 - - - | D5 - C5 - A#4 - D5 - | C5 - - - - - . .',
+        bass: '  F2 - - - C3 - - - | D2 - - - A2 - - - | A#1 - - - F2 - - - | C2 - - - G2 - - -' },
+      { melody: 'F5 - - - E5 - D5 - | D5 - - - - - . . | C5 - - - A4 - F4 - | G4 - A4 - G4 - . .',
+        bass: '  D2 - - - A2 - - - | A#1 - - - F2 - - - | F2 - - - C3 - - - | C2 - - - G2 - - -' },
+      { melody: 'D5 - - - F5 - D5 - | E5 - - - G5 - E5 - | F5 - - - C5 - - - | A4 - - - - - . .',
+        bass: '  A#1 - - - F2 - - - | C2 - - - G2 - - - | F2 - - - C3 - - - | F2 - - - - - . .' },
+      { melody: '. . F4 - A4 - C5 - | E5 - - - C5 - - - | . . D5 - F5 - D5 - | C5 - - - . . . .',
+        bass: '  F2 - - - C3 - - - | A1 - - - E2 - - - | A#1 - - - F2 - - - | C2 - - - G2 - - -' },
+      { melody: 'A#4 - - - D5 - G5 - | E5 - - - C5 - - - | F5 - - - A4 - C5 - | D5 - - - - - . .',
+        bass: '  G1 - - - D2 - - - | C2 - - - G2 - - - | F2 - - - C3 - - - | D2 - - - A2 - - -' },
+    ],
+    beats: ['k . . . h . . .', 'k . . . . . h .', '. . . . h . . .'],
+  },
+  // Sparse and spacious, lots of rests: A minor, long notes.
+  mountainLake: {
+    bpm: 64,
+    phrases: [
+      { melody: 'E5 - - - - - - - | C5 - - - . . . . | G5 - - - - - E5 - | D5 - - - . . . .',
+        bass: '  A2 - - - - - - - | F2 - - - - - - - | C3 - - - - - - - | G2 - - - - - - -' },
+      { melody: '. . A5 - - - G5 - | E5 - - - - - . . | . . C6 - - - A5 - | G5 - - - - - . .',
+        bass: '  A2 - - - E3 - - - | E2 - - - B2 - - - | F2 - - - C3 - - - | G2 - - - D3 - - -' },
+      { melody: 'A5 - - - - - - - | B5 - - - D5 - - - | C5 - - - E5 - - - | A4 - - - - - - -',
+        bass: '  F2 - - - - - - - | G2 - - - - - - - | A2 - - - - - - - | A2 - - - - - . .' },
+      { melody: '. . . . E5 - D5 - | C5 - - - - - . . | . . . . D5 - B4 - | A4 - - - - - . .',
+        bass: '  A2 - - - - - - - | C3 - - - - - - - | G2 - - - - - - - | A2 - - - - - - -' },
+      { melody: 'C6 - - - - - A5 - | G5 - - - - - . . | F5 - - - - - D5 - | E5 - - - - - . .',
+        bass: '  F2 - - - - - - - | C3 - - - - - - - | D2 - - - - - - - | E2 - - - - - - -' },
+      { melody: 'A4 - C5 - E5 - - - | D5 - - - . . . . | C5 - A4 - C5 - - - | B4 - - - . . . .',
+        bass: '  A2 - - - - - - - | G2 - - - - - - - | F2 - - - - - - - | E2 - - - - - - -' },
+    ],
+    beats: ['. . . . h . . .', 'k . . . . . . .', 'k . . . h . . . | . . . . h . . .'],
+  },
+  // The slowest and widest, almost a lullaby: G major in 3/4.
+  greatLake: {
+    bpm: 60,
+    phrases: [
+      { melody: 'B4 - - - - D5 | E5 - - - B4 - | C5 - - E5 - - | D5 - - - - -',
+        bass: '  G2 - - D3 - - | E2 - - B2 - - | C3 - - G2 - - | D3 - - A2 - -' },
+      { melody: 'D5 - - B4 - G4 | B4 - - - - - | A4 - - C5 - E5 | D5 - - - - -',
+        bass: '  G2 - - D3 - - | E2 - - B2 - - | C3 - - G2 - - | D3 - - A2 - -' },
+      { melody: 'E5 - - G5 - - | F#5 - - A5 - - | G5 - - D5 - - | E5 - - - - -',
+        bass: '  C3 - - G2 - - | D3 - - A2 - - | G2 - - D3 - - | E2 - - B2 - -' },
+      { melody: 'G4 - - C5 - E5 | D5 - - - B4 - | A4 - - - F#4 - | G4 - - - - -',
+        bass: '  C3 - - G2 - - | G2 - - D3 - - | D3 - - A2 - - | G2 - - - - -' },
+      { melody: '. . . B4 - - | . . . C5 - E5 | D5 - - - - - | . . . A4 - -',
+        bass: '  E2 - - B2 - - | C3 - - G2 - - | G2 - - D3 - - | D3 - - A2 - -' },
+      { melody: 'C5 - - E5 - A5 | F#5 - - - D5 - | G5 - - - - - | D5 - - - - -',
+        bass: '  A2 - - E3 - - | D3 - - A2 - - | G2 - - D3 - - | G2 - - - - -' },
+    ],
+    beats: ['k . . h . .', '. . . h . .', 'k . . . . .'],
+  },
+}
