@@ -36,6 +36,8 @@ Branches: work happens on `develop`; pushing `master` runs tests + build and dep
 
 **`src/art/`** All art is drawn in code, no asset files: pixel grids (`string[]` + palette, `'.'` = transparent) baked to RGBA `Bitmap`s by pure functions in `pixels.ts` (`paint` throws on ragged rows or missing palette chars), then uploaded via `addBitmap` (`src/scene/textures.ts`). Fish are a few base shapes recolored per species; each place has its own palette/look (`PLACE_LOOKS`). Canvas is 480×270 with `pixelArt: true`. New art goes through a user review stop (show it on `/preview.html`) before continuing.
 
+**`src/audio/`** Sounds are synthesized, no files. Pure, Node-tested modules hold the data and decisions: `sounds.ts` (each sound as notes, per-place water ambience), `cues.ts` (which sounds fire between two rendered frames, and per panel action), `settings.ts` (the volume, stored under `flyfishing-sound`, outside the save). `player.ts` is the only Web Audio code; `main.ts` owns it and passes `play` hooks to the scenes and panel. Phaser's own audio is off. New sounds go through the same review stop on `/preview.html` as art.
+
 **`src/ui/panel.ts`** is the HTML side panel over the canvas, re-rendered every 250 ms and after every action. It builds HTML strings and `patch`/`morph`s them into the DOM in place so a button under the cursor is never replaced mid-click; buttons dispatch via `data-action`/`data-id`.
 
 ## Docs and workflow

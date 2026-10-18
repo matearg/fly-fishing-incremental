@@ -21,12 +21,13 @@ sound.setVolume(soundGain(soundSettings))
 // Browsers allow audio only after a gesture; capture so it's unlocked before the gesture's own handlers play a sound.
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => sound.unlock(), { capture: true })
 
-function act(fn: (s: GameState) => unknown): void {
-  fn(session.state)
+function act(fn: (s: GameState) => unknown): unknown {
+  const result = fn(session.state)
   panel.render()
+  return result
 }
 
-const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() })
+const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() }, id => sound.play(id))
 setInterval(() => panel.render(), 250)
 
 // The title takes the whole window; panels show only in game. The canvas must re-fit either way.

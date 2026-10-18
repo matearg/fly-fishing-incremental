@@ -11,6 +11,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec, mockup and plans deleted once done; in git history up to `3a27cc7` |
 | 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar, bulk trash) | **Done**, merged to `develop` (`cb6c9a7`). Spec and plan deleted once done; in git history up to `cb6c9a7` |
 | 5 | Cast animation, canvas fill without bars, fixed 3-row basket, pixel-font HUD, tied-fly sprite on the line | **Built** on `feat/cast-and-view`, not merged yet. Spec `docs/superpowers/specs/2026-10-18-cast-and-view-design.md`, plan `docs/superpowers/plans/2026-10-18-cast-and-view.md` |
+| 6 | Sounds: synthesized fishing, menu, panel and purchase sounds, water ambience per place, volume/mute row in Settings | **Built** on `feat/sounds`, not merged yet. Spec `docs/superpowers/specs/2026-10-18-sounds-design.md`, plan `docs/superpowers/plans/2026-10-18-sounds.md` |
 
 ## Decisions already made (carry into pieces 3 and 4)
 
@@ -51,8 +52,16 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - **HUD text:** place name, helper count and bite "!" use the pixel font via `addText` (`src/scene/textures.ts`), shared with the title.
 - **Deferred minors (final review):** the helper's back-cast line runs up to 21 px off the world's left edge at non-dock places; `fit()` calls `setGameSize` even when the size is unchanged (possible one-frame clear while dragging the window, not seen); `lineFlyBitmap`'s `in` check would also match prototype keys (unreachable after `sanitize`).
 
+### Piece 6 (as built)
+- **All Web Audio, no files:** `src/audio/` holds pure, Node-tested data and decisions (`settings.ts`, `sounds.ts` notes and ambience, `cues.ts` which sounds fire between two frames), plus `player.ts`, the only Web Audio code. Phaser's audio is off (`noAudio`); its console banner still says "Web Audio" because it checks device support first.
+- **Sounds approved 2026-10-18** on `/preview.html`. The user asked for rod swooshes on the cast, so `Note` got optional `attack` (a swell) and `q` (bandpass noise).
+- **Volume:** `flyfishing-sound` in `localStorage`, outside the save; 10 steps, 10% floor, mute keeps the level. Only on the title Settings page; `TitleScene.volumeRow` takes the icon and setting so the music row (`NOTES` icon) is a second call.
+- **Cues:** only the player and the one visible helper sound (helper at `HELPER_GAIN`); cues reset when the state object is swapped or the scene wakes. `menuCue` tells BACK/NO apart by the transition (non-main page → main, no action).
+- **"Nope" buzz:** a `pointerdown` on a disabled panel button. Works in Chromium; Firefox not checked.
+- **Not checked live:** helper loudness, `?speed=20`, hidden-tab silence, and menu-mid-reel. The cue unit tests cover the logic.
+
 ### Saving
 - No manual save button. The user said "leave the save as it is": autosave every 5 s, plus saving on tab hide, page close, and going back to the menu. Nothing is saved while the title or menu is up.
 
 ## How to resume
-Pieces 1–4 are done; piece 5 is built on `feat/cast-and-view` and waits to be merged into `develop`. Shipping still means merging `develop` into `master`.
+Pieces 1–4 are done; piece 5 is built on `feat/cast-and-view` and piece 6 on `feat/sounds`, both waiting to be merged into `develop`. Shipping still means merging `develop` into `master`.

@@ -9,8 +9,10 @@ import type { CatchItem, GameState } from '../game/state'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS } from '../art/icons'
 import { catchImg, icon } from './icons'
 import { keepOpen, stackBasket, STACK_LIST_MAX, type Stack } from './basket'
+import { panelCue } from '../audio/cues'
+import type { SoundId } from '../audio/sounds'
 
-type Act = (fn: (s: GameState) => unknown) => void
+type Act = (fn: (s: GameState) => unknown) => unknown
 
 const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer' }
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
@@ -60,7 +62,7 @@ function benchBar(s: GameState): string {
   return `<div class="bar${full ? ' paused' : ''}" role="progressbar" aria-label="Bench" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${n}"><span style="width:${n}%"></span></div><p class="label">${full ? 'Box full' : 'Tying…'}</p>`
 }
 
-export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void): { render(): void } {
+export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void, play: (id: SoundId) => void): { render(): void } {
   let confirmSeason = false
   let stacks: Stack[] = []
   let openStack: string | null = null // key of the one tile whose catches are listed
@@ -167,12 +169,8 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     }
   }
 
-  root.addEventListener('click', e => {
-    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]')
-    if (!b || b.disabled) return
-    const id = b.dataset.id!
-    const a = b.dataset.action!
-    if (a !== 'season') confirmSeason = false
+  // Runs a button's action and returns what it returned (a purchase's success, a sale's money), which picks its sound.
+  function run(a: string, id: string): unknown {
     switch (a) {
       case 'tie': return act(s => tieFly(s))
       case 'recipePattern': return act(s => setRecipe(s, { ...s.recipe, patternId: id }))
@@ -188,12 +186,27 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       case 'trash': return act(s => trash(s, Number(id)))
       case 'trashStack': { const st = stacks.find(x => x.key === id); return st && act(s => trashStack(s, st.kind, st.defId)) }
       case 'toggleStack': openStack = openStack === id ? null : id; return render()
-      case 'season':
-        if (e.detail > 1) return // a double-click must not skip the confirmation
-        if (!confirmSeason) { confirmSeason = true; return render() }
-        confirmSeason = false
-        return setState(startNewSeason(getState()))
     }
+  }
+
+  root.addEventListener('click', e => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]')
+    if (!b || b.disabled) return
+    const id = b.dataset.id!
+    const a = b.dataset.action!
+    if (a === 'season') {
+      if (e.detail > 1) return // a double-click must not skip the confirmation
+      if (!confirmSeason) { confirmSeason = true; play('select'); return render() }
+      confirmSeason = false
+      play('season')
+      return setState(startNewSeason(getState()))
+    }
+    confirmSeason = false
+    play(panelCue(a, run(a, id)))
+  })
+  // Disabled buttons fire no click; a press on one (can't afford it) gets the "nope" buzz.
+  root.addEventListener('pointerdown', e => {
+    if ((e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]')?.disabled) play('nope')
   })
 
   render()
