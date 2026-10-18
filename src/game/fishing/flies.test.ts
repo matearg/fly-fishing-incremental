@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { flyStats, tieFly, basicRecipe } from './flies'
-import { newGame } from './state'
-import { PATTERNS, MATERIALS, LICENSE_UPGRADES } from './data'
+import { newGame } from '../state'
+import { PATTERNS, MATERIALS, LICENSE_UPGRADES } from '../data'
 
 const nymph = PATTERNS.find(p => p.cls === 'nymph')!
 const bead = MATERIALS.find(m => m.depthBonus > 0)!

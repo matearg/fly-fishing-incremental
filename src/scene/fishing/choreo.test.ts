@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { approach, approachTarget, castPose, releaseOffscreen, schoolKey, trackCatch, type Track } from './choreo'
-import { newGame } from '../game/state'
+import { newGame } from '../../game/state'
 
 describe('approach', () => {
   it('cruises until the approach window starts', () => {

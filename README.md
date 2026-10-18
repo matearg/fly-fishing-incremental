@@ -32,9 +32,15 @@ npm run build    # type-check and build to dist/
 
 ```
 src/
-  game/    rules and balance: data tables, economy, catches, flies, helpers, prestige, saving (no Phaser)
-  scene/   Phaser scenes: title screen, menu, fishing scene, river backdrop
-  art/     pixel art drawn in code: fish, logo, font, place looks
+  game/    rules and balance, no Phaser: data tables, state, saving
+    fishing/   casting, bites, catches, flies
+    progress/  money, unlocks, helpers, New Season
+    util/      random numbers, number formatting
+  scene/   Phaser scenes
+    fishing/   fishing scene and its animation timing
+    title/     title screen, menu, river backdrop
+  art/     pixel art drawn in code: pixel tools, font, logo, place looks
+    sprites/   anglers, fish, junk
   ui/      HTML/CSS side panel over the canvas
   session.ts  ties the game state, saving, and scenes together
 docs/      design specs and the roadmap

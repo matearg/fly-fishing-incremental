@@ -2,12 +2,12 @@
 // It plays faster than a human, so it targets the lower part of the spec's 30–60 min window.
 import { describe, it, expect } from 'vitest'
 import { LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './data'
-import { sellAll, setRecipe, trash, travel, unlockLocation, unlockMaterial, unlockPattern } from './economy'
-import { buyHelper, helperCost } from './helpers'
-import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licenseUpgradeCost, startNewSeason } from './prestige'
-import { castPlayer, reelPlayer, tick } from './sim'
+import { sellAll, setRecipe, trash, travel, unlockLocation, unlockMaterial, unlockPattern } from './progress/economy'
+import { buyHelper, helperCost } from './progress/helpers'
+import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licenseUpgradeCost, startNewSeason } from './progress/prestige'
+import { castPlayer, reelPlayer, tick } from './fishing/sim'
 import { newGame, type GameState } from './state'
-import { lcg } from './testutil'
+import { lcg } from './util/testutil'
 
 // Vitest runs in Node; the project has no @types/node.
 declare const process: { env: Record<string, string | undefined> }

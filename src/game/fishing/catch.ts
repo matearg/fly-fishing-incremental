@@ -1,7 +1,7 @@
-import { JUNK, LOCATIONS, SIZE, SPECIES, TIERS, type LocationId, type SpeciesDef } from './data'
+import { JUNK, LOCATIONS, SIZE, SPECIES, TIERS, type LocationId, type SpeciesDef } from '../data'
 import { flyStats } from './flies'
-import { licenseEffects } from './license'
-import type { CatchItem, Fly, GameState } from './state'
+import { licenseEffects } from '../progress/license'
+import type { CatchItem, Fly, GameState } from '../state'
 
 // The species at a place; licence species only once bought.
 export function placeSpecies(location: LocationId, licensed: string[]): SpeciesDef[] {

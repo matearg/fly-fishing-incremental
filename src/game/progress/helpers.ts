@@ -1,7 +1,7 @@
-import { HELPERS } from './data'
+import { HELPERS } from '../data'
 import { spend } from './economy'
 import { licenseEffects } from './license'
-import type { GameState } from './state'
+import type { GameState } from '../state'
 
 export type HelperKind = 'angler' | 'bench' | 'sorter' | 'buyer'
 

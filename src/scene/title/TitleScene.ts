@@ -1,12 +1,12 @@
 import Phaser from 'phaser'
-import { SMALL, textMask } from '../art/font'
-import { bakeLogo } from '../art/logo'
-import { paint, stylize } from '../art/pixels'
-import type { Session } from '../session'
+import { SMALL, textMask } from '../../art/font'
+import { bakeLogo } from '../../art/logo'
+import { paint, stylize } from '../../art/pixels'
+import type { Session } from '../../session'
 import { CONFIRM_PROMPT, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
 import { RiverBackdrop } from './RiverBackdrop'
-import { addBitmap } from './textures'
-import { VIEW_H, VIEW_W } from './FishingScene'
+import { addBitmap } from '../textures'
+import { VIEW_H, VIEW_W } from '../fishing/FishingScene'
 
 export interface TitleHooks {
   session: Session

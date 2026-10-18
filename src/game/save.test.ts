@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { serialize, deserialize, parseSave } from './save'
 import { newGame, type GameState } from './state'
-import { buyHelper } from './helpers'
-import { basicRecipe, flyStats, tieFly } from './flies'
-import { rollCatch } from './catch'
-import { castPlayer, reelPlayer, tick } from './sim'
-import { sellAll } from './economy'
+import { buyHelper } from './progress/helpers'
+import { basicRecipe, flyStats, tieFly } from './fishing/flies'
+import { rollCatch } from './fishing/catch'
+import { castPlayer, reelPlayer, tick } from './fishing/sim'
+import { sellAll } from './progress/economy'
 import { TIMING } from './data'
 
 describe('save', () => {

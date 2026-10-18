@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { newGame } from './state'
 import { PATTERNS, LICENSE_UPGRADES } from './data'
-import { licenseEffects } from './license'
+import { licenseEffects } from './progress/license'
 
 const zero = Object.fromEntries(LICENSE_UPGRADES.map(u => [u.id, 0])) as Record<(typeof LICENSE_UPGRADES)[number]['id'], number>
 

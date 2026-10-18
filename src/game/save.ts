@@ -1,5 +1,5 @@
 import { JUNK, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './data'
-import { basicRecipe } from './flies'
+import { basicRecipe } from './fishing/flies'
 import { newGame, SAVE_VERSION, type Fly, type GameState, type Recipe } from './state'
 
 export const SAVE_KEY = 'flyfishing-save'

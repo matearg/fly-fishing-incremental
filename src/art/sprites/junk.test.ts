@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { JUNK } from '../game/data'
+import { JUNK } from '../../game/data'
 import { JUNK_ART, JUNK_SNAG, junkBitmap } from './junk'
 
 describe('junk art', () => {

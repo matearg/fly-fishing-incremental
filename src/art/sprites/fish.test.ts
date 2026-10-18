@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { LOCATIONS, SPECIES, TIERS } from '../game/data'
+import { LOCATIONS, SPECIES, TIERS } from '../../game/data'
 import { FISH_COLORS, FISH_SIDE, FISH_TOP, fishBitmaps, fishColors, fishMouth, fishSideBitmaps, fishSideGrids, fishTopGrids } from './fish'
 
 describe('fish art', () => {

@@ -1,12 +1,12 @@
 import Phaser from 'phaser'
-import { placeSpecies } from '../game/catch'
-import type { LocationId } from '../game/data'
-import { hashString, lcg } from '../game/rand'
-import { fishBitmaps, TIER_SCHOOL } from '../art/fish'
-import { bakeBank, placeLook } from '../art/places'
-import { paint } from '../art/pixels'
-import { addBitmap } from './textures'
-import { VIEW_H, VIEW_W } from './FishingScene'
+import { placeSpecies } from '../../game/fishing/catch'
+import type { LocationId } from '../../game/data'
+import { hashString, lcg } from '../../game/util/rand'
+import { fishBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
+import { bakeBank, placeLook } from '../../art/places'
+import { paint } from '../../art/pixels'
+import { addBitmap } from '../textures'
+import { VIEW_H, VIEW_W } from '../fishing/FishingScene'
 
 const WRAP = 30 // off-screen margin so sprites leave fully before wrapping
 const wrapX = (x: number) => (((x + WRAP) % (VIEW_W + WRAP * 2)) + VIEW_W + WRAP * 2) % (VIEW_W + WRAP * 2) - WRAP

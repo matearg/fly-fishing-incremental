@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { sellAll, trash, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
-import { newGame, type CatchItem } from './state'
-import { PATTERNS, MATERIALS } from './data'
+import { newGame, type CatchItem } from '../state'
+import { PATTERNS, MATERIALS } from '../data'
 
 const item = (id: number, value: number, kind: CatchItem['kind'] = 'fish'): CatchItem => ({ id, kind, defId: 'x', value, size: 1 })
 

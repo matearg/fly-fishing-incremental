@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { helperCost, buyHelper } from './helpers'
-import { benchCooldownMs, tick } from './sim'
-import { newGame, type GameState } from './state'
-import { HELPERS, LICENSE_UPGRADES, PATTERNS, TIMING } from './data'
-import { seqRand } from './testutil'
+import { benchCooldownMs, tick } from '../fishing/sim'
+import { newGame, type GameState } from '../state'
+import { HELPERS, LICENSE_UPGRADES, PATTERNS, TIMING } from '../data'
+import { seqRand } from '../util/testutil'
 
 const run = (s: GameState, ms: number, r = seqRand(0.1, 0.3, 0.5)) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
 

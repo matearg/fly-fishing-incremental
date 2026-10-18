@@ -1,9 +1,9 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SEASON, SPECIES, type LicenseUpgradeId, type LocationId } from '../game/data'
-import { setRecipe, sellAll, trash, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/economy'
-import { flyStats, tieFly } from '../game/flies'
-import { formatNumber as fmt } from '../game/format'
-import { buyHelper, helperCost, type HelperKind } from '../game/helpers'
-import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason, licenseUpgradeCost, startNewSeason } from '../game/prestige'
+import { setRecipe, sellAll, trash, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/progress/economy'
+import { flyStats, tieFly } from '../game/fishing/flies'
+import { formatNumber as fmt } from '../game/util/format'
+import { buyHelper, helperCost, type HelperKind } from '../game/progress/helpers'
+import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason, licenseUpgradeCost, startNewSeason } from '../game/progress/prestige'
 import type { CatchItem, GameState } from '../game/state'
 
 type Act = (fn: (s: GameState) => unknown) => void
