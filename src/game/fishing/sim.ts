@@ -47,12 +47,16 @@ export function benchCooldownMs(state: GameState): number {
   return TIMING.benchTieMs * (1 - BENCH_SPEEDUP) ** (state.bench - 1)
 }
 
+// The box holds one fly per angler; the bench cooldown pauses while it's full.
+export function benchFull(state: GameState): boolean {
+  return state.flyBox.length >= state.anglers.length
+}
+
 export function tick(state: GameState, dtMs: number, rand: () => number): void {
   // Clamp so a hidden tab or laptop sleep can't produce a burst of catches.
   const dt = Math.min(dtMs, TIMING.maxTickMs)
   for (const a of state.anglers) stepAngler(state, a, dt, rand)
-  // The box holds one fly per angler; the cooldown pauses while it's full.
-  if (state.bench > 0 && state.flyBox.length < state.anglers.length && (state.benchTimerMs += dt) >= benchCooldownMs(state)) {
+  if (state.bench > 0 && !benchFull(state) && (state.benchTimerMs += dt) >= benchCooldownMs(state)) {
     state.benchTimerMs = 0
     tieFly(state) // an unaffordable tie is skipped silently
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tick, castPlayer, reelPlayer } from './sim'
+import { tick, castPlayer, reelPlayer, benchFull } from './sim'
 import { newGame, type GameState } from '../state'
 import { PATTERNS, SPECIES, TIMING } from '../data'
 import { travel } from '../progress/economy'
@@ -115,5 +115,15 @@ describe('auto anglers', () => {
     tick(s, 3_600_000, r)
     expect(s.basket.length).toBeLessThanOrEqual(1)
     expect(s.anglers[1].phase).toBe('waiting')
+  })
+})
+
+describe('benchFull', () => {
+  it('is true once the box holds one fly per angler', () => {
+    const s = newGame()
+    s.bench = 1
+    expect(benchFull(s)).toBe(false)
+    s.flyBox = [{ patternId: 'basicDry', materialIds: [], wearLeft: 3 }]
+    expect(benchFull(s)).toBe(true)
   })
 })

@@ -1,7 +1,8 @@
 import Phaser from 'phaser'
 import { SMALL, textMask } from '../../art/font'
 import { bakeLogo } from '../../art/logo'
-import { paint, stylize } from '../../art/pixels'
+import { iconBitmap, SCENE_ICONS } from '../../art/icons'
+import { stylize } from '../../art/pixels'
 import type { Session } from '../../session'
 import { CONFIRM_PROMPT, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
 import { RiverBackdrop } from './RiverBackdrop'
@@ -13,6 +14,7 @@ export interface TitleHooks {
   enterGame(kind: 'continue' | 'new'): void
   toggleFullscreen(): void
   isFullscreen(): boolean
+  canFullscreen(): boolean
 }
 
 const LOGO_Y = 24
@@ -21,8 +23,6 @@ const MENU_Y = 128
 const LINE_H = 14
 const WHITE = { top: 0xffffff, bottom: 0xffffff, outline: 0x000000, outlineW: 1 }
 const YELLOW = { top: 0xffe45c, bottom: 0xffb02e, outline: 0x2a0a3d, outlineW: 1 }
-// shortcut: placeholder cursor until the fish sprites land (Task 4)
-const CURSOR = ['.oooo..', 'obbbbo.', 'obebbbo', '.oooo..']
 
 const KEYS: Record<string, MenuKey> = {
   ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Enter: 'select', Space: 'select', Escape: 'back',
@@ -42,7 +42,7 @@ export class TitleScene extends Phaser.Scene {
 
   create(): void {
     addBitmap(this, 'logo', bakeLogo())
-    addBitmap(this, 'cursor', paint(CURSOR, { o: 0x2a0a3d, b: 0xff8a3a, e: 0x10222b }))
+    addBitmap(this, 'cursor', iconBitmap(SCENE_ICONS.cursor))
     this.buildRiver()
     this.logo = this.add.image(VIEW_W / 2, LOGO_Y, 'logo').setOrigin(0.5, 0).setDepth(10)
     this.press = this.add.image(VIEW_W / 2, VIEW_H - 40, this.text('PRESS START', false)).setOrigin(0.5).setDepth(10)
@@ -94,7 +94,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private ctx() {
-    return { hasSave: this.hooks.session.hasSave(), fullscreen: this.hooks.isFullscreen() }
+    return { hasSave: this.hooks.session.hasSave(), fullscreen: this.hooks.isFullscreen(), canFullscreen: this.hooks.canFullscreen() }
   }
 
   private key(k: MenuKey): void {

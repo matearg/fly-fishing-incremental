@@ -27,7 +27,7 @@ function purchaseOptions(s: GameState): { what: string; cost: number; buy: () =>
   if (loc) opts.push({ what: `location ${loc.id}`, cost: loc.unlockCost, buy: () => unlockLocation(s, loc.id) && travel(s, loc.id) })
   opts.push({ what: 'angler', cost: helperCost(s, 'angler')!, buy: () => buyHelper(s, 'angler') })
   if (s.bench * 3 < s.anglers.length - 1) opts.push({ what: 'bench', cost: helperCost(s, 'bench')!, buy: () => buyHelper(s, 'bench') })
-  for (const k of ['sorter', 'buyer'] as const) {
+  for (const k of ['bulkTrash', 'sorter', 'buyer'] as const) {
     const c = helperCost(s, k)
     if (c !== null) opts.push({ what: k, cost: c, buy: () => buyHelper(s, k) })
   }

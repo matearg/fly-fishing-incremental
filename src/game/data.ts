@@ -86,7 +86,8 @@ export const TIMING = { biteMinMs: 1_500, biteMaxMs: 4_000, reelMs: 800, benchTi
 export const HELPERS = {
   angler: { baseCost: 40, growth: 1.4 },
   bench: { baseCost: 30, growth: 1.6 },
-  sorter: { cost: 300 },
+  bulkTrash: { cost: 300 },
+  sorter: { cost: 450 },
   buyer: { cost: 800 },
 }
 // fish size multiplier = 1 + rand * (spread + sizeBonus)

@@ -1,5 +1,5 @@
 import { LOCATIONS, MATERIALS, PATTERNS, type LocationId } from '../data'
-import type { GameState, Recipe } from '../state'
+import type { CatchItem, GameState, Recipe } from '../state'
 
 export function spend(state: GameState, cost: number): boolean {
   if (state.money < cost) return false
@@ -24,6 +24,15 @@ export function trash(state: GameState, catchId: number): boolean {
   const i = state.basket.findIndex(c => c.id === catchId)
   if (i < 0) return false
   state.basket.splice(i, 1)
+  return true
+}
+
+// Bulk trash throws away every catch of one kind and species at once.
+export function trashStack(state: GameState, kind: CatchItem['kind'], defId: string): boolean {
+  if (!state.bulkTrash) return false
+  const kept = state.basket.filter(c => c.kind !== kind || c.defId !== defId)
+  if (kept.length === state.basket.length) return false
+  state.basket = kept
   return true
 }
 

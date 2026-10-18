@@ -2,7 +2,8 @@
 
 export type MenuPage = 'attract' | 'main' | 'settings' | 'confirmNew'
 export interface MenuState { page: MenuPage; index: number }
-export interface MenuCtx { hasSave: boolean; fullscreen: boolean }
+// canFullscreen: false where the browser has no Fullscreen API (iPhone Safari).
+export interface MenuCtx { hasSave: boolean; fullscreen: boolean; canFullscreen: boolean }
 export type MenuKey = 'up' | 'down' | 'select' | 'back' | 'any'
 export type MenuAction = 'continue' | 'newGame' | 'toggleFullscreen'
 export interface MenuItem { id: string; label: string }
@@ -17,7 +18,10 @@ export function menuItems(page: MenuPage, ctx: MenuCtx): MenuItem[] {
       { id: 'newGame', label: 'NEW GAME' },
       { id: 'settings', label: 'SETTINGS' },
     ]
-    case 'settings': return [{ id: 'fullscreen', label: `FULLSCREEN: ${ctx.fullscreen ? 'ON' : 'OFF'}` }, { id: 'back', label: 'BACK' }]
+    case 'settings': return [
+      ...(ctx.canFullscreen ? [{ id: 'fullscreen', label: `FULLSCREEN: ${ctx.fullscreen ? 'ON' : 'OFF'}` }] : []),
+      { id: 'back', label: 'BACK' },
+    ]
     case 'confirmNew': return [{ id: 'no', label: 'NO' }, { id: 'yes', label: 'YES' }]
   }
 }

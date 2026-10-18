@@ -37,6 +37,7 @@ const title = new TitleScene({
   // Document fullscreen, not the canvas, so the side panel stays visible in game.
   toggleFullscreen: () => void (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}),
   isFullscreen: () => !!document.fullscreenElement,
+  canFullscreen: () => !!document.fullscreenEnabled,
 })
 
 const game = new Phaser.Game({
