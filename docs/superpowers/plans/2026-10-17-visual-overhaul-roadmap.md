@@ -9,7 +9,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 1 | Tying bench rework | **Done**, merged to `master` (`cc389c0`) |
 | 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec and plan deleted once done; in git history up to `3a27cc7` (spec) and `c8cc002` (plan) |
 | 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec, mockup and plans deleted once done; in git history up to `3a27cc7` |
-| 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar) | Design approved 2026-10-18: `docs/superpowers/specs/2026-10-18-panel-journal-style-design.md`. Plan next |
+| 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar, bulk trash) | **Built** on `feat/panel-journal`, approved by the user 2026-10-18; not merged yet. Spec `docs/superpowers/specs/2026-10-18-panel-journal-style-design.md`, plan `docs/superpowers/plans/2026-10-18-panel-journal-style.md` |
 
 ## Decisions already made (carry into pieces 3 and 4)
 
@@ -33,6 +33,11 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - Bench cooldown progress bar: confirmed. No bar for the hired anglers (user dropped it).
 - Brainstorm 2026-10-18 added: whole panel and basket in a "field journal" pixel style (Silkscreen + Pixelify Sans from Google Fonts, approved by the user as the one outside asset), a unique icon per item with flies drawn like the real patterns, and a basket stacked by kind that opens to list catches. Details in the spec.
 
+### Piece 4 (as built, plus the user's changes at the final review)
+- The trash drop target and drag-and-drop are gone. Each row of an open stack has a trash-can button instead of ✕.
+- New one-off helper **Bulk trash** ($300, `state.bulkTrash`, rule `trashStack` in `progress/economy.ts`): it adds "Trash all" to an open stack. It never appears on a closed tile, so one click still can't throw away a stack. It reuses the approved trash-can icon.
+- The Junk sorter went from $300 to $450 to make room. The pacing bot buys Bulk trash too; season 1 is now 49.98 sim-min against the 50 limit (it was 48.71), so the next rebalance has almost no slack there.
+
 ### Bench (piece 1, as built)
 - A 10 s cooldown, cut by 25% per extra bench. It ties 1 fly per cooldown. The box holds at most 1 fly per angler, you included. The cooldown pauses while the box is full. Big River was made cheaper (12,000) to keep the pacing test smooth. The first season now takes about 47 minutes for the test bot.
 
@@ -47,5 +52,9 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - `MENU_BUTTON` (`src/scene/fishing/FishingScene.ts`) and `CURSOR` (`src/scene/title/TitleScene.ts`) are the only pixel grids with no test. `paint` now throws on ragged rows, so a bad edit to either crashes the game at boot. Fix: one test that paints both, or move them into tested art modules.
 - The scene code that hides a landed fish (`Chosen.lastPhase` passed to `releaseOffscreen`) is only checked by a manual run, because the scene has no unit-test harness.
 
+## Deferred minors (from piece 4's final review)
+- When the box is full and the bench timer sits at 0, the bench bar is an empty outline; only the "Box full" label shows the paused state.
+- Season 1 pacing is 0.02 sim-min under the 50-minute limit (see Piece 4 above).
+
 ## How to resume
-Piece 3 is merged to `master`. Work continues on `develop`. Next: piece 4. Design approved; write the plan from `docs/superpowers/specs/2026-10-18-panel-journal-style-design.md`.
+Piece 4 is built on `feat/panel-journal` and approved. Next: merge it into `develop`, then delete its spec and plan as with earlier pieces. All four pieces of the overhaul are then done.
