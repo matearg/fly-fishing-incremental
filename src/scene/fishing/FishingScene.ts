@@ -4,7 +4,7 @@ import { placeSpecies } from '../../game/fishing/catch'
 import { flyStats } from '../../game/fishing/flies'
 import { hashString, lcg } from '../../game/util/rand'
 import type { Angler, GameState, Pending } from '../../game/state'
-import { FEET_Y, figureBitmaps, ROD_TIP, type FigureKind, type Pose } from '../../art/sprites/figures'
+import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, ROD_TIP, type FigureKind, type Pose } from '../../art/sprites/figures'
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
 import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../../art/places'
@@ -102,7 +102,7 @@ export class FishingScene extends Phaser.Scene {
     this.rippleDots = Array.from({ length: 34 }, () => ({ x0: rand() * VIEW_W, y: WATER_Y + Math.floor(rand() * 8), len: 2 + Math.floor(rand() * 5), speed: 6 + rand() * 10 }))
     // The player stands at the water's edge (or out on the dock), the helper a step behind.
     const playerX = look.dock ? look.shoreX + 70 : look.shoreX - 34
-    const tipX = playerX + ROD_TIP.idle[0]
+    const tipX = playerX - BODY_X + ROD_TIP.idle[0]
     return {
       id, look, maxDepth, waterLeft: look.shoreX - 10, playerX, helperX: playerX - 24,
       playerFlyX: Math.min(VIEW_W - 40, tipX + 140), helperFlyX: tipX + 50,
@@ -229,18 +229,20 @@ export class FishingScene extends Phaser.Scene {
     this.helper.setVisible(!!h)
     if (h) {
       const pose = this.pose(h, htr)
-      this.helper.setTexture(`fig:helper:${pose}`).setPosition(place.helperX, figY)
-      const tip: [number, number] = [place.helperX + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
+      const hx = place.helperX - BODY_X // sprite left; helperX is where the body starts
+      this.helper.setTexture(`fig:helper:${pose}`).setPosition(hx, figY)
+      const tip: [number, number] = [hx + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
       const fly = this.flyPos(s, h, htr, tip, place.helperFlyX, place, t + 1.7)
       if (fly) this.drawLine(tip, fly)
     }
 
     const pose = this.pose(p, ptr)
-    this.player.setTexture(`fig:angler:${pose}`).setPosition(place.playerX, figY)
-    const tip: [number, number] = [place.playerX + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
+    const px = place.playerX - BODY_X
+    this.player.setTexture(`fig:angler:${pose}`).setPosition(px, figY)
+    const tip: [number, number] = [px + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
     const fly = this.flyPos(s, p, ptr, tip, place.playerFlyX, place, t)
     if (fly) this.drawLine(tip, fly)
-    this.biteText.setVisible(p.phase === 'bite').setPosition(place.playerX + 7, figY - 2)
+    this.biteText.setVisible(p.phase === 'bite').setPosition(place.playerX + 7, figY + BODY_Y - 2)
 
     // The catch picked at cast swims (or drifts) to the fly, bites, and is reeled in.
     const pending = p.phase === 'idle' ? null : p.pending

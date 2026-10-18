@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { FEET_Y, FIGURE_POSES, figureBitmaps, ROD_TIP, type FigureKind, type Pose } from './figures'
+import { BODY_X, FEET_Y, FIGURE_POSES, figureBitmaps, ROD_TIP, type FigureKind, type Pose } from './figures'
 
-const POSES: Pose[] = ['idle', 'cast', 'reel']
+const POSES: Pose[] = ['idle', 'back', 'cast', 'reel']
 const KINDS: FigureKind[] = ['angler', 'helper']
 const alpha = (b: { w: number; data: Uint8ClampedArray }, x: number, y: number) => b.data[(y * b.w + x) * 4 + 3]
 
@@ -24,6 +24,9 @@ describe('figures', () => {
     const b = figureBitmaps('angler').idle
     expect(FEET_Y).toBe(b.h - 1)
     expect([...Array(b.w).keys()].some(x => alpha(b, x, FEET_Y) === 255)).toBe(true)
+  })
+  it('the back-cast rod tip is behind the head', () => {
+    expect(ROD_TIP.back[0]).toBeLessThan(BODY_X + 6)
   })
   it('the helper looks different from the player', () => {
     expect(figureBitmaps('helper').idle.data).not.toEqual(figureBitmaps('angler').idle.data)

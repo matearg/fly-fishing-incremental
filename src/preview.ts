@@ -4,7 +4,8 @@ import { hashString } from './game/util/rand'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS, iconBitmap, type Icon } from './art/icons'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
 import { blank, blit, mix, paint, type Bitmap } from './art/pixels'
-import { FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
+import { BODY_X, FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
+import { lineFlyBitmap } from './art/sprites/flies'
 import { fishBitmaps, fishSideBitmaps } from './art/sprites/fish'
 import { junkBitmap } from './art/sprites/junk'
 
@@ -68,9 +69,9 @@ for (const loc of LOCATIONS) {
   show(places, sideView(loc.id), `${loc.name} · fishing`)
 }
 
-const POSES: Pose[] = ['idle', 'cast', 'reel']
+const POSES: Pose[] = ['idle', 'back', 'cast', 'reel']
 const KINDS: FigureKind[] = ['angler', 'helper']
-const sprites = section('Figures — angler and helper, idle / cast / reel (4×)')
+const sprites = section('Figures — angler and helper, idle / back / cast / reel (4×)')
 for (const k of KINDS) for (const p of POSES) show(sprites, figureBitmaps(k)[p], `${k} · ${p}`, 4)
 
 // Each place's fishing view with the two figures on the bank (on the dock at the Great Lake), one pose per place.
@@ -79,8 +80,8 @@ LOCATIONS.forEach((loc, i) => {
   const look = placeLook(loc.id), b = sideView(loc.id), pose = POSES[i % POSES.length]
   // Player at the water's edge (end of the flat ground, or near the end of the dock), helper a step behind.
   const player = look.dock ? look.shoreX + 70 : look.shoreX - 34, feet = HORIZON_H - BANK_ABOVE_WATER
-  blit(b, figureBitmaps('helper')[pose], player - 24, feet - FEET_Y)
-  blit(b, figureBitmaps('angler')[pose], player, feet - FEET_Y)
+  blit(b, figureBitmaps('helper')[pose], player - 24 - BODY_X, feet - FEET_Y)
+  blit(b, figureBitmaps('angler')[pose], player - BODY_X, feet - FEET_Y)
   show(onBank, b, `${loc.name} · ${pose}`)
 })
 
@@ -95,6 +96,15 @@ for (const loc of LOCATIONS) {
     blit(card, a, 2, 2); blit(card, b, a.w + 4, 2); blit(card, top, a.w * 2 + 6, 2)
     show(row, card, `${sp.name} (${sp.tier})`, 4)
   }
+}
+
+// The fly at the end of the line, per pattern, on the creek's water.
+const lineFlies = section('Line flies (4×)')
+for (const p of PATTERNS) {
+  const b = lineFlyBitmap(p.id), card = blank(b.w + 4, b.h + 4)
+  fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
+  blit(card, b, 2, 2)
+  show(lineFlies, card, p.name, 4)
 }
 
 const junk = section('Junk (4×)')
