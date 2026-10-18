@@ -2,9 +2,13 @@ import Phaser from 'phaser'
 import { bakeLogo } from '../../art/logo'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import type { Session } from '../../session'
-import { CONFIRM_PROMPT, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
+import { BAR_SEGMENT, SPEAKER, soundIconMask } from '../../art/soundIcons'
+import { stylize, type Grid } from '../../art/pixels'
+import { setLevel, toggleMute, type SoundSettings } from '../../audio/settings'
+import type { SoundId } from '../../audio/sounds'
+import { CONFIRM_PROMPT, menuCue, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
 import { RiverBackdrop } from './RiverBackdrop'
-import { addBitmap, addText, TEXT_WHITE, TEXT_YELLOW } from '../textures'
+import { addBitmap, addText, TEXT_GREY, TEXT_WHITE, TEXT_YELLOW } from '../textures'
 import { TITLE_ANCHOR, TITLE_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 export interface TitleHooks {
@@ -13,15 +17,23 @@ export interface TitleHooks {
   toggleFullscreen(): void
   isFullscreen(): boolean
   canFullscreen(): boolean
+  play(id: SoundId): void
+  sound(): SoundSettings
+  setSound(s: SoundSettings): void
 }
 
 const LOGO_Y = 24
 const LOGO_Y_MENU = 6
 const MENU_Y = 128
 const LINE_H = 14
+// Sound row, in pixels: icon, gap, 10 segments 1 px apart, gap, percent.
+const ROW_GAP = 6
+const SEG_STEP = BAR_SEGMENT[0].length + 1
+const BAR_W = 10 * SEG_STEP - 1
 
 const KEYS: Record<string, MenuKey> = {
-  ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Enter: 'select', Space: 'select', Escape: 'back',
+  ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+  Enter: 'select', Space: 'select', Escape: 'back',
 }
 
 export class TitleScene extends Phaser.Scene {
@@ -75,13 +87,61 @@ export class TitleScene extends Phaser.Scene {
     if (this.menu.page === 'confirmNew') y += LINE_H / 2
     menuItems(this.menu.page, ctx).forEach((item, i) => {
       const sel = i === this.menu.index
-      const img = this.add.image(VIEW_W / 2, y, this.text(item.label, sel)).setOrigin(0.5).setInteractive({ useHandCursor: true })
-      img.on('pointerover', () => { if (!this.busy && this.menu.index !== i) { this.menu.index = i; this.refreshMenu() } })
-      img.on('pointerdown', () => { this.menu.index = i; this.key('select') })
-      this.items.add(img)
-      if (sel) this.items.add(this.add.image(img.x - img.width / 2 - 6, y, 'cursor').setOrigin(1, 0.5))
+      if (item.id === 'sound') this.volumeRow(y, i, sel, SPEAKER, this.hooks.sound(), s => this.hooks.setSound(s))
+      else {
+        const img = this.add.image(VIEW_W / 2, y, this.text(item.label, sel)).setOrigin(0.5)
+        this.hover(img, i).on('pointerdown', () => { this.menu.index = i; this.key('select') })
+        this.items.add(img)
+        if (sel) this.items.add(this.add.image(img.x - img.width / 2 - 6, y, 'cursor').setOrigin(1, 0.5))
+      }
       y += LINE_H
     })
+  }
+
+  // Hovering an item moves the highlight there, with the same blip as the arrow keys.
+  private hover(obj: Phaser.GameObjects.Image, i: number): Phaser.GameObjects.Image {
+    return obj.setInteractive({ useHandCursor: true }).on('pointerover', () => {
+      if (this.busy || this.menu.index === i) return
+      this.menu.index = i
+      this.hooks.play('move')
+      this.refreshMenu()
+    })
+  }
+
+  // [icon] [10-step bar] [percent | OFF]. Clicking the icon or percent toggles mute; a segment sets that level.
+  // Takes the icon and setting so the future music row is a second call.
+  private volumeRow(y: number, i: number, sel: boolean, grid: Grid, s: SoundSettings, set: (s: SoundSettings) => void): void {
+    const style = sel ? TEXT_YELLOW : TEXT_WHITE, styleName = sel ? 'yellow' : 'white'
+    const iconKey = `snd:${grid.join('/')}:${s.muted}:${styleName}`
+    addBitmap(this, iconKey, stylize(soundIconMask(grid, s.muted), style))
+    const label = this.text(s.muted ? 'OFF' : `${s.level * 10}%`, sel)
+    // Images carry a 1 px outline on each side; lay out by their ink.
+    const iconW = grid[0].length, labelW = this.textures.get(label).getSourceImage().width - 2
+    let x = Math.round(VIEW_W / 2 - (iconW + ROW_GAP + BAR_W + ROW_GAP + labelW) / 2)
+    const select = () => { this.menu.index = i; this.key('select') }
+    const icon = this.add.image(x - 1, y, iconKey).setOrigin(0, 0.5)
+    this.hover(icon, i).on('pointerdown', select)
+    this.items.add(icon)
+    if (sel) this.items.add(this.add.image(x - 6, y, 'cursor').setOrigin(1, 0.5))
+    x += iconW + ROW_GAP
+    for (let j = 0; j < 10; j++) {
+      const on = j < s.level && !s.muted
+      const segKey = `snd:seg:${on ? styleName : 'grey'}`
+      addBitmap(this, segKey, stylize(soundIconMask(BAR_SEGMENT, false), on ? style : TEXT_GREY))
+      const seg = this.add.image(x + j * SEG_STEP - 1, y, segKey).setOrigin(0, 0.5)
+      this.hover(seg, i).on('pointerdown', () => {
+        if (this.busy) return
+        this.menu.index = i
+        set(setLevel(s, j + 1))
+        this.hooks.play('move')
+        this.refreshMenu()
+      })
+      this.items.add(seg)
+    }
+    x += BAR_W + ROW_GAP
+    const text = this.add.image(x - 1, y, label).setOrigin(0, 0.5)
+    this.hover(text, i).on('pointerdown', select)
+    this.items.add(text)
   }
 
   private buildRiver(): void {
@@ -91,16 +151,22 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private ctx() {
-    return { hasSave: this.hooks.session.hasSave(), fullscreen: this.hooks.isFullscreen(), canFullscreen: this.hooks.canFullscreen() }
+    return { hasSave: this.hooks.session.hasSave(), fullscreen: this.hooks.isFullscreen(), canFullscreen: this.hooks.canFullscreen(), sound: this.hooks.sound() }
   }
 
   private key(k: MenuKey): void {
     if (this.busy) return
-    const wasAttract = this.menu.page === 'attract'
-    const { next, action } = menuInput(this.menu, k, this.ctx())
+    const prev = this.menu, wasAttract = prev.page === 'attract'
+    const r = menuInput(prev, k, this.ctx()), { next, action } = r
     this.menu = next
     if (wasAttract) this.tweens.add({ targets: this.logo, y: LOGO_Y_MENU, duration: 250, ease: 'Quad.easeOut' })
     if (action === 'toggleFullscreen') this.hooks.toggleFullscreen()
+    const s = this.hooks.sound()
+    if (action === 'soundMute') this.hooks.setSound(toggleMute(s))
+    if (action === 'soundDown' || action === 'soundUp') this.hooks.setSound(setLevel(s, s.level + (action === 'soundUp' ? 1 : -1)))
+    // After the volume change, so it's heard at the new level.
+    const cue = menuCue(prev, k, r)
+    if (cue) this.hooks.play(cue)
     if (action === 'continue' || action === 'newGame') {
       this.busy = true // a second Enter during the fade must not enter twice
       this.cameras.main.fadeOut(300)

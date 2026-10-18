@@ -8,7 +8,7 @@ import type { GameState } from './game/state'
 import { Session } from './session'
 import { mountPanel } from './ui/panel'
 import { SoundPlayer } from './audio/player'
-import { parseSound, soundGain, soundStore } from './audio/settings'
+import { parseSound, serializeSound, soundGain, soundStore } from './audio/settings'
 import { TITLE_AMBIENCE } from './audio/sounds'
 import './ui/style.css'
 
@@ -61,6 +61,13 @@ const title = new TitleScene({
   toggleFullscreen: () => void (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}),
   isFullscreen: () => !!document.fullscreenElement,
   canFullscreen: () => !!document.fullscreenEnabled,
+  play: id => sound.play(id),
+  sound: () => soundSettings,
+  setSound: s => {
+    soundSettings = s
+    soundStore.write(serializeSound(s))
+    sound.setVolume(soundGain(s))
+  },
 })
 
 const game = new Phaser.Game({
@@ -77,7 +84,9 @@ const game = new Phaser.Game({
     new FishingScene({
       getState: () => session.state,
       onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
+      play: (id, scale) => sound.play(id, scale),
       onMenu: () => {
+        sound.play('back')
         session.toMenu()
         titleMode(true)
         game.scene.switch('fishing', 'title')

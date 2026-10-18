@@ -13,6 +13,8 @@ import { blank, mix } from '../../art/pixels'
 import { approach, approachTarget, CAST_MS, castLine, castPose, ease, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
 import { LINE_FLY_EYE, lineFlyBitmap } from '../../art/sprites/flies'
 import { addBitmap, addText, TEXT_WHITE, TEXT_YELLOW } from '../textures'
+import { anglerCues, cueFrame, type CueFrame } from '../../audio/cues'
+import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
 import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
@@ -22,7 +24,7 @@ const WRAP = 30 // off-screen margin so fish leave fully before wrapping
 // The helper stands a step behind the player: it, its line and its fly draw under the player.
 const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, helper: 5.5, figures: 6, line: 7, hud: 8 }
 
-export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void }
+export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void; play: (id: SoundId, scale?: number) => void }
 
 // stray: a hooked fish from another place, removed once it lands
 interface Swimmer { img: Phaser.GameObjects.Image; id: string; frames: [string, string]; x0: number; y: number; speed: number; phase: number; w: number; stray?: boolean }
@@ -53,6 +55,9 @@ export class FishingScene extends Phaser.Scene {
   private rippleDots: { x0: number; y: number; len: number; speed: number }[] = []
   // True until the first update after create/wake: a key that switched scenes must not also cast or leave.
   private settling = true
+  // Last frame's player and visible helper, for the sounds of what changed since. Reset when the state object is swapped.
+  private cues: [CueFrame | null, CueFrame | null] = [null, null]
+  private cueState: GameState | null = null
 
   constructor(private hooks: SceneHooks) {
     super('fishing')
@@ -80,7 +85,7 @@ export class FishingScene extends Phaser.Scene {
     this.input.on('pointerdown', (_: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => { if (!over.length && !this.settling) this.hooks.onWaterClick() })
     this.input.keyboard?.on('keydown-ESC', () => { if (!this.settling) this.hooks.onMenu() })
     this.cameras.main.fadeIn(300)
-    this.events.on('wake', () => { this.settling = true; this.cameras.main.fadeIn(300) })
+    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
     this.input.keyboard?.on('keydown-SPACE', () => { if (!this.settling && !document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
@@ -248,6 +253,12 @@ export class FishingScene extends Phaser.Scene {
     const figY = GROUND_Y - FEET_Y
     const p = s.anglers[0], h = s.anglers[1]
     const ptr = trackCatch(this.tracks[0], p), htr = trackCatch(this.tracks[1], h)
+    // An adopted save, Continue or New Season swaps the state: comparing across it would play phantom splashes.
+    if (s !== this.cueState) { this.cues = [null, null]; this.cueState = s }
+    const frames = [cueFrame(p, ptr), cueFrame(h, htr)] as const
+    for (const id of anglerCues(this.cues[0], frames[0])) this.hooks.play(id)
+    for (const id of anglerCues(this.cues[1], frames[1])) this.hooks.play(id, HELPER_GAIN)
+    this.cues = [frames[0], frames[1]]
     this.g.clear()
     this.helperLine.clear()
 
