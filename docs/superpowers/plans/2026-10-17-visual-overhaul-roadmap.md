@@ -7,8 +7,8 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | # | Piece | Status |
 |---|-------|--------|
 | 1 | Tying bench rework | **Done**, merged to `master` (`cc389c0`) |
-| 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec `specs/2026-10-17-title-screen-design.md`. Its plan was deleted once done; it's in git history up to `c8cc002` |
-| 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec `specs/2026-10-17-fishing-scene-design.md`, plans `plans/2026-10-17-fishing-scene.md` and `plans/2026-10-17-fishing-scene-minors.md` |
+| 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec and plan deleted once done; in git history up to `3a27cc7` (spec) and `c8cc002` (plan) |
+| 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec, mockup and plans deleted once done; in git history up to `3a27cc7` |
 | 4 | Panel icons + owned-unlock styling | Not started |
 
 ## Decisions already made (carry into pieces 3 and 4)
@@ -16,7 +16,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 ### Art, for every piece
 - All art is **drawn from scratch in code**: pixel grids (`string[]` + palette) baked by pure functions in `src/art/` (`paint`, `stylize`, `blit`, `scaleMask`), then uploaded with `addBitmap` (`src/scene/textures.ts`). No third-party packs, so no credits file.
 - The style is the one the user approved at the title review stops: thick dark outlines, stepped gradients, chunky pixels on the 480×270 canvas.
-- **Fish are generic:** a few base shapes, recolored per species (`FISH_COLORS` in `src/art/fish.ts`), with size growing by rarity tier, which also tracks price. The title uses the top-down shapes (`FISH_TOP`). Piece 3 needs **side-view** shapes in the same spirit, reusing `FISH_COLORS`.
+- **Fish are generic:** a few base shapes, recolored per species (`FISH_COLORS` in `src/art/sprites/fish.ts`), with size growing by rarity tier, which also tracks price. The title uses the top-down shapes (`FISH_TOP`). Piece 3 needs **side-view** shapes in the same spirit, reusing `FISH_COLORS`.
 - **Each place has its own look** (`PLACE_LOOKS` in `src/art/places.ts`): Creek has grass, pebbles and flowers; River has sand and reeds; Big River has mud and logs; Mountain Lake has rocks and pines; Great Lake has a beach and a dock. Piece 3 should give the side-view fishing scene the same palettes, so the player feels the progress.
 - The user wants **art review stops** (approve before continuing) for new art.
 
@@ -43,7 +43,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - A Space or Esc pressed on the exact frame the title's fade ends can reach the fishing scene, causing one cast or an instant return to the menu. Fix: ignore input for one frame after `wake`.
 
 ## Deferred minors (from the fishing scene's minors review)
-- `MENU_BUTTON` (`src/scene/FishingScene.ts`) and `CURSOR` (`src/scene/TitleScene.ts`) are the only pixel grids with no test. `paint` now throws on ragged rows, so a bad edit to either crashes the game at boot. Fix: one test that paints both, or move them into tested art modules.
+- `MENU_BUTTON` (`src/scene/fishing/FishingScene.ts`) and `CURSOR` (`src/scene/title/TitleScene.ts`) are the only pixel grids with no test. `paint` now throws on ragged rows, so a bad edit to either crashes the game at boot. Fix: one test that paints both, or move them into tested art modules.
 - The scene code that hides a landed fish (`Chosen.lastPhase` passed to `releaseOffscreen`) is only checked by a manual run, because the scene has no unit-test harness.
 
 ## How to resume

@@ -1,7 +1,6 @@
 # Fly Fishing Incremental: Design
 
 Date: 2026-10-17
-Status: draft, awaiting approval
 Working title: none yet (builder may use a placeholder)
 
 Marked **(Mateo)** = decided by Mateo. Marked **(Claude's call)** = a default chosen during design that Mateo has not explicitly confirmed; change freely if they object.
