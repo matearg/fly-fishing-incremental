@@ -1,12 +1,10 @@
 import Phaser from 'phaser'
-import { SMALL, textMask } from '../../art/font'
 import { bakeLogo } from '../../art/logo'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
-import { stylize } from '../../art/pixels'
 import type { Session } from '../../session'
 import { CONFIRM_PROMPT, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
 import { RiverBackdrop } from './RiverBackdrop'
-import { addBitmap } from '../textures'
+import { addBitmap, addText, TEXT_WHITE, TEXT_YELLOW } from '../textures'
 import { TITLE_ANCHOR, TITLE_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 export interface TitleHooks {
@@ -21,8 +19,6 @@ const LOGO_Y = 24
 const LOGO_Y_MENU = 6
 const MENU_Y = 128
 const LINE_H = 14
-const WHITE = { top: 0xffffff, bottom: 0xffffff, outline: 0x000000, outlineW: 1 }
-const YELLOW = { top: 0xffe45c, bottom: 0xffb02e, outline: 0x2a0a3d, outlineW: 1 }
 
 const KEYS: Record<string, MenuKey> = {
   ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Enter: 'select', Space: 'select', Escape: 'back',
@@ -114,8 +110,6 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private text(label: string, selected: boolean): string {
-    const key = `txt:${selected ? 'sel' : 'n'}:${label}`
-    addBitmap(this, key, stylize(textMask(label, SMALL), selected ? YELLOW : WHITE))
-    return key
+    return addText(this, label, selected ? TEXT_YELLOW : TEXT_WHITE)
   }
 }

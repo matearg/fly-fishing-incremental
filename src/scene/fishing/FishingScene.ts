@@ -11,7 +11,7 @@ import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } fr
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import { blank, mix } from '../../art/pixels'
 import { approach, approachTarget, CAST_MS, castPose, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, trackCatch, type Track } from './choreo'
-import { addBitmap } from '../textures'
+import { addBitmap, addText, TEXT_WHITE, TEXT_YELLOW } from '../textures'
 import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
@@ -34,9 +34,9 @@ const ease = (k: number) => k * k * (3 - 2 * k)
 export class FishingScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics
   private ripples!: Phaser.GameObjects.Graphics
-  private biteText!: Phaser.GameObjects.Text
-  private placeText!: Phaser.GameObjects.Text
-  private helperText!: Phaser.GameObjects.Text
+  private biteText!: Phaser.GameObjects.Image
+  private placeText!: Phaser.GameObjects.Image
+  private helperText!: Phaser.GameObjects.Image
   private menuButton!: Phaser.GameObjects.Image
   private player!: Phaser.GameObjects.Image
   private helper!: Phaser.GameObjects.Image
@@ -58,10 +58,9 @@ export class FishingScene extends Phaser.Scene {
   create(): void {
     this.g = this.add.graphics().setDepth(Z.line)
     this.ripples = this.add.graphics().setDepth(Z.ripples)
-    const font = { fontFamily: 'monospace', fontSize: '12px', color: '#ffffff', stroke: '#10161c', strokeThickness: 3 }
-    this.biteText = this.add.text(0, 0, '!', { ...font, fontSize: '16px', color: '#ffe066' }).setOrigin(0.5, 1).setDepth(Z.hud)
-    this.placeText = this.add.text(VIEW_W - 22, 6, '', font).setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0)
-    this.helperText = this.add.text(6, 6, '', font).setDepth(Z.hud).setScrollFactor(0)
+    this.biteText = this.add.image(0, 0, addText(this, '!', TEXT_YELLOW)).setOrigin(0.5, 1).setDepth(Z.hud)
+    this.placeText = this.add.image(VIEW_W - 22, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0)
+    this.helperText = this.add.image(6, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(0).setDepth(Z.hud).setScrollFactor(0)
     for (const kind of ['angler', 'helper'] as FigureKind[]) {
       const bmps = figureBitmaps(kind)
       for (const pose of Object.keys(bmps) as Pose[]) addBitmap(this, `fig:${kind}:${pose}`, bmps[pose])
@@ -256,8 +255,8 @@ export class FishingScene extends Phaser.Scene {
     this.moveJunk(pending, p, ptr, aim)
 
     const helpers = s.anglers.length - 1
-    this.helperText.setVisible(helpers > 0).setText(`Helpers ${helpers}`)
-    this.placeText.setText(LOCATIONS.find(l => l.id === s.location)!.name)
+    this.helperText.setVisible(helpers > 0).setTexture(addText(this, `HELPERS ${helpers}`, TEXT_WHITE))
+    this.placeText.setTexture(addText(this, LOCATIONS.find(l => l.id === s.location)!.name.toUpperCase(), TEXT_WHITE))
   }
 
   private moveChosen(c: Chosen, p: Angler, tr: Track, fly: [number, number], t: number, place: Place): void {
