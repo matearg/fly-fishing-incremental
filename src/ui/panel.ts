@@ -1,6 +1,7 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SEASON, SPECIES, type LicenseUpgradeId, type LocationId } from '../game/data'
 import { setRecipe, sellAll, trash, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/progress/economy'
 import { flyStats, tieFly } from '../game/fishing/flies'
+import { benchCooldownMs, benchFull } from '../game/fishing/sim'
 import { formatNumber as fmt } from '../game/util/format'
 import { buyHelper, helperCost, type HelperKind } from '../game/progress/helpers'
 import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason, licenseUpgradeCost, startNewSeason } from '../game/progress/prestige'
@@ -15,6 +16,8 @@ const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d 
 const pct = (x: number) => `${Math.round(x * 100)}%`
 // Icon + text label for a flex button, so <small> and the price lay out beside the icon.
 const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</span>`
+// Owned things are inert rows with a stamp, never a disabled button.
+const owned = (ico: string, label: string, stamp = 'OWNED') => `<div class="owned">${ico}<span>${label}</span><span class="stamp">${stamp}</span></div>`
 const ticket = (n: number) => `${n}${icon('ui', 'license', UI_ICONS.license, 1)}`
 
 function btn(action: string, id: string, label: string, opts: { disabled?: boolean; pressed?: boolean; cls?: string } = {}): string {
@@ -48,6 +51,11 @@ function morph(from: ParentNode, to: ParentNode): void {
   for (const o of olds.slice(news.length)) o.remove()
 }
 
+function benchBar(s: GameState): string {
+  const full = benchFull(s), n = Math.min(100, Math.round(100 * s.benchTimerMs / benchCooldownMs(s)))
+  return `<div class="bar${full ? ' paused' : ''}" role="progressbar" aria-label="Bench" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${n}"><span style="width:${n}%"></span></div><p class="label">${full ? 'Box full' : 'Tying…'}</p>`
+}
+
 export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void): { render(): void } {
   let confirmSeason = false
   let dragging = false
@@ -75,7 +83,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       if (!f) return `<p>No fly on the line. Box: ${s.flyBox.length}</p>`
       const max = flyStats(s, f).wear
       const name = PATTERNS.find(p => p.id === f.patternId)!.name + f.materialIds.map(m => ' + ' + MATERIALS.find(x => x.id === m)!.name).join('')
-      return `<p class="row">${icon('fly', f.patternId, FLY_ICONS[f.patternId])}<span class="txt">${name}</span></p><div class="wear" role="meter" aria-label="Wear" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${f.wearLeft}"><span style="width:${pct(f.wearLeft / max)}"></span></div><p>Wear ${f.wearLeft}/${max} · Box: ${s.flyBox.length}</p>`
+      return `<p class="row">${icon('fly', f.patternId, FLY_ICONS[f.patternId])}<span class="txt">${name}</span></p><div class="bar" role="meter" aria-label="Wear" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${f.wearLeft}"><span style="width:${pct(f.wearLeft / max)}"></span></div><p>Wear ${f.wearLeft}/${max} · Box: ${s.flyBox.length}</p>`
     },
     recipe: s => {
       const st = flyStats(s, s.recipe)
@@ -83,20 +91,21 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         + (s.unlockedMaterials.length ? `<p class="label">Materials</p><div class="row">${s.unlockedMaterials.map(id => btn('recipeMaterial', id, lbl(icon('mat', id, MATERIAL_ICONS[id], 1), MATERIALS.find(m => m.id === id)!.name), { pressed: s.recipe.materialIds.includes(id) })).join('')}</div>` : '')
         + `<p class="stats">Depth ${st.maxDepth} · Wear ${st.wear} · Odds +${pct(st.oddsBonus)}${st.sizeBonus ? ` · Size +${pct(st.sizeBonus)}` : ''}</p>`
         + btn('tie', '', `Tie fly ($${fmt(st.tieCost)})`, { disabled: s.money < st.tieCost, cls: 'wide' })
+        + (s.bench > 0 ? benchBar(s) : '')
     },
     shop: s => {
-      const pats = PATTERNS.filter(p => !s.unlockedPatterns.includes(p.id))
-        .map(p => btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}</small>`)}<b>$${fmt(p.unlockCost)}</b>`, { disabled: s.money < p.unlockCost }))
-      const mats = MATERIALS.filter(m => !s.unlockedMaterials.includes(m.id)).map(m => {
+      const pats = PATTERNS.map(p => s.unlockedPatterns.includes(p.id) ? owned(icon('fly', p.id, FLY_ICONS[p.id]), p.name) : btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}</small>`)}<b>$${fmt(p.unlockCost)}</b>`, { disabled: s.money < p.unlockCost }))
+      const mats = MATERIALS.map(m => {
+        if (s.unlockedMaterials.includes(m.id)) return owned(icon('mat', m.id, MATERIAL_ICONS[m.id]), m.name)
         const fx = [m.depthBonus && `depth +${m.depthBonus}`, m.wearBonus && `wear +${m.wearBonus}`, m.oddsBonus && `odds +${pct(m.oddsBonus)}`, m.sizeBonus && `size +${pct(m.sizeBonus)}`].filter(Boolean).join(', ')
         return btn('unlockMaterial', m.id, `${lbl(icon('mat', m.id, MATERIAL_ICONS[m.id]), `${m.name} <small>${fx} · tie $${fmt(m.tieCost)}</small>`)}<b>$${fmt(m.unlockCost)}</b>`, { disabled: s.money < m.unlockCost })
       })
-      return [...pats, ...mats].join('') || '<p>Everything unlocked.</p>'
+      return [...pats, ...mats].join('')
     },
     helpers: s => (Object.keys(HELPER_LABELS) as HelperKind[]).map(k => {
       const cost = helperCost(s, k)
-      const owned = k === 'angler' ? ` (${s.anglers.length - 1})` : k === 'bench' ? ` (${s.bench})` : ''
-      return cost === null ? `<p>${HELPER_LABELS[k]}: working</p>` : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k] + owned)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
+      const count = k === 'angler' ? ` (${s.anglers.length - 1})` : k === 'bench' ? ` (${s.bench})` : ''
+      return cost === null ? owned(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k]) : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k] + count)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
     }).join(''),
     places: s => {
       const next = LOCATIONS.find(l => !s.unlockedLocations.includes(l.id))
@@ -112,10 +121,10 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       + LICENSE_UPGRADES.map(u => {
         const cost = licenseUpgradeCost(s, u.id)
         const lvl = `${s.licenseLevels[u.id]}/${u.costs.length}`
-        return cost === null ? `<p>${u.name}: max (${lvl})</p>` : btn('licenseUpgrade', u.id, `${lbl(icon('license', u.id, LICENSE_ICONS[u.id]), `${u.name} (${lvl})`)}<b>${ticket(cost)}</b>`, { disabled: s.licenses < cost })
+        return cost === null ? owned(icon('license', u.id, LICENSE_ICONS[u.id]), u.name, `MAX ${lvl}`) : btn('licenseUpgrade', u.id, `${lbl(icon('license', u.id, LICENSE_ICONS[u.id]), `${u.name} (${lvl})`)}<b>${ticket(cost)}</b>`, { disabled: s.licenses < cost })
       }).join('')
       + SPECIES.filter(sp => sp.licenseCost).map(sp => s.licenseSpecies.includes(sp.id)
-        ? `<p>${sp.name}: in the water</p>`
+        ? owned(catchImg('fish', sp.id), sp.name, 'IN THE WATER')
         : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
     basketHead: s => {
       const total = s.basket.reduce((a, c) => a + c.value, 0)
