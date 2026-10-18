@@ -8,11 +8,13 @@ import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason
 import type { CatchItem, GameState } from '../game/state'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS } from '../art/icons'
 import { catchImg, icon } from './icons'
+import { keepOpen, stackBasket, STACK_LIST_MAX, type Stack } from './basket'
 
 type Act = (fn: (s: GameState) => unknown) => void
 
 const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', sorter: 'Junk sorter', buyer: 'Fish buyer' }
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
+const money = (n: number) => `${n < 0 ? '-' : ''}$${fmt(Math.abs(n))}`
 const pct = (x: number) => `${Math.round(x * 100)}%`
 // Icon + text label for a flex button, so <small> and the price lay out beside the icon.
 const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</span>`
@@ -20,9 +22,10 @@ const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</spa
 const owned = (ico: string, label: string, stamp = 'OWNED') => `<div class="owned">${ico}<span>${label}</span><span class="stamp">${stamp}</span></div>`
 const ticket = (n: number) => `${n}${icon('ui', 'license', UI_ICONS.license, 1)}`
 
-function btn(action: string, id: string, label: string, opts: { disabled?: boolean; pressed?: boolean; cls?: string } = {}): string {
+function btn(action: string, id: string, label: string, opts: { disabled?: boolean; pressed?: boolean; expanded?: boolean; cls?: string } = {}): string {
   const pressed = opts.pressed === undefined ? '' : ` aria-pressed="${opts.pressed}"`
-  return `<button data-action="${action}" data-id="${id}"${opts.disabled ? ' disabled' : ''}${pressed} class="${opts.cls ?? ''}">${label}</button>`
+  const expanded = opts.expanded === undefined ? '' : ` aria-expanded="${opts.expanded}"`
+  return `<button data-action="${action}" data-id="${id}"${opts.disabled ? ' disabled' : ''}${pressed}${expanded} class="${opts.cls ?? ''}">${label}</button>`
 }
 
 // Update a section in place so the button under the cursor is never swapped mid-click
@@ -59,6 +62,8 @@ function benchBar(s: GameState): string {
 export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void): { render(): void } {
   let confirmSeason = false
   let dragging = false
+  let stacks: Stack[] = []
+  let openStack: string | null = null // key of the one tile whose catches are listed
 
   root.innerHTML = `
     <aside class="side">
@@ -72,7 +77,8 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     </aside>
     <footer class="basket">
       <div data-sec="basketHead"></div>
-      <ul class="items" aria-label="Basket"></ul>
+      <ul class="items" aria-label="Basket" data-sec="basket"></ul>
+      <div class="stack-list" data-sec="stackList"></div>
       <div class="trash" role="img" aria-label="Trash can: drop a catch here to throw it away">${icon('ui', 'trash', UI_ICONS.trash)}</div>
     </footer>`
 
@@ -128,44 +134,33 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
     basketHead: s => {
       const total = s.basket.reduce((a, c) => a + c.value, 0)
-      return btn('sell', '', `Sell all (${s.basket.length}) <b>${total < 0 ? '-' : ''}$${fmt(Math.abs(total))}</b>`, { disabled: !s.basket.length })
+      return btn('sell', '', `Sell all (${s.basket.length}) <b>${money(total)}</b>`, { disabled: !s.basket.length })
+    },
+    // Closed tiles can't be trashed or dragged whole, so one slip never throws away a stack.
+    basket: () => stacks.map(st => `<li>${btn('toggleStack', st.key, `${catchImg(st.kind, st.defId)}${catchName(st.items[0])} <span class="ct">×${st.count} · ${money(st.total)}</span>`, { expanded: st.key === openStack })}</li>`).join(''),
+    stackList: () => {
+      const st = stacks.find(x => x.key === openStack)
+      if (!st) return ''
+      return st.items.slice(0, STACK_LIST_MAX).map(c => `<div class="row-catch" draggable="true" data-catch-id="${c.id}"><span>${catchName(c)}</span> <b>${money(c.value)}</b> ${btn('trash', String(c.id), '✕', { cls: 'x' }).replace('>✕', ` aria-label="Trash ${catchName(c)}">✕`)}</div>`).join('')
+        + (st.count > STACK_LIST_MAX ? `<p class="label">+${st.count - STACK_LIST_MAX} more</p>` : '')
     },
   }
 
   const last: Record<string, string> = {}
-  const list = root.querySelector<HTMLUListElement>('.items')!
-  const chips = new Map<number, HTMLLIElement>()
-  // shortcut: only the newest catches are shown; switch to grouping by species if baskets get huge.
-  const MAX_CHIPS = 60
-
-  function renderBasket(s: GameState): void {
-    const shown = s.basket.slice(-MAX_CHIPS)
-    const keep = new Set(shown.map(c => c.id))
-    for (const [id, el] of chips) if (!keep.has(id)) { el.remove(); chips.delete(id) }
-    for (const c of shown) {
-      if (chips.has(c.id)) continue
-      const li = document.createElement('li')
-      li.className = `chip ${c.kind}`
-      li.draggable = true
-      li.dataset.catchId = String(c.id)
-      li.innerHTML = `${catchName(c)} <b>${c.value < 0 ? '-' : ''}$${fmt(Math.abs(c.value))}</b> ${btn('trash', String(c.id), '✕', { cls: 'x' }).replace('>✕', ` aria-label="Trash ${catchName(c)}">✕`)}`
-      list.append(li)
-      chips.set(c.id, li)
-    }
-  }
-
   function render(): void {
     const s = getState()
+    stacks = stackBasket(s.basket)
+    openStack = keepOpen(stacks, openStack)
     // Restore keyboard focus across re-renders.
     const focused = document.activeElement as HTMLElement | null
     const fKey = focused?.dataset.action ? `${focused.dataset.action}|${focused.dataset.id}` : null
     for (const [name, fn] of Object.entries(sections)) {
+      if (dragging && (name === 'basket' || name === 'stackList')) continue // never swap the row being dragged
       const html = fn(s)
       if (last[name] === html) continue
       last[name] = html
       patch(root.querySelector(`[data-sec="${name}"]`)!, html)
     }
-    if (!dragging) renderBasket(s)
     if (fKey && !root.contains(focused)) {
       const [a, id] = fKey.split('|')
       root.querySelector<HTMLElement>(`[data-action="${a}"][data-id="${id}"]`)?.focus()
@@ -191,6 +186,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       case 'licenseSpecies': return act(s => buyLicenseSpecies(s, id))
       case 'sell': return act(s => sellAll(s))
       case 'trash': return act(s => trash(s, Number(id)))
+      case 'toggleStack': openStack = openStack === id ? null : id; return render()
       case 'season':
         if (e.detail > 1) return // a double-click must not skip the confirmation
         if (!confirmSeason) { confirmSeason = true; return render() }
@@ -200,13 +196,14 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
   })
 
   const trashCan = root.querySelector<HTMLElement>('.trash')!
-  list.addEventListener('dragstart', e => {
-    const li = (e.target as HTMLElement).closest<HTMLElement>('li[data-catch-id]')
-    if (!li) return
+  const footer = root.querySelector<HTMLElement>('.basket')!
+  footer.addEventListener('dragstart', e => {
+    const row = (e.target as HTMLElement).closest<HTMLElement>('[data-catch-id]')
+    if (!row) return
     dragging = true
-    e.dataTransfer!.setData('text/plain', li.dataset.catchId!)
+    e.dataTransfer!.setData('text/plain', row.dataset.catchId!)
   })
-  list.addEventListener('dragend', () => { dragging = false; trashCan.classList.remove('over'); render() })
+  footer.addEventListener('dragend', () => { dragging = false; trashCan.classList.remove('over'); render() })
   trashCan.addEventListener('dragover', e => { e.preventDefault(); trashCan.classList.add('over') })
   trashCan.addEventListener('dragleave', () => trashCan.classList.remove('over'))
   trashCan.addEventListener('drop', e => {
