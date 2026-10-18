@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { menuCue, menuInput, menuItems, type MenuCtx, type MenuKey, type MenuState } from './menu'
-import { DEFAULT_SOUND } from '../../audio/settings'
+import { DEFAULT_MUSIC, DEFAULT_SOUND } from '../../audio/settings'
 
-const save: MenuCtx = { hasSave: true, fullscreen: false, canFullscreen: true, sound: DEFAULT_SOUND }
-const noSave: MenuCtx = { hasSave: false, fullscreen: false, canFullscreen: true, sound: DEFAULT_SOUND }
+const save: MenuCtx = { hasSave: true, fullscreen: false, canFullscreen: true, sound: DEFAULT_SOUND, music: DEFAULT_MUSIC }
+const noSave: MenuCtx = { hasSave: false, fullscreen: false, canFullscreen: true, sound: DEFAULT_SOUND, music: DEFAULT_MUSIC }
 const at = (page: MenuState['page'], index = 0): MenuState => ({ page, index })
 const ids = (page: MenuState['page'], ctx: MenuCtx) => menuItems(page, ctx).map(i => i.id)
 
@@ -40,16 +40,16 @@ describe('menu', () => {
     expect(menuItems('settings', { ...save, fullscreen: true })[0].label).toBe('FULLSCREEN: ON')
   })
   it('settings without the Fullscreen API: SOUND and BACK', () => {
-    expect(ids('settings', { ...save, canFullscreen: false })).toEqual(['sound', 'back'])
-    expect(menuInput(at('settings', 1), 'select', { ...save, canFullscreen: false })).toEqual({ next: at('main', 0) })
+    expect(ids('settings', { ...save, canFullscreen: false })).toEqual(['sound', 'music', 'back'])
+    expect(menuInput(at('settings', 2), 'select', { ...save, canFullscreen: false })).toEqual({ next: at('main', 0) })
   })
   it('back from settings → main; back on main does nothing', () => {
     expect(menuInput(at('settings', 1), 'back', save)).toEqual({ next: at('main', 0) })
-    expect(menuInput(at('settings', 2), 'select', save)).toEqual({ next: at('main', 0) })
+    expect(menuInput(at('settings', 3), 'select', save)).toEqual({ next: at('main', 0) })
     expect(menuInput(at('main', 1), 'back', save)).toEqual({ next: at('main', 1) })
   })
   it('settings has the sound row between FULLSCREEN and BACK', () => {
-    expect(ids('settings', save)).toEqual(['fullscreen', 'sound', 'back'])
+    expect(ids('settings', save)).toEqual(['fullscreen', 'sound', 'music', 'back'])
     expect(menuItems('settings', save)[1].label).toBe('SOUND 70%')
     expect(menuItems('settings', { ...save, sound: { level: 7, muted: true } })[1].label).toBe('SOUND OFF')
   })
@@ -57,6 +57,17 @@ describe('menu', () => {
     expect(menuInput(at('settings', 1), 'select', save)).toEqual({ next: at('settings', 1), action: 'soundMute' })
     expect(menuInput(at('settings', 1), 'left', save)).toEqual({ next: at('settings', 1), action: 'soundDown' })
     expect(menuInput(at('settings', 1), 'right', save)).toEqual({ next: at('settings', 1), action: 'soundUp' })
+  })
+  it('settings has the music row right below the sound row', () => {
+    expect(menuItems('settings', save)[2].label).toBe('MUSIC 50%')
+    expect(menuItems('settings', { ...save, music: { level: 5, muted: true } })[2].label).toBe('MUSIC OFF')
+  })
+  it('music row: select mutes, left/right change the music volume, all staying put', () => {
+    expect(menuInput(at('settings', 2), 'select', save)).toEqual({ next: at('settings', 2), action: 'musicMute' })
+    expect(menuInput(at('settings', 2), 'left', save)).toEqual({ next: at('settings', 2), action: 'musicDown' })
+    expect(menuInput(at('settings', 2), 'right', save)).toEqual({ next: at('settings', 2), action: 'musicUp' })
+    expect(menuCue(at('settings', 2), 'right', menuInput(at('settings', 2), 'right', save))).toBe('move')
+    expect(menuCue(at('settings', 2), 'select', menuInput(at('settings', 2), 'select', save))).toBe('select')
   })
   it('left/right elsewhere do nothing', () => {
     expect(menuInput(at('settings', 0), 'left', save)).toEqual({ next: at('settings', 0) })
@@ -76,7 +87,7 @@ describe('menuCue', () => {
     expect(cue(at('main', 0), 'back')).toBeNull()
   })
   it('selecting BACK or NO sounds like back; other picks select', () => {
-    expect(cue(at('settings', 2), 'select')).toBe('back')
+    expect(cue(at('settings', 3), 'select')).toBe('back')
     expect(cue(at('confirmNew', 0), 'select')).toBe('back')
     expect(cue(at('main', 1), 'select')).toBe('select')
   })

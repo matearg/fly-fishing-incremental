@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 import { bakeLogo } from '../../art/logo'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import type { Session } from '../../session'
-import { BAR_SEGMENT, SPEAKER, soundIconMask } from '../../art/soundIcons'
+import { BAR_SEGMENT, NOTES, SPEAKER, soundIconMask } from '../../art/soundIcons'
 import { stylize, type Grid } from '../../art/pixels'
 import { setLevel, toggleMute, type SoundSettings } from '../../audio/settings'
 import type { SoundId } from '../../audio/sounds'
@@ -20,6 +20,8 @@ export interface TitleHooks {
   play(id: SoundId): void
   sound(): SoundSettings
   setSound(s: SoundSettings): void
+  music(): SoundSettings
+  setMusic(s: SoundSettings): void
 }
 
 const LOGO_Y = 24
@@ -88,6 +90,7 @@ export class TitleScene extends Phaser.Scene {
     menuItems(this.menu.page, ctx).forEach((item, i) => {
       const sel = i === this.menu.index
       if (item.id === 'sound') this.volumeRow(y, i, sel, SPEAKER, this.hooks.sound(), s => this.hooks.setSound(s))
+      else if (item.id === 'music') this.volumeRow(y, i, sel, NOTES, this.hooks.music(), s => this.hooks.setMusic(s))
       else {
         const img = this.add.image(VIEW_W / 2, y, this.text(item.label, sel)).setOrigin(0.5)
         this.hover(img, i).on('pointerdown', () => { this.menu.index = i; this.key('select') })
@@ -109,7 +112,6 @@ export class TitleScene extends Phaser.Scene {
   }
 
   // [icon] [10-step bar] [percent | OFF]. Clicking the icon or percent toggles mute; a segment sets that level.
-  // Takes the icon and setting so the future music row is a second call.
   private volumeRow(y: number, i: number, sel: boolean, grid: Grid, s: SoundSettings, set: (s: SoundSettings) => void): void {
     const style = sel ? TEXT_YELLOW : TEXT_WHITE, styleName = sel ? 'yellow' : 'white'
     const iconKey = `snd:${grid.join('/')}:${s.muted}:${styleName}`
@@ -151,7 +153,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private ctx() {
-    return { hasSave: this.hooks.session.hasSave(), fullscreen: this.hooks.isFullscreen(), canFullscreen: this.hooks.canFullscreen(), sound: this.hooks.sound() }
+    return { hasSave: this.hooks.session.hasSave(), fullscreen: this.hooks.isFullscreen(), canFullscreen: this.hooks.canFullscreen(), sound: this.hooks.sound(), music: this.hooks.music() }
   }
 
   private key(k: MenuKey): void {
@@ -161,9 +163,11 @@ export class TitleScene extends Phaser.Scene {
     this.menu = next
     if (wasAttract) this.tweens.add({ targets: this.logo, y: LOGO_Y_MENU, duration: 250, ease: 'Quad.easeOut' })
     if (action === 'toggleFullscreen') this.hooks.toggleFullscreen()
-    const s = this.hooks.sound()
+    const s = this.hooks.sound(), mu = this.hooks.music()
     if (action === 'soundMute') this.hooks.setSound(toggleMute(s))
     if (action === 'soundDown' || action === 'soundUp') this.hooks.setSound(setLevel(s, s.level + (action === 'soundUp' ? 1 : -1)))
+    if (action === 'musicMute') this.hooks.setMusic(toggleMute(mu))
+    if (action === 'musicDown' || action === 'musicUp') this.hooks.setMusic(setLevel(mu, mu.level + (action === 'musicUp' ? 1 : -1)))
     // After the volume change, so it's heard at the new level.
     const cue = menuCue(prev, k, r)
     if (cue) this.hooks.play(cue)

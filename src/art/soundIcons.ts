@@ -14,7 +14,7 @@ export const SPEAKER: Grid = [
   '....#......',
 ]
 
-// For the future music row; not drawn in game yet.
+// Music row icon.
 export const NOTES: Grid = [
   '...######',
   '...######',

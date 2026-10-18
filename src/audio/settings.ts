@@ -2,20 +2,23 @@ export interface SoundSettings { level: number; muted: boolean } // level: bar s
 
 export const SOUND_KEY = 'flyfishing-sound'
 export const DEFAULT_SOUND: SoundSettings = { level: 7, muted: false }
+// Music has the same kind of setting; it starts lower so it sits under the effects.
+export const MUSIC_KEY = 'flyfishing-music'
+export const DEFAULT_MUSIC: SoundSettings = { level: 5, muted: false }
 
 const validLevel = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 10
 
 // Stored outside the save, so a bad value only costs the volume, never the game.
-export function parseSound(raw: string | null): SoundSettings {
+export function parseSound(raw: string | null, fallback = DEFAULT_SOUND): SoundSettings {
   try {
     const v = JSON.parse(raw ?? 'null')
-    if (!v || typeof v !== 'object' || Array.isArray(v)) return { ...DEFAULT_SOUND }
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return { ...fallback }
     return {
-      level: validLevel(v.level) ? v.level : DEFAULT_SOUND.level,
-      muted: typeof v.muted === 'boolean' ? v.muted : DEFAULT_SOUND.muted,
+      level: validLevel(v.level) ? v.level : fallback.level,
+      muted: typeof v.muted === 'boolean' ? v.muted : fallback.muted,
     }
   } catch {
-    return { ...DEFAULT_SOUND }
+    return { ...fallback }
   }
 }
 
@@ -37,7 +40,11 @@ export function toggleMute(s: SoundSettings): SoundSettings {
 }
 
 // Storage can throw (private mode, quota, blocked site data).
-export const soundStore: { read(): string | null; write(raw: string): void } = {
-  read() { try { return localStorage.getItem(SOUND_KEY) } catch { return null } },
-  write(raw) { try { localStorage.setItem(SOUND_KEY, raw) } catch { /* the setting just won't stick */ } },
+export function storeAt(key: string): { read(): string | null; write(raw: string): void } {
+  return {
+    read() { try { return localStorage.getItem(key) } catch { return null } },
+    write(raw) { try { localStorage.setItem(key, raw) } catch { /* the setting just won't stick */ } },
+  }
 }
+export const soundStore = storeAt(SOUND_KEY)
+export const musicStore = storeAt(MUSIC_KEY)

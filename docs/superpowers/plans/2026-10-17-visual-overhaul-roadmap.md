@@ -12,6 +12,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar, bulk trash) | **Done**, merged to `develop` (`cb6c9a7`). Spec and plan deleted once done; in git history up to `cb6c9a7` |
 | 5 | Cast animation, canvas fill without bars, fixed 3-row basket, pixel-font HUD, tied-fly sprite on the line | **Built** on `feat/cast-and-view`, not merged yet. Spec `docs/superpowers/specs/2026-10-18-cast-and-view-design.md`, plan `docs/superpowers/plans/2026-10-18-cast-and-view.md` |
 | 6 | Sounds: synthesized fishing, menu, panel and purchase sounds, water ambience per place, volume/mute row in Settings | **Built** on `feat/sounds`, not merged yet. Spec `docs/superpowers/specs/2026-10-18-sounds-design.md`, plan `docs/superpowers/plans/2026-10-18-sounds.md` |
+| 7 | Background music: a calm chiptune tune for the title and each place, never audibly looping, own volume row in Settings | **Built** on `feat/music` (cut from `feat/sounds`), not merged yet. Spec `docs/superpowers/specs/2026-10-18-music-design.md`, plan `docs/superpowers/plans/2026-10-18-music.md` |
 
 ## Decisions already made (carry into pieces 3 and 4)
 
@@ -63,5 +64,12 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 ### Saving
 - No manual save button. The user said "leave the save as it is": autosave every 5 s, plus saving on tab hide, page close, and going back to the menu. Nothing is saved while the title or menu is up.
 
+### Piece 7 (as built)
+- **Tunes approved 2026-10-18** on `/preview.html`, as first composed. The user changed one thing at the design review: no extra voices, but keep melody and bass and **add a gentle beat** (soft hat + low thump).
+- **Format:** `src/audio/music.ts`, one token per eighth note (`E5`, `-` hold, `.` rest; beats `k`/`h`/`.`), `|` bar lines checked by a test. Great Lake is in 3/4.
+- **Variety:** `nextPick` never repeats a phrase back to back; the melody rests 15% of phrases, the beat 20%, and 25% drop one melody note. Every tune opens with phrase 0 when it comes in.
+- **Player:** music has its own gain node beside the effects master; one phrase is queued about 1 s before the last ends (250 ms timer); tune changes crossfade over 1.5 s.
+- **Setting:** `flyfishing-music`, default 50%, row right below the sound row with the `NOTES` icon.
+
 ## How to resume
-Pieces 1–4 are done; piece 5 is built on `feat/cast-and-view` and piece 6 on `feat/sounds`, both waiting to be merged into `develop`. Shipping still means merging `develop` into `master`.
+Pieces 1–4 are done; piece 5 is built on `feat/cast-and-view`, piece 6 on `feat/sounds` and piece 7 on `feat/music` (which contains piece 6), all waiting to be merged into `develop`. Shipping still means merging `develop` into `master`.

@@ -8,16 +8,18 @@ import type { GameState } from './game/state'
 import { Session } from './session'
 import { mountPanel } from './ui/panel'
 import { SoundPlayer } from './audio/player'
-import { parseSound, serializeSound, soundGain, soundStore } from './audio/settings'
+import { DEFAULT_MUSIC, musicStore, parseSound, serializeSound, soundGain, soundStore } from './audio/settings'
 import { TITLE_AMBIENCE } from './audio/sounds'
 import './ui/style.css'
 
 const session = new Session(localStore)
 
-// The volume lives outside the save, so New Game, New Season and adopted saves never touch it.
+// The volumes live outside the save, so New Game, New Season and adopted saves never touch them.
 const sound = new SoundPlayer()
 let soundSettings = parseSound(soundStore.read())
 sound.setVolume(soundGain(soundSettings))
+let musicSettings = parseSound(musicStore.read(), DEFAULT_MUSIC)
+sound.setMusicVolume(soundGain(musicSettings))
 // Browsers allow audio only after a gesture; capture so it's unlocked before the gesture's own handlers play a sound.
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => sound.unlock(), { capture: true })
 
@@ -69,6 +71,12 @@ const title = new TitleScene({
     soundStore.write(serializeSound(s))
     sound.setVolume(soundGain(s))
   },
+  music: () => musicSettings,
+  setMusic: s => {
+    musicSettings = s
+    musicStore.write(serializeSound(s))
+    sound.setMusicVolume(soundGain(s))
+  },
 })
 
 const game = new Phaser.Game({
@@ -109,6 +117,7 @@ function frame(now: number): void {
     last = now
   }
   sound.ambience(session.state.location, session.mode === 'title' ? TITLE_AMBIENCE : 1)
+  sound.music(session.mode === 'title' ? 'title' : session.state.location)
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)

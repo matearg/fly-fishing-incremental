@@ -5,9 +5,9 @@ import type { SoundId } from '../../audio/sounds'
 export type MenuPage = 'attract' | 'main' | 'settings' | 'confirmNew'
 export interface MenuState { page: MenuPage; index: number }
 // canFullscreen: false where the browser has no Fullscreen API (iPhone Safari).
-export interface MenuCtx { hasSave: boolean; fullscreen: boolean; canFullscreen: boolean; sound: SoundSettings }
+export interface MenuCtx { hasSave: boolean; fullscreen: boolean; canFullscreen: boolean; sound: SoundSettings; music: SoundSettings }
 export type MenuKey = 'up' | 'down' | 'left' | 'right' | 'select' | 'back' | 'any'
-export type MenuAction = 'continue' | 'newGame' | 'toggleFullscreen' | 'soundMute' | 'soundDown' | 'soundUp'
+export type MenuAction = 'continue' | 'newGame' | 'toggleFullscreen' | 'soundMute' | 'soundDown' | 'soundUp' | 'musicMute' | 'musicDown' | 'musicUp'
 export interface MenuItem { id: string; label: string }
 
 export const CONFIRM_PROMPT = ['THIS ERASES YOUR PROGRESS.', 'ARE YOU SURE?']
@@ -22,8 +22,9 @@ export function menuItems(page: MenuPage, ctx: MenuCtx): MenuItem[] {
     ]
     case 'settings': return [
       ...(ctx.canFullscreen ? [{ id: 'fullscreen', label: `FULLSCREEN: ${ctx.fullscreen ? 'ON' : 'OFF'}` }] : []),
-      // A text fallback: TitleScene draws this row as icon, bar and percent.
+      // Text fallbacks: TitleScene draws these rows as icon, bar and percent.
       { id: 'sound', label: ctx.sound.muted ? 'SOUND OFF' : `SOUND ${ctx.sound.level * 10}%` },
+      { id: 'music', label: ctx.music.muted ? 'MUSIC OFF' : `MUSIC ${ctx.music.level * 10}%` },
       { id: 'back', label: 'BACK' },
     ]
     case 'confirmNew': return [{ id: 'no', label: 'NO' }, { id: 'yes', label: 'YES' }]
@@ -39,7 +40,10 @@ export function menuInput(m: MenuState, key: MenuKey, ctx: MenuCtx): { next: Men
   if (key === 'up') return { next: { ...m, index: (m.index - 1 + n) % n } }
   if (key === 'down') return { next: { ...m, index: (m.index + 1) % n } }
   if (key === 'back') return { next: m.page === 'main' ? m : { ...MAIN } }
-  if (key === 'left' || key === 'right') return items[m.index]?.id === 'sound' ? { next: m, action: key === 'left' ? 'soundDown' : 'soundUp' } : { next: m }
+  if (key === 'left' || key === 'right') {
+    const id = items[m.index]?.id
+    return id === 'sound' || id === 'music' ? { next: m, action: `${id}${key === 'left' ? 'Down' : 'Up'}` } : { next: m }
+  }
   if (key !== 'select') return { next: m }
   switch (items[m.index]?.id) {
     case 'continue': return { next: m, action: 'continue' }
@@ -47,6 +51,7 @@ export function menuInput(m: MenuState, key: MenuKey, ctx: MenuCtx): { next: Men
     case 'settings': return { next: { page: 'settings', index: 0 } }
     case 'fullscreen': return { next: m, action: 'toggleFullscreen' }
     case 'sound': return { next: m, action: 'soundMute' }
+    case 'music': return { next: m, action: 'musicMute' }
     case 'yes': return { next: m, action: 'newGame' }
     default: return { next: { ...MAIN } } // back, no
   }

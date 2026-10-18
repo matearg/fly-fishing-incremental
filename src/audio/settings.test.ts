@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DEFAULT_SOUND, SOUND_KEY, parseSound, serializeSound, setLevel, soundGain, toggleMute } from './settings'
+import { DEFAULT_MUSIC, DEFAULT_SOUND, MUSIC_KEY, SOUND_KEY, parseSound, serializeSound, setLevel, soundGain, toggleMute } from './settings'
 import { SAVE_KEY } from '../game/save'
 
 describe('sound settings', () => {
@@ -38,5 +38,13 @@ describe('sound settings', () => {
 
   it('is stored apart from the save', () => {
     expect(SOUND_KEY).not.toBe(SAVE_KEY)
+  })
+
+  it('music has its own default and key', () => {
+    for (const raw of [null, '{bad', '[]']) expect(parseSound(raw, DEFAULT_MUSIC)).toEqual(DEFAULT_MUSIC)
+    expect(parseSound('{"level":11}', DEFAULT_MUSIC).level).toBe(5)
+    expect(parseSound('{"level":3}', DEFAULT_MUSIC)).toEqual({ level: 3, muted: false })
+    expect(MUSIC_KEY).not.toBe(SOUND_KEY)
+    expect(MUSIC_KEY).not.toBe(SAVE_KEY)
   })
 })
