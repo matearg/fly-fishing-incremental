@@ -1,9 +1,11 @@
 // Dev-only art review page: draws baked bitmaps at 2× so the user can approve them.
-import { LOCATIONS } from './game/data'
+import { JUNK, LOCATIONS, SPECIES } from './game/data'
 import { hashString } from './game/rand'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
 import { blank, blit, mix, paint, type Bitmap } from './art/pixels'
 import { FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/figures'
+import { fishBitmaps, fishSideBitmaps } from './art/fish'
+import { junkBitmap } from './art/junk'
 
 const W = 480, H = 270, SCALE = 2
 const HORIZON_H = 110 // waterline of the side view
@@ -80,3 +82,24 @@ LOCATIONS.forEach((loc, i) => {
   blit(b, figureBitmaps('angler')[pose], player, feet - FEET_Y)
   show(onBank, b, `${loc.name} · ${pose}`)
 })
+
+// Fish: side view (both tail frames) and the title's top-down view, grouped by place, on that place's water.
+for (const loc of LOCATIONS) {
+  const row = section(`Fish — ${loc.name} (4×: side frame 0, side frame 1, top-down)`)
+  const water = placeLook(loc.id).water[1]
+  for (const sp of SPECIES.filter(s => s.location === loc.id)) {
+    const [a, b] = fishSideBitmaps(sp.id), [top] = fishBitmaps(sp.id)
+    const card = blank(a.w * 2 + top.w + 8, Math.max(a.h, top.h) + 4)
+    fillRect(card, 0, 0, card.w, card.h, water)
+    blit(card, a, 2, 2); blit(card, b, a.w + 4, 2); blit(card, top, a.w * 2 + 6, 2)
+    show(row, card, `${sp.name} (${sp.tier})`, 4)
+  }
+}
+
+const junk = section('Junk (4×)')
+for (const j of JUNK) {
+  const b = junkBitmap(j.id), card = blank(b.w + 4, b.h + 4)
+  fillRect(card, 0, 0, card.w, card.h, placeLook('river').water[1])
+  blit(card, b, 2, 2)
+  show(junk, card, j.name, 4)
+}
