@@ -42,5 +42,9 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - Settings → Fullscreen throws a TypeError on iPhone Safari (no `requestFullscreen`). Fix: show the item only when `document.fullscreenEnabled` is true.
 - A Space or Esc pressed on the exact frame the title's fade ends can reach the fishing scene, causing one cast or an instant return to the menu. Fix: ignore input for one frame after `wake`.
 
+## Deferred minors (from the fishing scene's minors review)
+- `MENU_BUTTON` (`src/scene/FishingScene.ts`) and `CURSOR` (`src/scene/TitleScene.ts`) are the only pixel grids with no test. `paint` now throws on ragged rows, so a bad edit to either crashes the game at boot. Fix: one test that paints both, or move them into tested art modules.
+- The scene code that hides a landed fish (`Chosen.lastPhase` passed to `releaseOffscreen`) is only checked by a manual run, because the scene has no unit-test harness.
+
 ## How to resume
 Piece 3 is merged to `master`. Work continues on `develop`. Next: piece 4 (panel icons and owned-unlock styling), starting with a brainstorm.
