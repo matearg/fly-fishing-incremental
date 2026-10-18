@@ -3,7 +3,7 @@ import { spend } from './economy'
 import { licenseEffects } from './license'
 import type { GameState } from '../state'
 
-export type HelperKind = 'angler' | 'bench' | 'sorter' | 'buyer'
+export type HelperKind = 'angler' | 'bench' | 'bulkTrash' | 'sorter' | 'buyer'
 
 // null = a one-off helper that is already owned
 export function helperCost(state: GameState, kind: HelperKind): number | null {
@@ -11,6 +11,7 @@ export function helperCost(state: GameState, kind: HelperKind): number | null {
   switch (kind) {
     case 'angler': return HELPERS.angler.baseCost * HELPERS.angler.growth ** (state.anglers.length - 1) * discount
     case 'bench': return HELPERS.bench.baseCost * HELPERS.bench.growth ** state.bench * discount
+    case 'bulkTrash': return state.bulkTrash ? null : HELPERS.bulkTrash.cost * discount
     case 'sorter': return state.sorter ? null : HELPERS.sorter.cost * discount
     case 'buyer': return state.buyer ? null : HELPERS.buyer.cost * discount
   }

@@ -46,9 +46,7 @@ button.danger b, button[aria-pressed="true"] b { color: inherit; }
 .ct { font: 12px/1 var(--head); }
 .stack-list { position: absolute; bottom: 100%; left: 10px; z-index: 1; width: min(360px, calc(100% - 20px)); max-height: 240px; overflow-y: auto; padding: 6px; background: var(--paper); border: 3px solid var(--ink); outline: 2px dashed var(--rule); outline-offset: -7px; }
 .stack-list:empty { display: none; }
-.row-catch { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: grab; }
+.row-catch { display: flex; align-items: center; gap: 6px; padding: 2px 4px; }
 .row-catch > span { flex: 1; }
 .row-catch b { font: 12px/1 var(--head); color: var(--rust); }
-.row-catch button.x { padding: 0 5px; margin: 0; box-shadow: none; }
-.trash { display: flex; padding: 6px 8px; border: 2px dashed var(--rule); }
-.trash.over { border-color: var(--rust); background: var(--card-hover); }
+.row-catch button.x { padding: 1px 3px; margin: 0; box-shadow: none; }

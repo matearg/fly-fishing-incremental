@@ -1,5 +1,5 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SEASON, SPECIES, type LicenseUpgradeId, type LocationId } from '../game/data'
-import { setRecipe, sellAll, trash, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/progress/economy'
+import { setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/progress/economy'
 import { flyStats, tieFly } from '../game/fishing/flies'
 import { benchCooldownMs, benchFull } from '../game/fishing/sim'
 import { formatNumber as fmt } from '../game/util/format'
@@ -12,7 +12,7 @@ import { keepOpen, stackBasket, STACK_LIST_MAX, type Stack } from './basket'
 
 type Act = (fn: (s: GameState) => unknown) => void
 
-const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', sorter: 'Junk sorter', buyer: 'Fish buyer' }
+const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer' }
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
 const money = (n: number) => `${n < 0 ? '-' : ''}$${fmt(Math.abs(n))}`
 const pct = (x: number) => `${Math.round(x * 100)}%`
@@ -22,10 +22,11 @@ const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</spa
 const owned = (ico: string, label: string, stamp = 'OWNED') => `<div class="owned">${ico}<span>${label}</span><span class="stamp">${stamp}</span></div>`
 const ticket = (n: number) => `${n}${icon('ui', 'license', UI_ICONS.license, 1)}`
 
-function btn(action: string, id: string, label: string, opts: { disabled?: boolean; pressed?: boolean; expanded?: boolean; cls?: string } = {}): string {
+function btn(action: string, id: string, label: string, opts: { disabled?: boolean; pressed?: boolean; expanded?: boolean; label?: string; cls?: string } = {}): string {
   const pressed = opts.pressed === undefined ? '' : ` aria-pressed="${opts.pressed}"`
   const expanded = opts.expanded === undefined ? '' : ` aria-expanded="${opts.expanded}"`
-  return `<button data-action="${action}" data-id="${id}"${opts.disabled ? ' disabled' : ''}${pressed}${expanded} class="${opts.cls ?? ''}">${label}</button>`
+  const aria = opts.label === undefined ? '' : ` aria-label="${opts.label}"`
+  return `<button data-action="${action}" data-id="${id}"${opts.disabled ? ' disabled' : ''}${pressed}${expanded}${aria} class="${opts.cls ?? ''}">${label}</button>`
 }
 
 // Update a section in place so the button under the cursor is never swapped mid-click
@@ -61,7 +62,6 @@ function benchBar(s: GameState): string {
 
 export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void): { render(): void } {
   let confirmSeason = false
-  let dragging = false
   let stacks: Stack[] = []
   let openStack: string | null = null // key of the one tile whose catches are listed
 
@@ -79,7 +79,6 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       <div data-sec="basketHead"></div>
       <ul class="items" aria-label="Basket" data-sec="basket"></ul>
       <div class="stack-list" data-sec="stackList"></div>
-      <div class="trash" role="img" aria-label="Trash can: drop a catch here to throw it away">${icon('ui', 'trash', UI_ICONS.trash)}</div>
     </footer>`
 
   const sections: Record<string, (s: GameState) => string> = {
@@ -136,12 +135,14 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       const total = s.basket.reduce((a, c) => a + c.value, 0)
       return btn('sell', '', `Sell all (${s.basket.length}) <b>${money(total)}</b>`, { disabled: !s.basket.length })
     },
-    // Closed tiles can't be trashed or dragged whole, so one slip never throws away a stack.
+    // A closed tile can't be thrown away whole, so one slip never loses a stack.
     basket: () => stacks.map(st => `<li>${btn('toggleStack', st.key, `${catchImg(st.kind, st.defId)}${catchName(st.items[0])} <span class="ct">×${st.count} · ${money(st.total)}</span>`, { expanded: st.key === openStack })}</li>`).join(''),
-    stackList: () => {
+    stackList: s => {
       const st = stacks.find(x => x.key === openStack)
       if (!st) return ''
-      return st.items.slice(0, STACK_LIST_MAX).map(c => `<div class="row-catch" draggable="true" data-catch-id="${c.id}"><span>${catchName(c)}</span> <b>${money(c.value)}</b> ${btn('trash', String(c.id), '✕', { cls: 'x' }).replace('>✕', ` aria-label="Trash ${catchName(c)}">✕`)}</div>`).join('')
+      const bin = icon('ui', 'trash', UI_ICONS.trash, 1)
+      return (s.bulkTrash ? btn('trashStack', st.key, `${bin}Trash all ${catchName(st.items[0])} (×${st.count})`, { cls: 'wide' }) : '')
+        + st.items.slice(0, STACK_LIST_MAX).map(c => `<div class="row-catch"><span>${catchName(c)}</span> <b>${money(c.value)}</b> ${btn('trash', String(c.id), bin, { cls: 'x', label: `Trash ${catchName(c)}` })}</div>`).join('')
         + (st.count > STACK_LIST_MAX ? `<p class="label">+${st.count - STACK_LIST_MAX} more</p>` : '')
     },
   }
@@ -155,7 +156,6 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     const focused = document.activeElement as HTMLElement | null
     const fKey = focused?.dataset.action ? `${focused.dataset.action}|${focused.dataset.id}` : null
     for (const [name, fn] of Object.entries(sections)) {
-      if (dragging && (name === 'basket' || name === 'stackList')) continue // never swap the row being dragged
       const html = fn(s)
       if (last[name] === html) continue
       last[name] = html
@@ -186,6 +186,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       case 'licenseSpecies': return act(s => buyLicenseSpecies(s, id))
       case 'sell': return act(s => sellAll(s))
       case 'trash': return act(s => trash(s, Number(id)))
+      case 'trashStack': { const st = stacks.find(x => x.key === id); return st && act(s => trashStack(s, st.kind, st.defId)) }
       case 'toggleStack': openStack = openStack === id ? null : id; return render()
       case 'season':
         if (e.detail > 1) return // a double-click must not skip the confirmation
@@ -193,24 +194,6 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         confirmSeason = false
         return setState(startNewSeason(getState()))
     }
-  })
-
-  const trashCan = root.querySelector<HTMLElement>('.trash')!
-  const footer = root.querySelector<HTMLElement>('.basket')!
-  footer.addEventListener('dragstart', e => {
-    const row = (e.target as HTMLElement).closest<HTMLElement>('[data-catch-id]')
-    if (!row) return
-    dragging = true
-    e.dataTransfer!.setData('text/plain', row.dataset.catchId!)
-  })
-  footer.addEventListener('dragend', () => { dragging = false; trashCan.classList.remove('over'); render() })
-  trashCan.addEventListener('dragover', e => { e.preventDefault(); trashCan.classList.add('over') })
-  trashCan.addEventListener('dragleave', () => trashCan.classList.remove('over'))
-  trashCan.addEventListener('drop', e => {
-    e.preventDefault()
-    trashCan.classList.remove('over')
-    dragging = false
-    act(s => trash(s, Number(e.dataTransfer!.getData('text/plain'))))
   })
 
   render()

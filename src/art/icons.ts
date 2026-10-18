@@ -318,6 +318,25 @@ export const PLACE_ICONS: Record<LocationId, Icon> = {
   ], { s: 0xe8e0d0, D: 0x6b4422, P: 0x9a6a3a }),
 }
 
+// A metal bin: the basket's trash button and the Bulk trash helper.
+const TRASH_CAN: Icon = {
+  grid: [
+    '......oooo......',
+    '......o..o......',
+    '..oooooooooooo..',
+    '..oMMMMMMMMMMo..',
+    '..oooooooooooo..',
+    '...ommMmmMmmo...',
+    '...ommMmmMmmo...',
+    '...ommMmmMmmo...',
+    '...ommMmmMmmo...',
+    '...ommMmmMmmo...',
+    '...ommMmmMmmo...',
+    '...oooooooooo...',
+  ],
+  palette: { o: O, m: 0x7a8088, M: 0xb0b6be },
+}
+
 export const HELPER_ICONS: Record<HelperKind, Icon> = {
   angler: {
     grid: [
@@ -361,6 +380,7 @@ export const HELPER_ICONS: Record<HelperKind, Icon> = {
     ],
     palette: { o: O, j: 0x8a8e96, J: 0xc8ccd4, h: 0x8a3a20, b: 0x7a5230, B: 0x9a7248 },
   },
+  bulkTrash: TRASH_CAN,
   sorter: {
     grid: [
       _,
@@ -560,23 +580,7 @@ export const UI_ICONS: Record<UiIconId, Icon> = {
     ],
     palette: { o: O, L: 0x9a7248, w: 0xb08850, W: 0xd0a870 },
   },
-  trash: {
-    grid: [
-      '......oooo......',
-      '......o..o......',
-      '..oooooooooooo..',
-      '..oMMMMMMMMMMo..',
-      '..oooooooooooo..',
-      '...ommMmmMmmo...',
-      '...ommMmmMmmo...',
-      '...ommMmmMmmo...',
-      '...ommMmmMmmo...',
-      '...ommMmmMmmo...',
-      '...ommMmmMmmo...',
-      '...oooooooooo...',
-    ],
-    palette: { o: O, m: 0x7a8088, M: 0xb0b6be },
-  },
+  trash: TRASH_CAN,
 }
 
 export const iconBitmap = (icon: Icon): Bitmap => paint(icon.grid, icon.palette)

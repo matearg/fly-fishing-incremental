@@ -30,6 +30,14 @@ describe('helper costs', () => {
     expect(buyHelper(s, 'sorter')).toBe(false)
     expect(helperCost(s, 'sorter')).toBeNull()
   })
+  it('bulk trash is a one-off that comes before the sorter', () => {
+    const s = newGame()
+    expect(helperCost(s, 'bulkTrash')!).toBeLessThan(helperCost(s, 'sorter')!)
+    s.money = 1e9
+    expect(buyHelper(s, 'bulkTrash')).toBe(true)
+    expect(s.bulkTrash).toBe(true)
+    expect(helperCost(s, 'bulkTrash')).toBeNull()
+  })
 })
 
 describe('helpers in tick', () => {

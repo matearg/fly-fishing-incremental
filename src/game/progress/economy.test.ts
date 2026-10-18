@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sellAll, trash, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
+import { sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
 import { newGame, type CatchItem } from '../state'
 import { PATTERNS, MATERIALS } from '../data'
 
@@ -29,6 +29,17 @@ describe('selling and trash', () => {
     expect(s.basket.map(c => c.id)).toEqual([2])
     expect(s.money).toBe(0)
     expect(trash(s, 99)).toBe(false)
+  })
+  it('trashStack needs bulk trash and removes only that kind and species', () => {
+    const s = newGame()
+    s.basket = [item(1, 2), { ...item(2, 3), defId: 'y' }, item(3, -1, 'junk'), item(4, 2)]
+    expect(trashStack(s, 'fish', 'x')).toBe(false)
+    expect(s.basket).toHaveLength(4)
+    s.bulkTrash = true
+    expect(trashStack(s, 'fish', 'x')).toBe(true)
+    expect(s.basket.map(c => c.id)).toEqual([2, 3])
+    expect(s.money).toBe(0)
+    expect(trashStack(s, 'fish', 'x')).toBe(false)
   })
 })
 
