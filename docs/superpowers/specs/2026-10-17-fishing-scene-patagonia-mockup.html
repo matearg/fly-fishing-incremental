@@ -1,0 +1,83 @@
+<!-- Brainstorm mockup for the Patagonia direction (approved as direction; colours settle at art review stop 1). Open directly in a browser. -->
+<script>function toggleSelect() {}</script>
+<h2>Patagonia, one place at a time</h2>
+<p class="subtitle">A first pass at mood and palette. The places get wilder and closer to the Andes as you unlock them. Click the ones that feel right.</p>
+
+<div class="cards" data-multiselect id="cards"></div>
+
+<div class="section">
+  <h3>What I borrowed from Patagonia</h3>
+  <ul>
+    <li><b>Andes on the horizon:</b> snow-capped peaks, far away at the Creek and filling the sky by the lakes.</li>
+    <li><b>Steppe:</b> golden coirón grass tufts and ochre cliffs (bardas) along the rivers.</li>
+    <li><b>Lupines:</b> the purple and pink spikes along the creeks.</li>
+    <li><b>Poplar rows</b> in the river valleys, and <b>lenga forest</b> around the mountain lake.</li>
+    <li><b>Cobble beaches</b> instead of sand, and clear blue to turquoise glacial water.</li>
+  </ul>
+</div>
+
+<script>
+(() => {
+  const hex = n => '#' + n.toString(16).padStart(6, '0')
+  const mix = (a, b, k) => { const c = i => Math.round(((a >> i) & 255) * (1 - k) + ((b >> i) & 255) * k); return (c(16) << 16) | (c(8) << 8) | c(0) }
+  const px = (ctx, c, x, y, w = 1, h = 1) => { ctx.fillStyle = typeof c === 'number' ? hex(c) : c; ctx.fillRect(x, y, w, h) }
+  const W = 240, H = 135, WY = 62
+  let seed = 1; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+
+  function sky(ctx, top, bot) { for (let y = 0; y < WY; y++) px(ctx, mix(top, bot, y / WY), 0, y, W, 1) }
+  function peaks(ctx, base, height, rock, snow, step) {
+    for (let x = 0; x < W; x++) {
+      const h = Math.round(height * (0.55 + 0.25 * Math.sin(x * 0.045 * step + 1) + 0.2 * Math.abs(Math.sin(x * 0.11 * step))))
+      px(ctx, rock, x, base - h, 1, h)
+      const cap = Math.max(0, Math.round(h - height * 0.62))
+      if (cap) px(ctx, snow, x, base - h, 1, cap + (x % 3 === 0 ? 1 : 0))
+    }
+  }
+  function hills(ctx, base, height, c, f) { for (let x = 0; x < W; x++) { const h = Math.round(height * (0.6 + 0.4 * Math.sin(x * f + 2))); px(ctx, c, x, base - h, 1, h) } }
+  function bardas(ctx, base, height) {
+    for (let x = 0; x < W; x++) {
+      const h = Math.round(height * (0.8 + 0.2 * Math.sin(x * 0.03)) - (x % 47 < 5 ? 6 : 0))
+      for (let y = 0; y < h; y++) px(ctx, [0xc89a5a, 0xb07a44, 0xd8b070, 0x9a6a3a][Math.floor(y / 4) % 4], x, base - h + y)
+    }
+  }
+  function poplars(ctx, base, xs) { for (const x of xs) { px(ctx, 0x2f5a24, x, base - 22, 4, 20); px(ctx, 0x3f7a2e, x + 1, base - 24, 2, 22); px(ctx, 0x4a3a24, x + 1, base - 2, 2, 2) } }
+  function lengas(ctx, base, n, colors) { for (let i = 0; i < n; i++) { const x = (i * 9 + (i * 7) % 5) % W, h = 8 + (i * 5) % 7; px(ctx, colors[i % colors.length], x, base - h, 7, h); px(ctx, colors[(i + 1) % colors.length], x + 2, base - h - 2, 3, 2) } }
+  function water(ctx, top, bot, deep) { for (let y = WY; y < H; y++) { const k = (y - WY) / (H - WY); px(ctx, mix(mix(top, bot, k), deep, k * 0.5), 0, y, W, 1) } for (let x = 0; x < W; x += 7) px(ctx, 0xffffff, x + (x % 3), WY, 3, 1) }
+  function bank(ctx, ground, dirt, w) { px(ctx, ground, 0, WY - 8, w, 3); px(ctx, dirt, 0, WY - 5, w, H) }
+  function cobbles(ctx, x0, w, y0, h) { for (let i = 0; i < w * h / 10; i++) { const x = x0 + Math.floor(rnd() * w), y = y0 + Math.floor(rnd() * h); px(ctx, [0x8a8f96, 0xa8a49a, 0x6e737a, 0xc0b8a8][i % 4], x, y, 3, 2) } }
+  function coiron(ctx, xs, y) { for (const x of xs) { px(ctx, 0xc8a84a, x, y - 3, 1, 3); px(ctx, 0xd8bc5a, x + 1, y - 4, 1, 4); px(ctx, 0xb0903a, x + 2, y - 3, 1, 3) } }
+  function lupines(ctx, xs, y) { xs.forEach((x, i) => { const c = [0x8a4ab0, 0xd06aa8, 0x6a5ac8][i % 3]; px(ctx, 0x3c6e25, x, y - 2, 1, 2); px(ctx, c, x, y - 7, 1, 5); px(ctx, c, x - 1, y - 5, 1, 2); px(ctx, c, x + 1, y - 5, 1, 2) }) }
+  function anglers(ctx, y, x1, x2) { for (const [x, c] of [[x1, 0xd9534f], [x2, 0x4f8fe0]]) { px(ctx, 0x10161c, x - 1, y - 19, 8, 19); px(ctx, c, x, y - 12, 6, 8); px(ctx, 0x3a4a5a, x, y - 4, 6, 4); px(ctx, 0xe8c8a0, x, y - 18, 6, 6); px(ctx, 0x7a4a22, x + 1, y - 21, 4, 2) } }
+
+  const PLACES = [
+    { id: 'creek', name: 'Creek', note: 'A steppe arroyo: coirón, lupines, the Andes far away', draw(ctx) {
+      sky(ctx, 0x5aa0e0, 0xcfe6f4); peaks(ctx, WY - 8, 16, 0x7a8aa0, 0xf4f8fc, 1); hills(ctx, WY - 2, 10, 0xb8a060, 0.03)
+      water(ctx, 0x6ab8d0, 0x3a90b0, 0x1a4a62); bank(ctx, 0xb8a050, 0x7a5a34, 58); cobbles(ctx, 52, 8, WY - 5, 70)
+      coiron(ctx, [3, 12, 40], WY - 8); lupines(ctx, [26, 30, 34, 48], WY - 8); anglers(ctx, WY - 8, 10, 30) } },
+    { id: 'river', name: 'River', note: 'Clear water over cobbles, ochre bardas, a row of poplars', draw(ctx) {
+      sky(ctx, 0x4a96dc, 0xd4e8f4); peaks(ctx, WY - 14, 18, 0x7a8aa0, 0xf4f8fc, 0.8); bardas(ctx, WY - 2, 14); poplars(ctx, WY - 2, [150, 158, 166, 174, 182, 190])
+      water(ctx, 0x58aacc, 0x2f84aa, 0x123c58); px(ctx, 0x9a948a, 0, WY - 8, 58, 3); px(ctx, 0x7a6a50, 0, WY - 5, 58, H); cobbles(ctx, 0, 58, WY - 8, 74)
+      coiron(ctx, [6, 46], WY - 8); anglers(ctx, WY - 8, 12, 30) } },
+    { id: 'bigRiver', name: 'Big River', note: 'Wide and slow, tall bardas, willows and driftwood', draw(ctx) {
+      sky(ctx, 0x4a90d8, 0xe0e8ec); bardas(ctx, WY - 2, 26); poplars(ctx, WY - 2, [30, 36, 42])
+      water(ctx, 0x3f88a8, 0x22607e, 0x0c2a40); bank(ctx, 0x6a7a3a, 0x6b5a3a, 60); px(ctx, 0x3a2614, 40, WY - 11, 18, 4); px(ctx, 0x7a5230, 41, WY - 10, 16, 2)
+      for (const x of [4, 20]) { px(ctx, 0x5a8a3a, x, WY - 18, 10, 10); px(ctx, 0x4a3a24, x + 4, WY - 9, 2, 2) } anglers(ctx, WY - 8, 14, 30) } },
+    { id: 'mountainLake', name: 'Mountain Lake', note: 'Turquoise glacial water, lenga forest, peaks up close', draw(ctx) {
+      sky(ctx, 0x3a86d4, 0xdcecf6); peaks(ctx, WY - 4, 44, 0x5a6478, 0xffffff, 1.4); lengas(ctx, WY, 30, [0x1f4a2a, 0x2f6a3a, 0xa8402a, 0x2a5a30])
+      water(ctx, 0x3ac0c0, 0x1f94a8, 0x0a4058); bank(ctx, 0x4a7a4a, 0x5a5a5a, 56); for (const x of [6, 30, 44]) { px(ctx, 0x4a4f55, x, WY - 12, 9, 5); px(ctx, 0x8a9097, x + 1, WY - 11, 7, 3) }
+      lengas(ctx, WY - 8, 2, [0xa8402a, 0x1f4a2a]); anglers(ctx, WY - 8, 18, 34) } },
+    { id: 'greatLake', name: 'Great Lake', note: 'Deep blue, the Andes filling the sky, a long dock', draw(ctx) {
+      sky(ctx, 0x2a78cc, 0xd8eaf6); peaks(ctx, WY - 2, 52, 0x4a5468, 0xffffff, 0.7); lengas(ctx, WY, 26, [0x1f3a2a, 0x2a4a34])
+      water(ctx, 0x2a70b8, 0x18488a, 0x061830); px(ctx, 0x9a948a, 0, WY - 6, 28, 3); px(ctx, 0x7a6a50, 0, WY - 3, 30, H); cobbles(ctx, 0, 28, WY - 6, 72)
+      px(ctx, 0x6b4422, 22, WY - 7, 56, 1); px(ctx, 0x9a6a3a, 22, WY - 6, 56, 2); px(ctx, 0x6b4422, 22, WY - 4, 56, 1); for (const x of [40, 58, 76]) px(ctx, 0x6b4422, x, WY - 3, 2, 34)
+      px(ctx, 0x1f4a2a, 4, WY - 22, 6, 16); px(ctx, 0x2f6a3a, 5, WY - 25, 4, 4); anglers(ctx, WY - 7, 48, 64) } },
+  ]
+
+  const host = document.getElementById('cards')
+  for (const p of PLACES) {
+    host.insertAdjacentHTML('beforeend', `<div class="card" data-choice="${p.id}" onclick="toggleSelect(this)"><div class="card-image"><canvas id="c-${p.id}" width="${W}" height="${H}" style="width:100%;image-rendering:pixelated;display:block"></canvas></div><div class="card-body"><h3>${p.name}</h3><p>${p.note}</p></div></div>`)
+    seed = p.name.length * 31 + 7
+    p.draw(document.getElementById('c-' + p.id).getContext('2d'))
+  }
+})()
+</script>
