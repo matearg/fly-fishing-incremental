@@ -10,9 +10,9 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec and plan deleted once done; in git history up to `3a27cc7` (spec) and `c8cc002` (plan) |
 | 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec, mockup and plans deleted once done; in git history up to `3a27cc7` |
 | 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar, bulk trash) | **Done**, merged to `develop` (`cb6c9a7`). Spec and plan deleted once done; in git history up to `cb6c9a7` |
-| 5 | Cast animation, canvas fill without bars, fixed 3-row basket, pixel-font HUD, tied-fly sprite on the line | **Built** on `feat/cast-and-view`, not merged yet. Spec `docs/superpowers/specs/2026-10-18-cast-and-view-design.md`, plan `docs/superpowers/plans/2026-10-18-cast-and-view.md` |
-| 6 | Sounds: synthesized fishing, menu, panel and purchase sounds, water ambience per place, volume/mute row in Settings | **Built** on `feat/sounds`, not merged yet. Spec `docs/superpowers/specs/2026-10-18-sounds-design.md`, plan `docs/superpowers/plans/2026-10-18-sounds.md` |
-| 7 | Background music: a calm chiptune tune for the title and each place, never audibly looping, own volume row in Settings | **Built** on `feat/music` (cut from `feat/sounds`), not merged yet. Spec `docs/superpowers/specs/2026-10-18-music-design.md`, plan `docs/superpowers/plans/2026-10-18-music.md` |
+| 5 | Cast animation, canvas fill without bars, fixed 3-row basket, pixel-font HUD, tied-fly sprite on the line | **Done**, merged to `develop` (`c2a5e77`), PR #7 to `master`. Spec and plan deleted once done; in git history up to `f6fa4ee` |
+| 6 | Sounds: synthesized fishing, menu, panel and purchase sounds, water ambience per place, volume/mute row in Settings | **Done**, merged to `develop` (`f6fa4ee`), PR #7 to `master`. Spec and plan deleted once done; in git history up to `f6fa4ee` |
+| 7 | Background music: a calm chiptune tune for the title and each place, never audibly looping, own volume row in Settings | **Done**, merged to `develop` (`f6fa4ee`), PR #7 to `master`. Spec and plan deleted once done; in git history up to `f6fa4ee` |
 
 ## Decisions already made (carry into pieces 3 and 4)
 
@@ -72,4 +72,4 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - **Setting:** `flyfishing-music`, default 50%, row right below the sound row with the `NOTES` icon.
 
 ## How to resume
-Pieces 1–4 are done; piece 5 is built on `feat/cast-and-view`, piece 6 on `feat/sounds` and piece 7 on `feat/music` (which contains piece 6), all waiting to be merged into `develop`. Shipping still means merging `develop` into `master`.
+All seven pieces are done and on `develop`; PR #7 ships pieces 5–7 to `master`. No further piece is planned. Open leftovers: piece 5's deferred minors, piece 6's not-checked-live list, and the pacing slack (season 1 at 49.98 of 50 sim-min). A new piece starts with a brainstorm, then a spec and plan as before.
