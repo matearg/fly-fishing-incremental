@@ -6,7 +6,7 @@ import { basicRecipe, flyStats, tieFly } from './fishing/flies'
 import { rollCatch } from './fishing/catch'
 import { castPlayer, reelPlayer, tick } from './fishing/sim'
 import { sellAll } from './progress/economy'
-import { TIMING } from './data'
+import { RELEASE, TIMING } from './data'
 
 describe('save', () => {
   it('round-trips a mid-game state', () => {
@@ -114,5 +114,20 @@ describe('save with a pending catch', () => {
     expect(l.anglers[0]).toMatchObject({ phase: 'idle', pending: null })
     expect(() => tick(l, 100, Math.random)).not.toThrow()
     expect(l.basket).toHaveLength(0)
+  })
+})
+
+describe('catch & release fields', () => {
+  it('old saves get the new fields; the bonus is clamped', () => {
+    const old = JSON.parse(serialize(newGame()))
+    delete old.release; delete old.releaseBonus; delete old.buyerPaused
+    const s = parseSave(JSON.stringify(old))!
+    expect([s.release, s.releaseBonus, s.buyerPaused]).toEqual([false, 0, false])
+    const withBonus = (b: unknown) => parseSave(JSON.stringify({ ...old, releaseBonus: b }))!.releaseBonus
+    expect(withBonus(NaN)).toBe(0)
+    expect(withBonus(-1)).toBe(0)
+    expect(withBonus(50)).toBe(RELEASE.cap)
+    expect(withBonus('0.5')).toBe(0)
+    expect(withBonus(0.4)).toBe(0.4)
   })
 })

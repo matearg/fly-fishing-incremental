@@ -26,3 +26,9 @@ export function buyHelper(state: GameState, kind: HelperKind): boolean {
   else state[kind] = true
   return true
 }
+
+export function toggleBuyerPause(state: GameState): boolean {
+  if (!state.buyer) return false
+  state.buyerPaused = !state.buyerPaused
+  return true
+}

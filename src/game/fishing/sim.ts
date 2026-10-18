@@ -60,7 +60,7 @@ export function tick(state: GameState, dtMs: number, rand: () => number): void {
     state.benchTimerMs = 0
     tieFly(state) // an unaffordable tie is skipped silently
   }
-  if (state.buyer && (state.buyerTimerMs += dt) >= TIMING.buyerIntervalMs) {
+  if (state.buyer && !state.buyerPaused && (state.buyerTimerMs += dt) >= TIMING.buyerIntervalMs) {
     state.buyerTimerMs -= TIMING.buyerIntervalMs
     sellAll(state)
   }

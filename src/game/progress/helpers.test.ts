@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { helperCost, buyHelper } from './helpers'
+import { helperCost, buyHelper, toggleBuyerPause } from './helpers'
 import { benchCooldownMs, tick } from '../fishing/sim'
 import { newGame, type GameState } from '../state'
 import { HELPERS, LICENSE_UPGRADES, PATTERNS, TIMING } from '../data'
@@ -89,5 +89,21 @@ describe('helpers in tick', () => {
     run(s, TIMING.buyerIntervalMs + 100)
     expect(s.money).toBe(10)
     expect(s.basket).toHaveLength(0)
+  })
+})
+
+describe('buyer pause', () => {
+  it('a paused buyer neither sells nor advances its timer', () => {
+    const s = newGame(); s.buyer = true
+    expect(toggleBuyerPause(s)).toBe(true); expect(s.buyerPaused).toBe(true)
+    s.basket = [{ id: 1, kind: 'fish', defId: 'dace', value: 5, size: 1 }]
+    run(s, TIMING.buyerIntervalMs * 2)
+    expect(s.basket).toHaveLength(1); expect(s.buyerTimerMs).toBe(0)
+    toggleBuyerPause(s); run(s, TIMING.buyerIntervalMs + 100)
+    expect(s.basket).toHaveLength(0)
+  })
+  it('no buyer, no pause', () => {
+    const s = newGame()
+    expect(toggleBuyerPause(s)).toBe(false); expect(s.buyerPaused).toBe(false)
   })
 })

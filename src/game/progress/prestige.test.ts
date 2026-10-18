@@ -66,3 +66,12 @@ describe('license shop', () => {
     expect(buyLicenseSpecies(s, leg.id)).toBe(false)
   })
 })
+
+describe('New Season and catch & release', () => {
+  it('a new season starts unpaused with no bonus', () => {
+    const s = newGame()
+    s.buyer = true; s.buyerPaused = true; s.releaseBonus = 0.4; s.release = true
+    const n = startNewSeason(s)
+    expect([n.buyerPaused, n.releaseBonus, n.release]).toEqual([false, 0, false])
+  })
+})
