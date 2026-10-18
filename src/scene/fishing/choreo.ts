@@ -1,6 +1,6 @@
 // Pure timing for the fishing scene's animations; the scene reads sim state and asks these what to draw.
-import { placeSpecies } from '../game/catch'
-import type { Angler, GameState, Pending } from '../game/state'
+import { placeSpecies } from '../../game/fishing/catch'
+import type { Angler, GameState, Pending } from '../../game/state'
 
 export const APPROACH_MS = 2000 // the chosen fish's notice + swim to the fly, ending at the bite
 export const NOTICE_SHARE = 0.4 // first part of the approach: stop and turn toward the fly

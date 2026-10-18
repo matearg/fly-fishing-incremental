@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { tick, castPlayer, reelPlayer } from './sim'
-import { newGame, type GameState } from './state'
-import { PATTERNS, SPECIES, TIMING } from './data'
-import { travel } from './economy'
-import { seqRand } from './testutil'
+import { newGame, type GameState } from '../state'
+import { PATTERNS, SPECIES, TIMING } from '../data'
+import { travel } from '../progress/economy'
+import { seqRand } from '../util/testutil'
 
 const r = seqRand(0.1, 0.3, 0.5)
 const run = (s: GameState, ms: number) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }

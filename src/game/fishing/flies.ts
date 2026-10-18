@@ -1,7 +1,7 @@
-import { MATERIALS, PATTERNS } from './data'
-import { spend } from './economy'
-import { licenseEffects } from './license'
-import type { GameState, Recipe } from './state'
+import { MATERIALS, PATTERNS } from '../data'
+import { spend } from '../progress/economy'
+import { licenseEffects } from '../progress/license'
+import type { GameState, Recipe } from '../state'
 
 export interface FlyStats { maxDepth: number; wear: number; oddsBonus: number; sizeBonus: number; tieCost: number }
 

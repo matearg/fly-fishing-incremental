@@ -1,4 +1,4 @@
-import { paint, type Bitmap, type Grid } from './pixels'
+import { paint, type Bitmap, type Grid } from '../pixels'
 
 // Side-view junk that drifts into the line. One entry per JUNK id in data.ts.
 const O = 0x10161c

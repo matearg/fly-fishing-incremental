@@ -1,4 +1,4 @@
-import { LICENSE_UPGRADES, type LicenseUpgradeId } from './data'
+import { LICENSE_UPGRADES, type LicenseUpgradeId } from '../data'
 
 export interface LicenseEffects { startPatterns: number; extraWear: number; valueMult: number; helperDiscount: number; startLocation: number }
 

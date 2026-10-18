@@ -1,11 +1,11 @@
 // Dev-only art review page: draws baked bitmaps at 2× so the user can approve them.
 import { JUNK, LOCATIONS, SPECIES } from './game/data'
-import { hashString } from './game/rand'
+import { hashString } from './game/util/rand'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
 import { blank, blit, mix, paint, type Bitmap } from './art/pixels'
-import { FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/figures'
-import { fishBitmaps, fishSideBitmaps } from './art/fish'
-import { junkBitmap } from './art/junk'
+import { FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
+import { fishBitmaps, fishSideBitmaps } from './art/sprites/fish'
+import { junkBitmap } from './art/sprites/junk'
 
 const W = 480, H = 270, SCALE = 2
 const HORIZON_H = 110 // waterline of the side view

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { licensesForSeason, canStartSeason, startNewSeason, licenseUpgradeCost, buyLicenseUpgrade, buyLicenseSpecies } from './prestige'
-import { newGame } from './state'
-import { LICENSE_UPGRADES, SEASON, SPECIES } from './data'
+import { newGame } from '../state'
+import { LICENSE_UPGRADES, SEASON, SPECIES } from '../data'
 
 describe('New Season', () => {
   it('licenses = floor(sqrt(earnings / divisor))', () => {

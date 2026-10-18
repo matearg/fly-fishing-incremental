@@ -1,5 +1,5 @@
 import { LICENSE_UPGRADES, LOCATIONS, PATTERNS, type LicenseUpgradeId, type LocationId } from './data'
-import { licenseEffects } from './license'
+import { licenseEffects } from './progress/license'
 
 export interface Fly { patternId: string; materialIds: string[]; wearLeft: number }
 export type Phase = 'idle' | 'waiting' | 'bite' | 'reeling'

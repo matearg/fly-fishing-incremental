@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { placeSpecies, rollCatch } from './catch'
-import { newGame, type Fly } from './state'
-import { LICENSE_UPGRADES, LOCATIONS, SPECIES, TIERS } from './data'
-import { seqRand, lcg } from './testutil'
+import { newGame, type Fly } from '../state'
+import { LICENSE_UPGRADES, LOCATIONS, SPECIES, TIERS } from '../data'
+import { seqRand, lcg } from '../util/testutil'
 
 const fly = (patternId: string, materialIds: string[] = []): Fly => ({ patternId, materialIds, wearLeft: 1 })
 const depthOf = (id: string) => SPECIES.find(s => s.id === id)!.depth

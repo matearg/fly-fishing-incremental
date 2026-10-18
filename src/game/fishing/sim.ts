@@ -1,8 +1,8 @@
 import { rollCatch } from './catch'
-import { BENCH_SPEEDUP, TIMING } from './data'
-import { sellAll } from './economy'
+import { BENCH_SPEEDUP, TIMING } from '../data'
+import { sellAll } from '../progress/economy'
 import { basicRecipe, tieFly } from './flies'
-import type { Angler, GameState } from './state'
+import type { Angler, GameState } from '../state'
 
 function pick(state: GameState, a: Angler, rand: () => number): void {
   a.pending = { ...rollCatch(state, a.fly!, rand), location: state.location }

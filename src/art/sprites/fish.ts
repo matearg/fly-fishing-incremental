@@ -1,5 +1,5 @@
-import { SPECIES, type Tier } from '../game/data'
-import { paint, type Bitmap, type Grid } from './pixels'
+import { SPECIES, type Tier } from '../../game/data'
+import { paint, type Bitmap, type Grid } from '../pixels'
 
 // Top-down fish facing right: tail fan, oval body with a darker back stripe, two eyes.
 // Frame 0/1 swing the tail to either side for the wiggle.

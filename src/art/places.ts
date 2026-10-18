@@ -1,5 +1,5 @@
 import type { LocationId } from '../game/data'
-import { lcg } from '../game/rand'
+import { lcg } from '../game/util/rand'
 import { blank, blit, mix, paint, type Bitmap, type Grid } from './pixels'
 
 export interface Decor { grid: Grid; palette: Record<string, number>; perBank: number }

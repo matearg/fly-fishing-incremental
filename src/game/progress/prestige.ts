@@ -1,5 +1,5 @@
-import { LICENSE_UPGRADES, SEASON, SPECIES, type LicenseUpgradeId } from './data'
-import { newGame, type GameState } from './state'
+import { LICENSE_UPGRADES, SEASON, SPECIES, type LicenseUpgradeId } from '../data'
+import { newGame, type GameState } from '../state'
 
 export function licensesForSeason(state: GameState): number {
   return Math.floor(Math.sqrt(state.seasonEarnings / SEASON.licenseDivisor))

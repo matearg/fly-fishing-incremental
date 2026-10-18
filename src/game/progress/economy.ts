@@ -1,5 +1,5 @@
-import { LOCATIONS, MATERIALS, PATTERNS, type LocationId } from './data'
-import type { GameState, Recipe } from './state'
+import { LOCATIONS, MATERIALS, PATTERNS, type LocationId } from '../data'
+import type { GameState, Recipe } from '../state'
 
 export function spend(state: GameState, cost: number): boolean {
   if (state.money < cost) return false

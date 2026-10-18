@@ -1,4 +1,4 @@
-import { paint, type Bitmap, type Grid } from './pixels'
+import { paint, type Bitmap, type Grid } from '../pixels'
 
 export type Pose = 'idle' | 'cast' | 'reel'
 export type FigureKind = 'angler' | 'helper'
