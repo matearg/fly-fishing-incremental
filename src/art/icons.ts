@@ -423,7 +423,27 @@ export const HELPER_ICONS: Record<HelperKind, Icon> = {
     ],
     palette: { o: O, f: 0x8aa8b8, F: 0xc8d8e0, l: 0xb08850, L: 0x8a6a3a },
   },
-  release: TRASH_CAN, // placeholder until Task 6's icon is approved
+  release: { // a fish diving back into the water
+    grid: [
+      '..oo............',
+      '..oao...........',
+      '...oaoooo.......',
+      'oooaaaaaaoo.....',
+      'oaaaabaaaaao....',
+      '.oooobbbaaaao...',
+      '.....oBbbbaaao..',
+      '......oBBbbbao..',
+      '.......oBBbbeao.',
+      '........oBBBbbo.',
+      '.........oBBBo..',
+      '..W..W....oBo.W.',
+      '.WWWWWWWWWoWoWW.',
+      '..wwwwwwwwwwwww.',
+      '...wwwwwwwwwww..',
+      '................',
+    ],
+    palette: { o: O, a: 0x4a6a3a, b: 0x8aa860, B: 0xd8d0a0, e: 0x101010, w: 0x3a7ab0, W: 0x8ac0e0 },
+  },
 }
 
 const GOLD = { y: 0xd8a830, Y: 0xf8e080, d: 0xa07018 }
