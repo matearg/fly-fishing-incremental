@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { LOCATIONS, SPECIES, TIERS } from '../game/data'
-import { FISH_COLORS, FISH_MOUTH, FISH_SIDE, FISH_TOP, fishBitmaps, fishColors, fishSideBitmaps } from './fish'
+import { FISH_COLORS, FISH_MOUTH, FISH_SIDE, FISH_TOP, fishBitmaps, fishColors, fishMouth, fishSideBitmaps, fishSideGrids, fishTopGrids } from './fish'
 
 describe('fish art', () => {
   it('colours exist for exactly the current species', () => {
@@ -45,5 +45,24 @@ describe('fish art', () => {
   })
   it('an unknown style falls back to default colours', () => {
     expect(fishColors('dace', 'nope')).toBe(fishColors('dace'))
+  })
+  it('El Cuero and Nahuelito have their own shapes in both views', () => {
+    for (const id of ['lakeSturgeon', 'ghostSturgeon']) {
+      expect(fishSideGrids(id), id).not.toEqual(FISH_SIDE.legendary)
+      expect(fishTopGrids(id), id).not.toEqual(FISH_TOP.legendary)
+      for (const [a, b] of [fishSideGrids(id), fishTopGrids(id)]) {
+        expect([b.length, b[0].length], id).toEqual([a.length, a[0].length])
+        for (const row of [...a, ...b]) expect(row.length, id).toBe(a[0].length)
+        expect(a, id).not.toEqual(b) // the two frames animate
+      }
+    }
+    expect(fishSideGrids('lakeSturgeon')).not.toEqual(fishSideGrids('ghostSturgeon'))
+  })
+  it('every species has a mouth on an opaque pixel of its side frame 0', () => {
+    for (const sp of SPECIES) {
+      const [x, y] = fishMouth(sp.id), g = fishSideGrids(sp.id)[0]
+      expect(g[y]?.[x], sp.id).toBeDefined()
+      expect(g[y][x], sp.id).not.toBe('.')
+    }
   })
 })
