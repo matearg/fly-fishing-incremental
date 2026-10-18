@@ -58,6 +58,12 @@ describe('cast', () => {
     expect(dist(pts.at(-1)!, back)).toBeLessThanOrEqual(1)
     for (const p of pts) expect(toSegment(p, tip, back)).toBeLessThanOrEqual(1)
   })
+  it('keeps the fly in place when the rod swings forward', () => {
+    const castTip: Pt = [126, 96] // the rod tip moves with the pose; the line behind must not
+    const before = castLine(BACK_MS + STRAIGHT_MS - 1, tip, land)!.at(-1)!
+    const after = castLine(BACK_MS + STRAIGHT_MS, castTip, land, tip)!.at(-1)!
+    expect(dist(before, after)).toBeLessThanOrEqual(1)
+  })
   it('lands the fly on the water, then ends', () => {
     expect(dist(castLine(CAST_MS - 1, tip, land)!.at(-1)!, land)).toBeLessThanOrEqual(2)
     expect(castLine(CAST_MS, tip, land)).toBeNull()

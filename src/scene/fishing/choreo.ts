@@ -35,8 +35,9 @@ export function castPose(sinceMs: number): 'back' | 'cast' | null {
 
 // The cast line from the rod tip, as a polyline ending at the fly; null once the fly is down.
 // The loop: tip → front L → bulge → lower leg → fly, with the lower leg `g` below the upper.
-export function castLine(sinceMs: number, tip: Pt, land: Pt): Pt[] | null {
-  const B: Pt = [tip[0] - BACK_LEN, tip[1] + 2]
+// `tip` is the current pose's rod tip; the line behind hangs off the back pose's tip, so it stays put when the rod swings forward.
+export function castLine(sinceMs: number, tip: Pt, land: Pt, backTip: Pt = tip): Pt[] | null {
+  const B: Pt = [backTip[0] - BACK_LEN, backTip[1] + 2]
   const loop = (front: Pt, g: number, dir: number, fly: Pt): Pt[] =>
     [tip, front, [front[0] + dir * g / 3, front[1] + g / 2], [front[0], front[1] + g], fly]
   if (sinceMs < BACK_MS) {

@@ -156,13 +156,13 @@ export class FishingScene extends Phaser.Scene {
   }
 
   // The line from the rod tip to the angler's fly (its last point), or null while no line is out.
-  private linePos(s: GameState, a: Angler, tr: Track, tip: Pt, landX: number, place: Place, t: number): Pt[] | null {
-    const fly = this.flyPos(s, a, tr, tip, landX, place, t)
-    return fly && (a.phase === 'waiting' && castLine(tr.castMs - a.timerMs, tip, [landX, WATER_Y]) || [tip, fly])
+  private linePos(s: GameState, a: Angler, tr: Track, tip: Pt, backTip: Pt, landX: number, place: Place, t: number): Pt[] | null {
+    const fly = this.flyPos(s, a, tr, tip, backTip, landX, place, t)
+    return fly && (a.phase === 'waiting' && castLine(tr.castMs - a.timerMs, tip, [landX, WATER_Y], backTip) || [tip, fly])
   }
 
   // Where the angler's fly is, or null while no line is out.
-  private flyPos(s: GameState, a: Angler, tr: Track, tip: Pt, landX: number, place: Place, t: number): Pt | null {
+  private flyPos(s: GameState, a: Angler, tr: Track, tip: Pt, backTip: Pt, landX: number, place: Place, t: number): Pt | null {
     if (a.phase === 'idle' || !a.fly) return null
     const depthY = this.depthY(Math.min(flyStats(s, a.fly).maxDepth, place.maxDepth), place)
     if (a.phase === 'bite') return [landX, depthY + Math.sin(t * 25) * 2] // the tug
@@ -171,7 +171,7 @@ export class FishingScene extends Phaser.Scene {
       return [lerp(landX, Math.max(tip[0], place.waterLeft + 6), k), lerp(depthY, WATER_Y + 2, k)]
     }
     const since = tr.castMs - a.timerMs
-    if (since < CAST_MS) return castLine(since, tip, [landX, WATER_Y])!.at(-1)!
+    if (since < CAST_MS) return castLine(since, tip, [landX, WATER_Y], backTip)!.at(-1)!
     if (since < CAST_MS + SINK_MS) return [landX, lerp(WATER_Y, depthY, (since - CAST_MS) / SINK_MS)]
     return [landX, depthY + Math.sin(t * 3.3) * 1.5] // bobbing
   }
@@ -254,14 +254,16 @@ export class FishingScene extends Phaser.Scene {
       const hx = place.helperX - BODY_X // sprite left; helperX is where the body starts
       this.helper.setTexture(`fig:helper:${pose}`).setPosition(hx, figY)
       const tip: [number, number] = [hx + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
-      this.drawLine(this.linePos(s, h, htr, tip, place.helperFlyX, place, t + 1.7), this.flies[1], h.fly?.patternId)
+      const backTip: Pt = [hx + ROD_TIP.back[0], figY + ROD_TIP.back[1]]
+      this.drawLine(this.linePos(s, h, htr, tip, backTip, place.helperFlyX, place, t + 1.7), this.flies[1], h.fly?.patternId)
     } else this.flies[1].setVisible(false)
 
     const pose = this.pose(p, ptr)
     const px = place.playerX - BODY_X
     this.player.setTexture(`fig:angler:${pose}`).setPosition(px, figY)
     const tip: [number, number] = [px + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
-    const line = this.linePos(s, p, ptr, tip, place.playerFlyX, place, t), fly = line && line[line.length - 1]
+    const backTip: Pt = [px + ROD_TIP.back[0], figY + ROD_TIP.back[1]]
+    const line = this.linePos(s, p, ptr, tip, backTip, place.playerFlyX, place, t), fly = line && line[line.length - 1]
     this.drawLine(line, this.flies[0], p.fly?.patternId)
     this.biteText.setVisible(p.phase === 'bite').setPosition(place.playerX + 7, figY + BODY_Y - 2)
 
