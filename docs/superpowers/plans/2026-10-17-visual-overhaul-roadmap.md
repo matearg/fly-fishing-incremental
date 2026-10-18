@@ -9,7 +9,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 1 | Tying bench rework | **Done**, merged to `master` (`cc389c0`) |
 | 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec and plan deleted once done; in git history up to `3a27cc7` (spec) and `c8cc002` (plan) |
 | 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec, mockup and plans deleted once done; in git history up to `3a27cc7` |
-| 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar, bulk trash) | **Built** on `feat/panel-journal`, approved by the user 2026-10-18; not merged yet. Spec `docs/superpowers/specs/2026-10-18-panel-journal-style-design.md`, plan `docs/superpowers/plans/2026-10-18-panel-journal-style.md` |
+| 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar, bulk trash) | **Done**, merged to `develop` (`cb6c9a7`). Spec and plan deleted once done; in git history up to `cb6c9a7` |
 
 ## Decisions already made (carry into pieces 3 and 4)
 
@@ -45,4 +45,4 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - No manual save button. The user said "leave the save as it is": autosave every 5 s, plus saving on tab hide, page close, and going back to the menu. Nothing is saved while the title or menu is up.
 
 ## How to resume
-Piece 4 is built on `feat/panel-journal` and approved. Next: merge it into `develop`, then delete its spec and plan as with earlier pieces. All four pieces of the overhaul are then done.
+All four pieces of the overhaul are done. Next: merge `develop` into `master` to ship piece 4.
