@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
-import { FishingScene, VIEW_H, VIEW_W } from './scene/fishing/FishingScene'
+import { FishingScene } from './scene/fishing/FishingScene'
 import { TitleScene } from './scene/title/TitleScene'
+import { FISHING_KEEP, TITLE_KEEP, VIEW_H, VIEW_W, viewSize } from './scene/view'
 import { castPlayer, reelPlayer, tick } from './game/fishing/sim'
 import { localStore, SAVE_KEY } from './game/save'
 import type { GameState } from './game/state'
@@ -21,8 +22,20 @@ setInterval(() => panel.render(), 250)
 // The title takes the whole window; panels show only in game. The canvas must re-fit either way.
 function titleMode(on: boolean): void {
   document.body.classList.toggle('title-mode', on)
+  fit()
+}
+
+// Size the game to a crop of the world matching #game's aspect, so it fills the cell (ENVELOP covers rounding).
+// Past a scene's zoom limit the crop stops and FIT shows thin bars instead of hiding what must stay in view.
+const cell = document.getElementById('game')!
+function fit(): void {
+  if (!cell.clientWidth || !cell.clientHeight) return
+  const { w, h, clamped } = viewSize(cell.clientWidth, cell.clientHeight, session.mode === 'title' ? TITLE_KEEP : FISHING_KEEP)
+  const mode = clamped ? Phaser.Scale.FIT : Phaser.Scale.ENVELOP
+  game.scale.scaleMode = mode
+  game.scale.displaySize.setAspectMode(mode)
   game.scale.getParentBounds() // refresh() alone reuses the cached parent size
-  game.scale.refresh()
+  game.scale.setGameSize(w, h)
 }
 
 const title = new TitleScene({
@@ -61,6 +74,7 @@ const game = new Phaser.Game({
     }),
   ],
 })
+game.events.once(Phaser.Core.Events.READY, () => new ResizeObserver(fit).observe(cell))
 
 // Dev-only fast-forward: ?speed=20 runs 20 clamped sub-ticks per frame.
 const speed = import.meta.env.DEV ? Math.max(1, Math.floor(Number(new URLSearchParams(location.search).get('speed') ?? 1)) || 1) : 1

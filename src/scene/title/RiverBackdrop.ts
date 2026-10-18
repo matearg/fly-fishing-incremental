@@ -6,7 +6,7 @@ import { fishBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { bakeBank, placeLook } from '../../art/places'
 import { paint } from '../../art/pixels'
 import { addBitmap } from '../textures'
-import { VIEW_H, VIEW_W } from '../fishing/FishingScene'
+import { VIEW_H, VIEW_W } from '../view'
 
 const WRAP = 30 // off-screen margin so sprites leave fully before wrapping
 const wrapX = (x: number) => (((x + WRAP) % (VIEW_W + WRAP * 2)) + VIEW_W + WRAP * 2) % (VIEW_W + WRAP * 2) - WRAP

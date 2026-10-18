@@ -12,9 +12,8 @@ import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import { blank, mix } from '../../art/pixels'
 import { approach, approachTarget, CAST_MS, castPose, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, trackCatch, type Track } from './choreo'
 import { addBitmap } from '../textures'
+import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
-export const VIEW_W = 480
-export const VIEW_H = 270
 const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
 const GROUND_Y = WATER_Y - 8 // the row the anglers stand on
 const SINK_MS = 500 // the fly sinking to its depth after the cast
@@ -38,6 +37,7 @@ export class FishingScene extends Phaser.Scene {
   private biteText!: Phaser.GameObjects.Text
   private placeText!: Phaser.GameObjects.Text
   private helperText!: Phaser.GameObjects.Text
+  private menuButton!: Phaser.GameObjects.Image
   private player!: Phaser.GameObjects.Image
   private helper!: Phaser.GameObjects.Image
   private junk!: Phaser.GameObjects.Image
@@ -60,8 +60,8 @@ export class FishingScene extends Phaser.Scene {
     this.ripples = this.add.graphics().setDepth(Z.ripples)
     const font = { fontFamily: 'monospace', fontSize: '12px', color: '#ffffff', stroke: '#10161c', strokeThickness: 3 }
     this.biteText = this.add.text(0, 0, '!', { ...font, fontSize: '16px', color: '#ffe066' }).setOrigin(0.5, 1).setDepth(Z.hud)
-    this.placeText = this.add.text(VIEW_W - 22, 6, '', font).setOrigin(1, 0).setDepth(Z.hud)
-    this.helperText = this.add.text(6, 6, '', font).setDepth(Z.hud)
+    this.placeText = this.add.text(VIEW_W - 22, 6, '', font).setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0)
+    this.helperText = this.add.text(6, 6, '', font).setDepth(Z.hud).setScrollFactor(0)
     for (const kind of ['angler', 'helper'] as FigureKind[]) {
       const bmps = figureBitmaps(kind)
       for (const pose of Object.keys(bmps) as Pose[]) addBitmap(this, `fig:${kind}:${pose}`, bmps[pose])
@@ -71,7 +71,7 @@ export class FishingScene extends Phaser.Scene {
     for (const j of JUNK) addBitmap(this, `junk:${j.id}`, junkBitmap(j.id))
     this.junk = this.add.image(0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
     addBitmap(this, 'menu-button', iconBitmap(SCENE_ICONS.menuButton))
-    this.add.image(VIEW_W - 4, 4, 'menu-button').setOrigin(1, 0).setDepth(Z.hud).setInteractive({ useHandCursor: true }).on('pointerdown', () => { if (!this.settling) this.hooks.onMenu() })
+    this.menuButton = this.add.image(VIEW_W - 4, 4, 'menu-button').setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => { if (!this.settling) this.hooks.onMenu() })
     // A click on the menu button is not a cast.
     this.input.on('pointerdown', (_: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => { if (!over.length && !this.settling) this.hooks.onWaterClick() })
     this.input.keyboard?.on('keydown-ESC', () => { if (!this.settling) this.hooks.onMenu() })
@@ -201,6 +201,11 @@ export class FishingScene extends Phaser.Scene {
 
   update(time: number): void {
     this.settling = false
+    // The HUD is pinned to the corners of whatever crop is showing.
+    const w = this.scale.width
+    this.cameras.main.setScroll(...viewScroll(w, this.scale.height, FISHING_KEEP, FISHING_ANCHOR))
+    this.menuButton.x = w - 4
+    this.placeText.x = w - 22
     const s = this.hooks.getState()
     const t = time / 1000
     if (this.place?.id !== s.location) { this.place = this.buildPlace(s.location); this.school = '' }

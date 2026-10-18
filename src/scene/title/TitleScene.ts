@@ -7,7 +7,7 @@ import type { Session } from '../../session'
 import { CONFIRM_PROMPT, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
 import { RiverBackdrop } from './RiverBackdrop'
 import { addBitmap } from '../textures'
-import { VIEW_H, VIEW_W } from '../fishing/FishingScene'
+import { TITLE_ANCHOR, TITLE_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 export interface TitleHooks {
   session: Session
@@ -61,6 +61,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   update(time: number): void {
+    this.cameras.main.setScroll(...viewScroll(this.scale.width, this.scale.height, TITLE_KEEP, TITLE_ANCHOR))
     this.river?.update(time)
     const base = this.menu.page === 'attract' ? LOGO_Y : LOGO_Y_MENU
     if (!this.tweens.isTweening(this.logo)) this.logo.y = base + Math.round(Math.sin(time / 500) * 2)
