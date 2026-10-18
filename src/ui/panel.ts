@@ -14,7 +14,7 @@ import type { SoundId } from '../audio/sounds'
 
 type Act = (fn: (s: GameState) => unknown) => unknown
 
-const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer' }
+const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer', release: 'Catch & Release' }
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
 const money = (n: number) => `${n < 0 ? '-' : ''}$${fmt(Math.abs(n))}`
 const pct = (x: number) => `${Math.round(x * 100)}%`

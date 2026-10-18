@@ -423,6 +423,7 @@ export const HELPER_ICONS: Record<HelperKind, Icon> = {
     ],
     palette: { o: O, f: 0x8aa8b8, F: 0xc8d8e0, l: 0xb08850, L: 0x8a6a3a },
   },
+  release: TRASH_CAN, // placeholder until Task 6's icon is approved
 }
 
 const GOLD = { y: 0xd8a830, Y: 0xf8e080, d: 0xa07018 }

@@ -87,9 +87,12 @@ export const HELPERS = {
   angler: { baseCost: 40, growth: 1.4 },
   bench: { baseCost: 30, growth: 1.6 },
   bulkTrash: { cost: 300 },
-  sorter: { cost: 450 },
+  sorter: { cost: 1000 },
   buyer: { cost: 800 },
+  release: { cost: 1500 },
 }
+// a trashed fish adds pctPerUnit per multiple of its place's cheapest base value; the bonus stops at cap
+export const RELEASE = { pctPerUnit: 0.02, cap: 1 }
 // fish size multiplier = 1 + rand * (spread + sizeBonus)
 export const SIZE = { spread: 1 }
 export const SEASON = { minEarnings: 5e7, licenseDivisor: 5e5 }

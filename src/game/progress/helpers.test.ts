@@ -8,6 +8,19 @@ import { seqRand } from '../util/testutil'
 const run = (s: GameState, ms: number, r = seqRand(0.1, 0.3, 0.5)) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
 
 describe('helper costs', () => {
+  it('catch & release is a one-off helper', () => {
+    const s = newGame()
+    expect(s.release).toBe(false)
+    expect(helperCost(s, 'release')).toBe(HELPERS.release.cost)
+    s.money = HELPERS.release.cost
+    expect(buyHelper(s, 'release')).toBe(true)
+    expect(s.release).toBe(true)
+    expect(s.money).toBe(0)
+    expect(helperCost(s, 'release')).toBeNull()
+  })
+  it('the junk sorter costs over 3× bulk trash', () => {
+    expect(HELPERS.sorter.cost).toBeGreaterThan(3 * HELPERS.bulkTrash.cost)
+  })
   it('angler cost grows and license discount applies', () => {
     const s = newGame()
     s.money = 1e9

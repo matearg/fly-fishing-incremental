@@ -14,7 +14,8 @@ export interface GameState {
   location: LocationId; unlockedLocations: LocationId[]
   unlockedPatterns: string[]; unlockedMaterials: string[]; recipe: Recipe
   flyBox: Fly[]; anglers: Angler[] // anglers[0] is the player (auto: false)
-  bench: number; bulkTrash: boolean; sorter: boolean; buyer: boolean; benchTimerMs: number; buyerTimerMs: number
+  bench: number; bulkTrash: boolean; sorter: boolean; buyer: boolean; release: boolean; benchTimerMs: number; buyerTimerMs: number
+  releaseBonus: number; buyerPaused: boolean // releaseBonus: fraction added to the next Sell all, 0…RELEASE.cap
   basket: CatchItem[]; nextCatchId: number
   licenses: number; licenseLevels: Record<LicenseUpgradeId, number>; licenseSpecies: string[]
 }
@@ -32,7 +33,8 @@ export function newGame(carry?: Carry): GameState {
     unlockedPatterns: PATTERNS.slice(0, 1 + fx.startPatterns).map(p => p.id), unlockedMaterials: [],
     recipe: { patternId: PATTERNS[0].id, materialIds: [] },
     flyBox: [], anglers: [{ auto: false, phase: 'idle', timerMs: 0, fly: null, pending: null }],
-    bench: 0, bulkTrash: false, sorter: false, buyer: false, benchTimerMs: 0, buyerTimerMs: 0,
+    bench: 0, bulkTrash: false, sorter: false, buyer: false, release: false, benchTimerMs: 0, buyerTimerMs: 0,
+    releaseBonus: 0, buyerPaused: false,
     basket: [], nextCatchId: 1,
     licenses: carry?.licenses ?? 0, licenseLevels: { ...licenseLevels }, licenseSpecies: [...(carry?.licenseSpecies ?? [])],
   }

@@ -18,7 +18,7 @@ describe('icons', () => {
   checkIcons('flies', FLY_ICONS, PATTERNS.map(p => p.id))
   checkIcons('materials', MATERIAL_ICONS, MATERIALS.map(m => m.id))
   checkIcons('places', PLACE_ICONS, LOCATIONS.map(l => l.id))
-  checkIcons('helpers', HELPER_ICONS, ['angler', 'bench', 'bulkTrash', 'sorter', 'buyer'])
+  checkIcons('helpers', HELPER_ICONS, ['angler', 'bench', 'bulkTrash', 'sorter', 'buyer', 'release'])
   checkIcons('licenses', LICENSE_ICONS, LICENSE_UPGRADES.map(u => u.id))
   checkIcons('ui', UI_ICONS, ['coin', 'fly', 'season', 'license', 'basket', 'trash'])
   checkIcons('scene', SCENE_ICONS, ['menuButton', 'cursor'])
