@@ -6,6 +6,8 @@ import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './
 import { blank, blit, mix, paint, stylize, type Bitmap, type TextStyle } from './art/pixels'
 import { SMALL, textMask } from './art/font'
 import { BAR_SEGMENT, NOTES, SPEAKER, soundIconMask } from './art/soundIcons'
+import { SoundPlayer } from './audio/player'
+import { SFX, TITLE_AMBIENCE, type SoundId } from './audio/sounds'
 import { TEXT_GREY, TEXT_WHITE, TEXT_YELLOW } from './scene/textures'
 import { BODY_X, FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
 import { lineFlyBitmap } from './art/sprites/flies'
@@ -158,3 +160,18 @@ function soundRow(level: number, muted: boolean, style: TextStyle): Bitmap {
 onWater(soundRow(7, false, TEXT_WHITE), 'row · 70%', 2)
 onWater(soundRow(7, false, TEXT_YELLOW), 'row · 70% · selected', 2)
 onWater(soundRow(7, true, TEXT_WHITE), 'row · muted', 2)
+
+// Sound review: one button per effect and per place's water.
+const sounds = section('Sounds (click to play)')
+const player = new SoundPlayer()
+player.setVolume(0.7)
+let waterAt: (typeof LOCATIONS)[number]['id'] = 'creek'
+const button = (label: string, run: () => void) => {
+  const b = Object.assign(document.createElement('button'), { textContent: label })
+  b.onclick = () => { player.unlock(); run() }
+  sounds.append(b)
+}
+for (const id of Object.keys(SFX) as SoundId[]) button(id, () => player.play(id))
+for (const l of LOCATIONS) button(`water · ${l.name}`, () => player.ambience(waterAt = l.id))
+button('title water', () => player.ambience(waterAt, TITLE_AMBIENCE))
+button('stop water', () => player.ambience(null))
