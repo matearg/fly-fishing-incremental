@@ -1,3 +1,17 @@
-.superpowers/
 node_modules/
 dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Local agent state
+.superpowers/
+.claude/settings.local.json
+.playwright-cli/
