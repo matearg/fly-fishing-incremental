@@ -5,6 +5,9 @@ import { BIG, SMALL, textMask } from './font'
 const px = (b: { w: number; data: Uint8ClampedArray }, x: number, y: number) => [...b.data.slice((y * b.w + x) * 4, (y * b.w + x) * 4 + 4)]
 
 describe('paint', () => {
+  it('throws on a ragged grid', () => {
+    expect(() => paint(['ab', 'abc'], { a: 1, b: 2, c: 3 })).toThrow('ragged grid')
+  })
   it("maps palette chars and leaves '.' transparent", () => {
     const b = paint(['a.', '.b'], { a: 0x112233, b: 0x445566 })
     expect([b.w, b.h]).toEqual([2, 2])

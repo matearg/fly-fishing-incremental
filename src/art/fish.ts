@@ -70,7 +70,6 @@ function mouthOf(g: Grid): [number, number] {
   const tips = lens.flatMap((l, y) => (l === max ? [y] : []))
   return [max - 1, tips[tips.length >> 1]]
 }
-export const FISH_MOUTH = Object.fromEntries(Object.entries(FISH_SIDE).map(([t, [g]]) => [t, mouthOf(g)])) as Record<Tier, [number, number]>
 
 // --- Legendary creatures of the Patagonian lakes get their own shapes ---
 
@@ -158,7 +157,12 @@ const SPECIAL_SHAPES: Record<string, { side: [Grid, Grid]; top: [Grid, Grid] }> 
 const tierOf = (id: string) => SPECIES.find(s => s.id === id)!.tier
 export const fishSideGrids = (id: string): [Grid, Grid] => SPECIAL_SHAPES[id]?.side ?? FISH_SIDE[tierOf(id)]
 export const fishTopGrids = (id: string): [Grid, Grid] => SPECIAL_SHAPES[id]?.top ?? FISH_TOP[tierOf(id)]
-export const fishMouth = (id: string): [number, number] => mouthOf(fishSideGrids(id)[0])
+const mouths = new Map<string, [number, number]>()
+export function fishMouth(id: string): [number, number] {
+  let m = mouths.get(id)
+  if (!m) mouths.set(id, (m = mouthOf(fishSideGrids(id)[0])))
+  return m
+}
 
 // How many of each tier swim in a school.
 export const TIER_SCHOOL: Record<Tier, number> = { common: 3, uncommon: 2, rare: 1, legendary: 1 }

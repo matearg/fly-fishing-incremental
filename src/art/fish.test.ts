@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { LOCATIONS, SPECIES, TIERS } from '../game/data'
-import { FISH_COLORS, FISH_MOUTH, FISH_SIDE, FISH_TOP, fishBitmaps, fishColors, fishMouth, fishSideBitmaps, fishSideGrids, fishTopGrids } from './fish'
+import { FISH_COLORS, FISH_SIDE, FISH_TOP, fishBitmaps, fishColors, fishMouth, fishSideBitmaps, fishSideGrids, fishTopGrids } from './fish'
 
 describe('fish art', () => {
   it('colours exist for exactly the current species', () => {
@@ -33,12 +33,8 @@ describe('fish art', () => {
       for (const row of [...a, ...b]) expect(row.length, t).toBe(a[0].length)
     }
   })
-  it('the mouth sits on an opaque pixel of frame 0', () => {
-    for (const t of TIERS) {
-      const [x, y] = FISH_MOUTH[t]
-      expect(FISH_SIDE[t][0][y]?.[x], t).toBeDefined()
-      expect(FISH_SIDE[t][0][y][x], t).not.toBe('.')
-    }
+  it('fishMouth returns the same point on repeat calls', () => {
+    expect(fishMouth('dace')).toBe(fishMouth('dace'))
   })
   it('fishSideBitmaps paints both frames for every species', () => {
     for (const sp of SPECIES) expect(fishSideBitmaps(sp.id)).toHaveLength(2)

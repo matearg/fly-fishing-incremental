@@ -15,12 +15,16 @@ function put(b: Bitmap, x: number, y: number, rgb: number, a = 255): void {
 }
 
 export function paint(grid: Grid, palette: Record<string, number>): Bitmap {
-  const b = blank(grid[0]?.length ?? 0, grid.length)
-  grid.forEach((row, y) => [...row].forEach((ch, x) => {
-    if (ch === '.') return
-    if (!(ch in palette)) throw new Error(`no palette entry for '${ch}'`)
-    put(b, x, y, palette[ch])
-  }))
+  const w = grid[0]?.length ?? 0
+  const b = blank(w, grid.length)
+  grid.forEach((row, y) => {
+    if (row.length !== w) throw new Error(`ragged grid: row ${y} is ${row.length} wide, expected ${w}`)
+    for (const [x, ch] of [...row].entries()) {
+      if (ch === '.') continue
+      if (!(ch in palette)) throw new Error(`no palette entry for '${ch}'`)
+      put(b, x, y, palette[ch])
+    }
+  })
   return b
 }
 
