@@ -5,12 +5,17 @@ import { formatNumber as fmt } from '../game/util/format'
 import { buyHelper, helperCost, type HelperKind } from '../game/progress/helpers'
 import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason, licenseUpgradeCost, startNewSeason } from '../game/progress/prestige'
 import type { CatchItem, GameState } from '../game/state'
+import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS } from '../art/icons'
+import { catchImg, icon } from './icons'
 
 type Act = (fn: (s: GameState) => unknown) => void
 
 const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', sorter: 'Junk sorter', buyer: 'Fish buyer' }
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
 const pct = (x: number) => `${Math.round(x * 100)}%`
+// Icon + text label for a flex button, so <small> and the price lay out beside the icon.
+const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</span>`
+const ticket = (n: number) => `${n}${icon('ui', 'license', UI_ICONS.license, 1)}`
 
 function btn(action: string, id: string, label: string, opts: { disabled?: boolean; pressed?: boolean; cls?: string } = {}): string {
   const pressed = opts.pressed === undefined ? '' : ` aria-pressed="${opts.pressed}"`
@@ -50,68 +55,68 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
   root.innerHTML = `
     <aside class="side">
       <div class="money" data-sec="money"></div>
-      <section><h2>Fly</h2><div data-sec="fly"></div><div data-sec="recipe"></div></section>
-      <section><h2>Shop</h2><div data-sec="shop"></div></section>
-      <section><h2>Helpers</h2><div data-sec="helpers"></div></section>
-      <section><h2>Places</h2><div data-sec="places"></div></section>
-      <section><h2>New Season</h2><div data-sec="season"></div></section>
-      <section><h2>Licenses</h2><div data-sec="licenses"></div></section>
+      <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Fly</h2><div data-sec="fly"></div><div data-sec="recipe"></div></section>
+      <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Shop</h2><div data-sec="shop"></div></section>
+      <section><h2>${icon('helper', 'angler', HELPER_ICONS.angler, 1)}Helpers</h2><div data-sec="helpers"></div></section>
+      <section><h2>${icon('place', 'creek', PLACE_ICONS.creek, 1)}Places</h2><div data-sec="places"></div></section>
+      <section><h2>${icon('ui', 'season', UI_ICONS.season, 1)}New Season</h2><div data-sec="season"></div></section>
+      <section><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Licenses</h2><div data-sec="licenses"></div></section>
     </aside>
     <footer class="basket">
       <div data-sec="basketHead"></div>
       <ul class="items" aria-label="Basket"></ul>
-      <div class="trash" role="img" aria-label="Trash can: drop a catch here to throw it away">🗑️</div>
+      <div class="trash" role="img" aria-label="Trash can: drop a catch here to throw it away">${icon('ui', 'trash', UI_ICONS.trash)}</div>
     </footer>`
 
   const sections: Record<string, (s: GameState) => string> = {
-    money: s => `$${fmt(s.money)}`,
+    money: s => `${icon('ui', 'coin', UI_ICONS.coin)}$${fmt(s.money)}`,
     fly: s => {
       const f = s.anglers[0].fly
       if (!f) return `<p>No fly on the line. Box: ${s.flyBox.length}</p>`
       const max = flyStats(s, f).wear
       const name = PATTERNS.find(p => p.id === f.patternId)!.name + f.materialIds.map(m => ' + ' + MATERIALS.find(x => x.id === m)!.name).join('')
-      return `<p>${name}</p><div class="wear" role="meter" aria-label="Wear" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${f.wearLeft}"><span style="width:${pct(f.wearLeft / max)}"></span></div><p>Wear ${f.wearLeft}/${max} · Box: ${s.flyBox.length}</p>`
+      return `<p class="row">${icon('fly', f.patternId, FLY_ICONS[f.patternId])}<span class="txt">${name}</span></p><div class="wear" role="meter" aria-label="Wear" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${f.wearLeft}"><span style="width:${pct(f.wearLeft / max)}"></span></div><p>Wear ${f.wearLeft}/${max} · Box: ${s.flyBox.length}</p>`
     },
     recipe: s => {
       const st = flyStats(s, s.recipe)
-      return `<p class="label">Pattern</p><div class="row">${s.unlockedPatterns.map(id => btn('recipePattern', id, PATTERNS.find(p => p.id === id)!.name, { pressed: s.recipe.patternId === id })).join('')}</div>`
-        + (s.unlockedMaterials.length ? `<p class="label">Materials</p><div class="row">${s.unlockedMaterials.map(id => btn('recipeMaterial', id, MATERIALS.find(m => m.id === id)!.name, { pressed: s.recipe.materialIds.includes(id) })).join('')}</div>` : '')
+      return `<p class="label">Pattern</p><div class="row">${s.unlockedPatterns.map(id => btn('recipePattern', id, lbl(icon('fly', id, FLY_ICONS[id], 1), PATTERNS.find(p => p.id === id)!.name), { pressed: s.recipe.patternId === id })).join('')}</div>`
+        + (s.unlockedMaterials.length ? `<p class="label">Materials</p><div class="row">${s.unlockedMaterials.map(id => btn('recipeMaterial', id, lbl(icon('mat', id, MATERIAL_ICONS[id], 1), MATERIALS.find(m => m.id === id)!.name), { pressed: s.recipe.materialIds.includes(id) })).join('')}</div>` : '')
         + `<p class="stats">Depth ${st.maxDepth} · Wear ${st.wear} · Odds +${pct(st.oddsBonus)}${st.sizeBonus ? ` · Size +${pct(st.sizeBonus)}` : ''}</p>`
         + btn('tie', '', `Tie fly ($${fmt(st.tieCost)})`, { disabled: s.money < st.tieCost, cls: 'wide' })
     },
     shop: s => {
       const pats = PATTERNS.filter(p => !s.unlockedPatterns.includes(p.id))
-        .map(p => btn('unlockPattern', p.id, `${p.name} <small>${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}</small> <b>$${fmt(p.unlockCost)}</b>`, { disabled: s.money < p.unlockCost }))
+        .map(p => btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}</small>`)}<b>$${fmt(p.unlockCost)}</b>`, { disabled: s.money < p.unlockCost }))
       const mats = MATERIALS.filter(m => !s.unlockedMaterials.includes(m.id)).map(m => {
         const fx = [m.depthBonus && `depth +${m.depthBonus}`, m.wearBonus && `wear +${m.wearBonus}`, m.oddsBonus && `odds +${pct(m.oddsBonus)}`, m.sizeBonus && `size +${pct(m.sizeBonus)}`].filter(Boolean).join(', ')
-        return btn('unlockMaterial', m.id, `${m.name} <small>${fx} · tie $${fmt(m.tieCost)}</small> <b>$${fmt(m.unlockCost)}</b>`, { disabled: s.money < m.unlockCost })
+        return btn('unlockMaterial', m.id, `${lbl(icon('mat', m.id, MATERIAL_ICONS[m.id]), `${m.name} <small>${fx} · tie $${fmt(m.tieCost)}</small>`)}<b>$${fmt(m.unlockCost)}</b>`, { disabled: s.money < m.unlockCost })
       })
       return [...pats, ...mats].join('') || '<p>Everything unlocked.</p>'
     },
     helpers: s => (Object.keys(HELPER_LABELS) as HelperKind[]).map(k => {
       const cost = helperCost(s, k)
       const owned = k === 'angler' ? ` (${s.anglers.length - 1})` : k === 'bench' ? ` (${s.bench})` : ''
-      return cost === null ? `<p>${HELPER_LABELS[k]}: working</p>` : btn('hire', k, `${HELPER_LABELS[k]}${owned} <b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
+      return cost === null ? `<p>${HELPER_LABELS[k]}: working</p>` : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k] + owned)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
     }).join(''),
     places: s => {
       const next = LOCATIONS.find(l => !s.unlockedLocations.includes(l.id))
-      return `<div class="row">${s.unlockedLocations.map(id => btn('travel', id, LOCATIONS.find(l => l.id === id)!.name, { pressed: s.location === id })).join('')}</div>`
-        + (next ? btn('unlockLocation', next.id, `Unlock ${next.name} <b>$${fmt(next.unlockCost)}</b>`, { disabled: s.money < next.unlockCost, cls: 'wide' }) : '')
+      return `<div class="row">${s.unlockedLocations.map(id => btn('travel', id, lbl(icon('place', id, PLACE_ICONS[id], 1), LOCATIONS.find(l => l.id === id)!.name), { pressed: s.location === id })).join('')}</div>`
+        + (next ? btn('unlockLocation', next.id, `${lbl(icon('place', next.id, PLACE_ICONS[next.id]), `Unlock ${next.name}`)}<b>$${fmt(next.unlockCost)}</b>`, { disabled: s.money < next.unlockCost, cls: 'wide' }) : '')
     },
     season: s => {
       const can = canStartSeason(s)
       return `<p>Earned this season: $${fmt(s.seasonEarnings)} / $${fmt(SEASON.minEarnings)}</p>`
         + btn('season', '', can ? (confirmSeason ? `Are you sure? Reset for +${licensesForSeason(s)} licenses` : `Start New Season (+${licensesForSeason(s)} licenses)`) : 'Not ready yet', { disabled: !can, cls: 'wide' + (confirmSeason ? ' danger' : '') })
     },
-    licenses: s => `<p>Licenses: <b>${s.licenses}</b></p>`
+    licenses: s => `<p>Licenses: <b>${ticket(s.licenses)}</b></p>`
       + LICENSE_UPGRADES.map(u => {
         const cost = licenseUpgradeCost(s, u.id)
         const lvl = `${s.licenseLevels[u.id]}/${u.costs.length}`
-        return cost === null ? `<p>${u.name}: max (${lvl})</p>` : btn('licenseUpgrade', u.id, `${u.name} (${lvl}) <b>${cost}🎫</b>`, { disabled: s.licenses < cost })
+        return cost === null ? `<p>${u.name}: max (${lvl})</p>` : btn('licenseUpgrade', u.id, `${lbl(icon('license', u.id, LICENSE_ICONS[u.id]), `${u.name} (${lvl})`)}<b>${ticket(cost)}</b>`, { disabled: s.licenses < cost })
       }).join('')
       + SPECIES.filter(sp => sp.licenseCost).map(sp => s.licenseSpecies.includes(sp.id)
         ? `<p>${sp.name}: in the water</p>`
-        : btn('licenseSpecies', sp.id, `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name} <b>${sp.licenseCost}🎫</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
+        : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
     basketHead: s => {
       const total = s.basket.reduce((a, c) => a + c.value, 0)
       return btn('sell', '', `Sell all (${s.basket.length}) <b>${total < 0 ? '-' : ''}$${fmt(Math.abs(total))}</b>`, { disabled: !s.basket.length })
