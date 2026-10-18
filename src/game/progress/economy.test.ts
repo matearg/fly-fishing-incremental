@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
+import { releaseBonusOf, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
 import { newGame, type CatchItem } from '../state'
-import { PATTERNS, MATERIALS } from '../data'
+import { PATTERNS, MATERIALS, RELEASE, SPECIES } from '../data'
 
 const item = (id: number, value: number, kind: CatchItem['kind'] = 'fish'): CatchItem => ({ id, kind, defId: 'x', value, size: 1 })
+const fish = (id: number, defId: string, size: number): CatchItem => ({ id, kind: 'fish', defId, value: SPECIES.find(d => d.id === defId)!.baseValue * size, size })
 
 describe('selling and trash', () => {
   it('sellAll sums fish and junk', () => {
@@ -88,5 +89,54 @@ describe('setRecipe duplicates', () => {
     const s = newGame()
     s.unlockedMaterials.push(MATERIALS[0].id)
     expect(setRecipe(s, { patternId: PATTERNS[0].id, materialIds: [MATERIALS[0].id, MATERIALS[0].id] })).toBe(false)
+  })
+})
+
+describe('catch & release', () => {
+  it('bonus is 2% per multiple of the place’s cheapest fish', () => {
+    expect(releaseBonusOf(fish(1, 'dace', 1))).toBeCloseTo(0.02)
+    expect(releaseBonusOf(fish(1, 'brownTrout', 1))).toBeCloseTo(0.30)
+    expect(releaseBonusOf(fish(1, 'whitefish', 1.5))).toBeCloseTo(0.03)
+    expect(releaseBonusOf({ ...fish(1, 'dace', 1), kind: 'junk', defId: 'tire' })).toBe(0)
+  })
+  it('same bonus per dollar for any species at one place', () => {
+    const a = fish(1, 'creekChub', 1.3), b = fish(2, 'brownTrout', 1.7)
+    expect(releaseBonusOf(a) / a.value).toBeCloseTo(releaseBonusOf(b) / b.value)
+  })
+  it('only counts once owned, and only fish', () => {
+    const s = newGame()
+    s.basket = [fish(1, 'brownTrout', 1), { ...item(2, -2, 'junk'), defId: 'boot' }]
+    trash(s, 1); expect(s.releaseBonus).toBe(0)
+    s.release = true
+    s.basket.push(fish(3, 'brownTrout', 1))
+    trash(s, 2); expect(s.releaseBonus).toBe(0)
+    trash(s, 3); expect(s.releaseBonus).toBeCloseTo(0.30)
+  })
+  it('trash all adds every fish and stops at the cap', () => {
+    const s = newGame(); s.release = true; s.bulkTrash = true
+    s.basket = Array.from({ length: 5 }, (_, i) => fish(i + 1, 'brownTrout', 1))
+    expect(trashStack(s, 'fish', 'brownTrout')).toBe(true)
+    expect(s.releaseBonus).toBe(RELEASE.cap)
+    s.basket = [fish(9, 'brownTrout', 1)]; trash(s, 9)
+    expect(s.releaseBonus).toBe(RELEASE.cap)
+  })
+  it('a fish from another place uses its own place’s cheapest fish', () => {
+    const s = newGame(); s.release = true; s.location = 'greatLake'
+    s.basket = [fish(1, 'brownTrout', 1)]; trash(s, 1)
+    expect(s.releaseBonus).toBeCloseTo(0.30)
+  })
+  it('manual sell multiplies fish only, then resets', () => {
+    const s = newGame(); s.releaseBonus = 0.5
+    s.basket = [item(1, 10), item(2, -2, 'junk')]
+    expect(sellAll(s, true)).toBe(13)
+    expect(s.releaseBonus).toBe(0)
+  })
+  it('a junk-only sale and the buyer’s sale keep the bonus', () => {
+    const s = newGame(); s.releaseBonus = 0.5
+    s.basket = [item(1, -2, 'junk')]; sellAll(s, true)
+    expect(s.releaseBonus).toBe(0.5)
+    s.basket = [item(2, 10)]
+    expect(sellAll(s)).toBe(10)
+    expect(s.releaseBonus).toBe(0.5)
   })
 })
