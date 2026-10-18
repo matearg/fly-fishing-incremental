@@ -8,7 +8,7 @@ import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../art/fish'
 import { JUNK_SNAG, junkBitmap } from '../art/junk'
 import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../art/places'
 import { blank, mix, paint } from '../art/pixels'
-import { approach, CAST_MS, NOTICE_SHARE, schoolKey, schoolSpecies, trackCatch, type Track } from './choreo'
+import { approach, approachTarget, CAST_MS, NOTICE_SHARE, sameCatch, schoolKey, schoolSpecies, trackCatch, type Track } from './choreo'
 import { addBitmap } from './textures'
 
 export const VIEW_W = 480
@@ -45,7 +45,7 @@ export class FishingScene extends Phaser.Scene {
   private fish: Swimmer[] = []
   private place: Place | null = null
   private school = ''
-  private tracks: [Track, Track] = [{ pending: null, waitMs: 0 }, { pending: null, waitMs: 0 }]
+  private tracks: [Track, Track] = [{ pending: null, waitMs: 0, lastMs: 0 }, { pending: null, waitMs: 0, lastMs: 0 }]
   private chosen: Chosen | null = null
   private rippleDots: { x0: number; y: number; len: number; speed: number }[] = []
 
@@ -144,6 +144,11 @@ export class FishingScene extends Phaser.Scene {
     return [this.wrapX(f.x0 + t * f.speed, place), f.y + Math.sin(t * 1.3 + f.phase) * 2]
   }
 
+  // Where the fly comes to rest after the cast and sink.
+  private restPos(s: GameState, a: Angler, landX: number, place: Place): [number, number] {
+    return [landX, this.depthY(Math.min(flyStats(s, a.fly!).maxDepth, place.maxDepth), place)]
+  }
+
   // Where the angler's fly is, or null while no line is out.
   private flyPos(s: GameState, a: Angler, tr: Track, tip: [number, number], landX: number, place: Place, t: number): [number, number] | null {
     if (a.phase === 'idle' || !a.fly) return null
@@ -229,14 +234,15 @@ export class FishingScene extends Phaser.Scene {
 
     // The catch picked at cast swims (or drifts) to the fly, bites, and is reeled in.
     const pending = p.phase === 'idle' ? null : p.pending
-    if (this.chosen && this.chosen.pending !== pending) this.release(t, place, p.phase === 'idle')
+    if (this.chosen && !sameCatch(this.chosen.pending, pending)) this.release(t, place, p.phase === 'idle')
     if (pending?.kind === 'fish' && !this.chosen) {
       // A fish hooked at another place (travel during a bite) has no school here; it gets a sprite of its own.
       const sw = this.fish.find(f => f.id === pending.defId) ?? (p.phase !== 'waiting' && fly ? Object.assign(this.addSwimmer(pending.defId, fly[0], fly[1], -10, 0), { stray: true }) : undefined)
       if (sw) this.chosen = { sw, pending, from: null, right: sw.speed > 0 }
     }
-    if (this.chosen && fly) this.moveChosen(this.chosen, p, ptr, fly, t, place)
-    this.moveJunk(pending, p, ptr, fly)
+    const aim = fly && approachTarget(p.phase, fly, this.restPos(s, p, place.playerFlyX, place))
+    if (this.chosen && aim) this.moveChosen(this.chosen, p, ptr, aim, t, place)
+    this.moveJunk(pending, p, ptr, aim)
 
     const helpers = s.anglers.length - 1
     this.helperText.setVisible(helpers > 0).setText(`Helpers ${helpers}`)

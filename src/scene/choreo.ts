@@ -29,12 +29,24 @@ export function schoolKey(state: GameState): string {
   return `${state.location}:${schoolSpecies(state).map(s => s.id).join(',')}`
 }
 
-// What the scene remembers per visible angler: the catch it last saw, and the wait remaining when it appeared.
-export interface Track { pending: Pending | null; waitMs: number }
+// What the scene remembers per visible angler: the catch it last saw, the wait remaining when it appeared, and the last timer seen.
+export interface Track { pending: Pending | null; waitMs: number; lastMs: number }
+
+// Compared by value: a reloaded save (tab return, another tab, Continue) rebuilds the same catch as new objects.
+export function sameCatch(a: Pending | null, b: Pending | null): boolean {
+  return a === b || (!!a && !!b && a.kind === b.kind && a.defId === b.defId && a.value === b.value && a.size === b.size && a.location === b.location)
+}
 
 // A new catch (a cast, or a re-pick after travel) restarts the approach within the wait that is left.
+// The timer jumping back up also means a new cast, even if the new catch happens to equal the last one.
 export function trackCatch(tr: Track, a: Angler | undefined): Track {
-  const pending = a?.pending ?? null
-  if (pending !== tr.pending) { tr.pending = pending; tr.waitMs = a?.timerMs ?? 0 }
+  const pending = a?.pending ?? null, ms = a?.timerMs ?? 0
+  if (!sameCatch(pending, tr.pending) || ms > tr.lastMs) tr.waitMs = ms
+  tr.pending = pending; tr.lastMs = ms
   return tr
+}
+
+// While waiting, the catch heads for where the fly will rest (it may still be mid-cast); once hooked it follows the fly.
+export function approachTarget(phase: Angler['phase'], fly: [number, number], rest: [number, number]): [number, number] {
+  return phase === 'waiting' ? rest : fly
 }

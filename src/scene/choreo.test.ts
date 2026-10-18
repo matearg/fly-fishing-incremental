@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { approach, castPose, schoolKey, trackCatch, type Track } from './choreo'
+import { approach, approachTarget, castPose, schoolKey, trackCatch, type Track } from './choreo'
 import { newGame } from '../game/state'
 
 describe('approach', () => {
@@ -48,7 +48,7 @@ describe('schoolKey', () => {
 describe('trackCatch', () => {
   const angler = (pending: object | null, timerMs: number) => ({ auto: false, phase: 'waiting' as const, timerMs, fly: null, pending: pending as any })
   it('restarts the approach when the catch changes identity (cast, or re-pick after travel)', () => {
-    const tr: Track = { pending: null, waitMs: 0 }
+    const tr: Track = { pending: null, waitMs: 0, lastMs: 0 }
     const first = { kind: 'fish', defId: 'dace', value: 1, size: 1, location: 'creek' }
     trackCatch(tr, angler(first, 3000))
     expect(tr.waitMs).toBe(3000)
@@ -56,5 +56,31 @@ describe('trackCatch', () => {
     expect(tr.waitMs).toBe(3000) // same catch: the wait it started with stays
     trackCatch(tr, angler({ ...first, location: 'river' }, 1200))
     expect(tr.waitMs).toBe(1200)
+  })
+})
+
+describe('trackCatch after a reload', () => {
+  const angler = (pending: object | null, timerMs: number) => ({ auto: false, phase: 'waiting' as const, timerMs, fly: null, pending: pending as any })
+  const c = { kind: 'junk', defId: 'can', value: 0, size: 1, location: 'creek' }
+  it('a reloaded save (same catch, new object) keeps the wait it started with', () => {
+    const tr: Track = { pending: null, waitMs: 0, lastMs: 0 }
+    trackCatch(tr, angler(c, 3000))
+    trackCatch(tr, angler({ ...c }, 2500))
+    expect(tr.waitMs).toBe(3000)
+  })
+  it('an identical catch on a new cast (the timer jumps back up) restarts', () => {
+    const tr: Track = { pending: null, waitMs: 0, lastMs: 0 }
+    trackCatch(tr, angler(c, 3000))
+    trackCatch(tr, angler(c, 100))
+    trackCatch(tr, angler({ ...c }, 2800))
+    expect(tr.waitMs).toBe(2800)
+  })
+})
+
+describe('approachTarget', () => {
+  it('aims at where the fly will rest while waiting, at the live fly once hooked', () => {
+    expect(approachTarget('waiting', [10, 20], [200, 150])).toEqual([200, 150])
+    expect(approachTarget('bite', [201, 152], [200, 150])).toEqual([201, 152])
+    expect(approachTarget('reeling', [120, 115], [200, 150])).toEqual([120, 115])
   })
 })
