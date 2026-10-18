@@ -1,3 +1,6 @@
+import type { LicenseUpgradeId, LocationId } from '../game/data'
+import type { HelperKind } from '../game/progress/helpers'
+import { placeLook } from './places'
 import { paint, type Bitmap, type Grid } from './pixels'
 
 // Panel icons: small pixel grids that read on the journal paper (#e8d8b0). Flies face right (eye on the right).
@@ -245,6 +248,335 @@ export const MATERIAL_ICONS: Record<string, Icon> = {
     palette: { o: O, T: 0x8a3a20, s: 0x7088a8, S: 0x9aa8c8, p: 0xc070a0, b: 0x40a0b0 },
   },
   tungstenBead: { grid: BEAD, palette: { o: O, y: 0x5a5e66, Y: 0x9aa0aa, d: 0x3a3e46, x: 0x1a1a1a } },
+}
+
+// Place vignettes: a framed slice of bank over water, in each place's own colors.
+const WATER: Grid = [
+  'oeeeeeeeeeeeeeeo',
+  'owwwwwwwwwwwwwwo',
+  'owwrrwwwwwwwwwwo',
+  'owwwwwwwwwrrwwwo',
+  'oWWWWWWWWWWWWWWo',
+  'oWWWWrrWWWWWWWWo',
+  'oWWWWWWWWWWWWWWo',
+  'oooooooooooooooo',
+]
+
+function place(id: LocationId, bank: Grid, props: Record<string, number>): Icon {
+  const l = placeLook(id)
+  return {
+    grid: ['oooooooooooooooo', ...bank, ...WATER],
+    palette: { o: O, a: l.bank, e: l.edge, w: l.water[0], W: l.water[2], r: l.ripple, ...props },
+  }
+}
+
+export const PLACE_ICONS: Record<LocationId, Icon> = {
+  creek: place('creek', [
+    'oaaaaaaaaaaaaaao',
+    'oagaGaaaaaaaaaao',
+    'oaGgaaaaaagaGaao',
+    'oaaaaaaaaaaGgaao',
+    'oaaaaaPpaaaaaaao',
+    'oagaaaPPaaaPpaao',
+    'oaGgaaaaaaaaaaao',
+  ], { g: 0x3f7a2e, G: 0x8aba5a, p: 0xa8a49a, P: 0x5f6468 }),
+  river: place('river', [
+    'oaaaaaaaaaTaaaao',
+    'oaaaTaaaaaRaTaao',
+    'oaaaRaTaaaRaRaao',
+    'oaaaRaRaaRRaRaao',
+    'oaaRRaRaaRaaRRao',
+    'oaaaRRRaaaaaRaao',
+    'oaaaaaaaaaaaaaao',
+  ], { R: 0x5a7a2a, T: 0x6a4020 }),
+  bigRiver: place('bigRiver', [
+    'oaaaaaaaaaaaaaao',
+    'oaammaaaaaaaaaao',
+    'oaaaaaaaaaammmao',
+    'oaLLLLLLLLLLaaao',
+    'oLlllkllllklLaao',
+    'oLllllklllllLaao',
+    'oaLLLLLLLLLLamao',
+  ], { m: 0x52432a, L: 0x3a2614, l: 0x7a5230, k: 0x5a3a1e }),
+  mountainLake: place('mountainLake', [
+    'oaaaaaaaaadaaaao',
+    'oaaaaaaaadndaaao',
+    'oaaaaaaadnnndaao',
+    'oaqqqqaaadndaaao',
+    'oqggGgqadnnndaao',
+    'oqgggggqaataaaao',
+    'oaqqqqqaaataaaao',
+  ], { d: 0x173a20, n: 0x2f6a3a, t: 0x5a3a1e, q: 0x4a4f55, g: 0x8a9097, G: 0xb8bec4 }),
+  greatLake: place('greatLake', [
+    'oaasaaaaaaaaaaao',
+    'oaaaaaaaaDDDDaao',
+    'oaaaaasaaDPPDaao',
+    'oaaaaaaaaDDDDaao',
+    'oasaaaaaaDPPDaao',
+    'oaaaaaaaaDDDDaao',
+    'oaaaasaaaDPPDaao',
+  ], { s: 0xe8e0d0, D: 0x6b4422, P: 0x9a6a3a }),
+}
+
+export const HELPER_ICONS: Record<HelperKind, Icon> = {
+  angler: {
+    grid: [
+      _,
+      '......oooo......',
+      '......oHHo......',
+      '....oooooooo....',
+      '.....osssso.....',
+      '.....osssso.....',
+      '......oooo......',
+      '....ovvvvvvo....',
+      '...ovvvVvvvvo...',
+      '...osvvVvvvso...',
+      '...oovvVvvvoo...',
+      '.....obbbbo.....',
+      '.....obbbbo.....',
+      '.....obo.obo....',
+      '.....obo.obo....',
+      '.....ooo.ooo....',
+    ],
+    palette: { o: O, H: 0xb8985a, s: 0xe8b888, v: 0x6a7a3a, V: 0x8a9a5a, b: 0x4a5a7a },
+  },
+  bench: {
+    grid: [
+      _,
+      '..........ooo...',
+      '.........ojJoh..',
+      '........ojJo.hh.',
+      '.......ojJo.....',
+      '......ojJo......',
+      '......oJjo......',
+      '......ojJo......',
+      '......ojJo......',
+      '......ojJo......',
+      '......ojJo......',
+      '...oooooooooo...',
+      '...obbbbbbbbo...',
+      '...obBbbbbbbo...',
+      '...oooooooooo...',
+      _,
+    ],
+    palette: { o: O, j: 0x8a8e96, J: 0xc8ccd4, h: 0x8a3a20, b: 0x7a5230, B: 0x9a7248 },
+  },
+  sorter: {
+    grid: [
+      _,
+      '....oo..........',
+      '....obo....ooo..',
+      '....obo...orrro.',
+      '..oooooooooooo..',
+      '..oMMMMMMMMMMo..',
+      '..oooooooooooo..',
+      '...omMmmMmmMmo..',
+      '...omMmmMmmMmo..',
+      '...omMmmMmmMmo..',
+      '...omMmmMmmMmo..',
+      '...omMmmMmmMmo..',
+      '....oMmmMmmMo...',
+      '....ooooooooo...',
+      _,
+      _,
+    ],
+    palette: { o: O, b: 0x6b4a2a, r: 0xb04a2a, m: 0x7a8088, M: 0xb0b6be },
+  },
+  buyer: {
+    grid: [
+      _,
+      _,
+      '...o.o...o.o....',
+      '...ofo...ofo....',
+      '...ofFo..ofFo...',
+      '...ofFo..ofFo...',
+      '..oooooooooooo..',
+      '..ollllllllllo..',
+      '..oLLLLLLLLLLo..',
+      '..oooooooooooo..',
+      '..ollllllllllo..',
+      '..oLLLLLLLLLLo..',
+      '..oooooooooooo..',
+      '..ollllllllllo..',
+      '..oLLLLLLLLLLo..',
+      '..oooooooooooo..',
+    ],
+    palette: { o: O, f: 0x8aa8b8, F: 0xc8d8e0, l: 0xb08850, L: 0x8a6a3a },
+  },
+}
+
+const GOLD = { y: 0xd8a830, Y: 0xf8e080, d: 0xa07018 }
+
+export const LICENSE_ICONS: Record<LicenseUpgradeId, Icon> = {
+  // A pattern card with a fly sketched on it.
+  startPattern: {
+    grid: [
+      _,
+      '..oooooooooooo..',
+      '..occcccccccco..',
+      '..occcckccccco..',
+      '..occckkkcccco..',
+      '..ockkkkkkkcco..',
+      '..occkccccccco..',
+      '..occckcccccco..',
+      '..occcccccccco..',
+      '..ocLLLLLLLLco..',
+      '..occcccccccco..',
+      '..ocLLLLLLccco..',
+      '..occcccccccco..',
+      '..oooooooooooo..',
+      _,
+      _,
+    ],
+    palette: { o: O, c: 0xf8f0d8, k: 0x8a3a20, L: 0xb09a70 },
+  },
+  // A spool of tying thread.
+  extraWear: { grid: MATERIAL_ICONS.copperWire.grid, palette: { o: O, w: 0x8a6a3a, c: 0x8a3a20, C: 0xc05a3a } },
+  valueMult: {
+    grid: [
+      _,
+      _,
+      '..ooooo.........',
+      '.oYyyyyo........',
+      '.odddddo........',
+      '.oyyyyyo........',
+      '.odddddo........',
+      '.oyyyyyo........',
+      '.odddddo.ooooo..',
+      '.oyyyyyooYyyyyo.',
+      '.odddddoodddddo.',
+      '.oyyyyyooyyyyyo.',
+      '.odddddoodddddo.',
+      '..ooooo..ooooo..',
+      _,
+      _,
+    ],
+    palette: { o: O, ...GOLD },
+  },
+  helperDiscount: {
+    grid: [
+      _,
+      _,
+      '.....oooooooooo.',
+      '....oTTTTTTTTTo.',
+      '...oTTTkkTTTkTo.',
+      '..oTTTTkkTTkTTo.',
+      '.oTooTTTTTkTTTo.',
+      '.oTooTTTTkTTTTo.',
+      '..oTTTTTkTTkkTo.',
+      '...oTTTkTTTkkTo.',
+      '....oTTTTTTTTTo.',
+      '.....oooooooooo.',
+      _,
+      _,
+      _,
+      _,
+    ],
+    palette: { o: O, T: 0xe8c888, k: 0x8a3a20 },
+  },
+  startLocation: {
+    grid: [
+      _,
+      '......oooo......',
+      '..ooooooooooo...',
+      '..oSSSSSSSkSSo..',
+      '..oSkkkkkkkkSSo.',
+      '..oSSSSSSSkSSo..',
+      '..ooooooooooo...',
+      '......oPPo......',
+      '......oPPo......',
+      '......oPPo......',
+      '......oPPo......',
+      '......oPPo......',
+      '......oPPo......',
+      '...oggGgggGgo...',
+      '...oooooooooo...',
+      _,
+    ],
+    palette: { o: O, S: 0xe8c888, k: 0x8a3a20, P: 0x7a5230, g: 0x5a8a3a, G: 0x8aba5a },
+  },
+}
+
+export type UiIconId = 'coin' | 'fly' | 'season' | 'license' | 'basket' | 'trash'
+
+export const UI_ICONS: Record<UiIconId, Icon> = {
+  coin: {
+    grid: [
+      '..oooooo..',
+      '.oYYYyyyo.',
+      'oYyddddyyo',
+      'oYdyyyyyyo',
+      'oydyyyyyyo',
+      'oydyyyyyDo',
+      'oyyddddyDo',
+      '.oyyyyyDo.',
+      '..oooooo..',
+    ],
+    palette: { o: O, ...GOLD, D: 0xb88a20 },
+  },
+  fly: FLY_ICONS.basicDry,
+  season: {
+    grid: [
+      _,
+      '......oooo......',
+      '.....osSSso.....',
+      '....osSSSSso....',
+      '..o.osSSSSso.o..',
+      '....osSSSSso....',
+      '.ooo..osso..ooo.',
+      'oGGgoooooooogGGo',
+      'oggggGGGGGGggggo',
+      'oggggggggggggggo',
+      'oooooooooooooooo',
+    ],
+    palette: { o: O, s: 0xf8e080, S: 0xe0a030, g: 0x5a8a3a, G: 0x8aba5a },
+  },
+  license: {
+    grid: [
+      'oooooooooooooo',
+      'ottttttttkttto',
+      'otLLLLLtttttto',
+      'ottttttttktTto',
+      'otLLLtttttTTTo',
+      'ottttttttktTto',
+      'oooooooooooooo',
+    ],
+    palette: { o: O, t: 0xe8b860, L: 0x8a3a20, k: 0x8a6a3a, T: 0x8a3a20 },
+  },
+  basket: {
+    grid: [
+      '....oooooooo....',
+      '...o........o...',
+      '..o..........o..',
+      '.oooooooooooooo.',
+      '.oLLLLLLLLLLLLo.',
+      '.oooooooooooooo.',
+      '.owWwWwWwWwWwWo.',
+      '.oWwWwWwWwWwWwo.',
+      '.owWwWwWwWwWwWo.',
+      '.oWwWwWwWwWwWwo.',
+      '..owWwWwWwWwWo..',
+      '..oooooooooooo..',
+    ],
+    palette: { o: O, L: 0x9a7248, w: 0xb08850, W: 0xd0a870 },
+  },
+  trash: {
+    grid: [
+      '......oooo......',
+      '......o..o......',
+      '..oooooooooooo..',
+      '..oMMMMMMMMMMo..',
+      '..oooooooooooo..',
+      '...ommMmmMmmo...',
+      '...ommMmmMmmo...',
+      '...ommMmmMmmo...',
+      '...ommMmmMmmo...',
+      '...ommMmmMmmo...',
+      '...ommMmmMmmo...',
+      '...oooooooooo...',
+    ],
+    palette: { o: O, m: 0x7a8088, M: 0xb0b6be },
+  },
 }
 
 export const iconBitmap = (icon: Icon): Bitmap => paint(icon.grid, icon.palette)

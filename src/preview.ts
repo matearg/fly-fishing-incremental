@@ -1,7 +1,7 @@
 // Dev-only art review page: draws baked bitmaps at 2× so the user can approve them.
-import { JUNK, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './game/data'
+import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './game/data'
 import { hashString } from './game/util/rand'
-import { FLY_ICONS, MATERIAL_ICONS, iconBitmap, type Icon } from './art/icons'
+import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS, iconBitmap, type Icon } from './art/icons'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
 import { blank, blit, mix, paint, type Bitmap } from './art/pixels'
 import { FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
@@ -113,3 +113,7 @@ const onPaper = (i: Icon, caption: string) => {
 }
 for (const p of PATTERNS) onPaper(FLY_ICONS[p.id], p.name)
 for (const m of MATERIALS) onPaper(MATERIAL_ICONS[m.id], m.name)
+for (const l of LOCATIONS) onPaper(PLACE_ICONS[l.id], l.name)
+for (const [k, i] of Object.entries(HELPER_ICONS)) onPaper(i, `helper · ${k}`)
+for (const u of LICENSE_UPGRADES) onPaper(LICENSE_ICONS[u.id], u.name)
+for (const [k, i] of Object.entries(UI_ICONS)) onPaper(i, `ui · ${k}`)
