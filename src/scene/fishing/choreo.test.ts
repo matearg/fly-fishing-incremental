@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { approach, approachTarget, BACK_LEN, BACK_MS, CAST_MS, castLine, castPose, releaseOffscreen, schoolKey, SINK_MS, STRAIGHT_MS, trackCatch, type Pt, type Track } from './choreo'
 import { TIMING } from '../../game/data'
+import { BODY_X, BODY_Y, ROD_TIP } from '../../art/sprites/figures'
 import { newGame } from '../../game/state'
 
 describe('approach', () => {
@@ -63,6 +64,13 @@ describe('cast', () => {
     const before = castLine(BACK_MS + STRAIGHT_MS - 1, tip, land)!.at(-1)!
     const after = castLine(BACK_MS + STRAIGHT_MS, castTip, land, tip)!.at(-1)!
     expect(dist(before, after)).toBeLessThanOrEqual(1)
+  })
+  it('keeps the forward cast above the anglers\' hats', () => {
+    // An angler whose hat top is at y 70 and body at x 100–114 (the helper stands 24 px behind), with the real pose tips.
+    const sx = 100 - BODY_X, sy = 70 - BODY_Y, water: Pt = [240, 107]
+    const backTip: Pt = [sx + ROD_TIP.back[0], sy + ROD_TIP.back[1]], castTip: Pt = [sx + ROD_TIP.cast[0], sy + ROD_TIP.cast[1]]
+    for (let ms = BACK_MS + STRAIGHT_MS; ms < CAST_MS; ms += 5)
+      for (const [x, y] of castLine(ms, castTip, water, backTip)!) if (x <= 114) expect(y, `${ms} ms`).toBeLessThan(70)
   })
   it('lands the fly on the water, then ends', () => {
     expect(dist(castLine(CAST_MS - 1, tip, land)!.at(-1)!, land)).toBeLessThanOrEqual(2)

@@ -12,6 +12,7 @@ export const CAST_MS = BACK_MS + STRAIGHT_MS + FORWARD_MS
 export const SINK_MS = 400
 export const BACK_LEN = 34 // how far behind the rod tip the line straightens out
 const LOOP = 6 // gap between the legs of the line's U loop
+const LIFT = 20 // how high the forward loop arcs, keeping the line over the anglers
 
 export type Pt = [number, number]
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k
@@ -50,7 +51,7 @@ export function castLine(sinceMs: number, tip: Pt, land: Pt, backTip: Pt = tip):
   }
   if (sinceMs < CAST_MS) {
     const e = ease((sinceMs - BACK_MS - STRAIGHT_MS) / FORWARD_MS), arc = Math.sin(Math.PI * e)
-    const F: Pt = [lerp(tip[0], land[0], e), lerp(tip[1], land[1], e) - arc * 12], g = LOOP * arc
+    const F: Pt = [lerp(B[0], land[0], e), lerp(B[1], land[1], e) - arc * LIFT], g = LOOP * arc // the loop unrolls from behind
     return loop(F, g, 1, lerpPt(B, F, e * e))
   }
   return null

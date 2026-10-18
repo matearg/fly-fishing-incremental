@@ -50,7 +50,7 @@ const SHOULDER: [number, number] = [9, 11]
 const POSES: Record<Pose, { hand: [number, number]; rod: [number, number][] }> = {
   idle: { hand: [12, 15], rod: [[13, 15], [25, 3]] },
   back: { hand: [13, 8], rod: [[13, 7], [12, 4], [8, -3], [1, -7]] }, // raised by the shoulder, rod up and back over the hat
-  cast: { hand: [13, 12], rod: [[14, 12], [27, 9]] },
+  cast: { hand: [13, 9], rod: [[14, 9], [27, -4]] }, // stopped high in front, so the line unrolls over the hats
   reel: { hand: [12, 11], rod: [[13, 11], [16, 3], [20, 1], [24, 2], [25, 5]] }, // raised and bent by the fish
 }
 const pad = ([x, y]: [number, number]): [number, number] => [x + PAD_L, y + PAD_T]

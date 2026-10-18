@@ -19,7 +19,8 @@ const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
 const GROUND_Y = WATER_Y - 8 // the row the anglers stand on
 const WRAP = 30 // off-screen margin so fish leave fully before wrapping
 // Draw order, back to front.
-const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, figures: 6, line: 7, hud: 8 }
+// The helper stands a step behind the player: it, its line and its fly draw under the player.
+const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, helper: 5.5, figures: 6, line: 7, hud: 8 }
 
 export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void }
 
@@ -32,6 +33,7 @@ const lerp = (a: number, b: number, k: number) => a + (b - a) * k
 
 export class FishingScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics
+  private helperLine!: Phaser.GameObjects.Graphics
   private ripples!: Phaser.GameObjects.Graphics
   private biteText!: Phaser.GameObjects.Image
   private placeText!: Phaser.GameObjects.Image
@@ -58,6 +60,7 @@ export class FishingScene extends Phaser.Scene {
 
   create(): void {
     this.g = this.add.graphics().setDepth(Z.line)
+    this.helperLine = this.add.graphics().setDepth(Z.helper + 0.1)
     this.ripples = this.add.graphics().setDepth(Z.ripples)
     this.biteText = this.add.image(0, 0, addText(this, '!', TEXT_YELLOW)).setOrigin(0.5, 1).setDepth(Z.hud)
     this.placeText = this.add.image(VIEW_W - 22, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0)
@@ -66,9 +69,9 @@ export class FishingScene extends Phaser.Scene {
       const bmps = figureBitmaps(kind)
       for (const pose of Object.keys(bmps) as Pose[]) addBitmap(this, `fig:${kind}:${pose}`, bmps[pose])
     }
-    this.helper = this.add.image(0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.figures)
+    this.helper = this.add.image(0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.helper)
     this.player = this.add.image(0, 0, 'fig:angler:idle').setOrigin(0).setDepth(Z.figures)
-    this.flies = [0, 1].map(() => this.add.image(0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(Z.line + 0.5).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
+    this.flies = [Z.line + 0.5, Z.helper + 0.2].map(z => this.add.image(0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(z).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
     for (const j of JUNK) addBitmap(this, `junk:${j.id}`, junkBitmap(j.id))
     this.junk = this.add.image(0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
     addBitmap(this, 'menu-button', iconBitmap(SCENE_ICONS.menuButton))
@@ -107,7 +110,7 @@ export class FishingScene extends Phaser.Scene {
     const tipX = playerX - BODY_X + ROD_TIP.idle[0]
     return {
       id, look, maxDepth, waterLeft: look.shoreX - 10, playerX, helperX: playerX - 24,
-      playerFlyX: Math.min(VIEW_W - 40, tipX + 140), helperFlyX: tipX + 50,
+      playerFlyX: Math.min(VIEW_W - 40, tipX + 140), helperFlyX: tipX + 110, // far enough that its line clears the bank face at depth
     }
   }
 
@@ -182,17 +185,17 @@ export class FishingScene extends Phaser.Scene {
   }
 
   // The cast's loop as a polyline; a settled line is straight, fainter below the surface. The tied fly sits on its end.
-  private drawLine(pts: Pt[] | null, fly: Phaser.GameObjects.Image, patternId: string | undefined): void {
+  private drawLine(g: Phaser.GameObjects.Graphics, pts: Pt[] | null, fly: Phaser.GameObjects.Image, patternId: string | undefined): void {
     fly.setVisible(!!pts)
     if (!pts) return
-    this.g.lineStyle(1, 0xf0f0f0, 0.8)
+    g.lineStyle(1, 0xf0f0f0, 0.8)
     const [tip, end] = [pts[0], pts[pts.length - 1]]
-    if (pts.length > 2) for (let i = 1; i < pts.length; i++) this.g.lineBetween(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1])
-    else if (end[1] <= WATER_Y) this.g.lineBetween(tip[0], tip[1], end[0], end[1])
+    if (pts.length > 2) for (let i = 1; i < pts.length; i++) g.lineBetween(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1])
+    else if (end[1] <= WATER_Y) g.lineBetween(tip[0], tip[1], end[0], end[1])
     else {
       const cross = lerp(tip[0], end[0], (WATER_Y - tip[1]) / (end[1] - tip[1]))
-      this.g.lineBetween(tip[0], tip[1], cross, WATER_Y)
-      this.g.lineStyle(1, 0xf0f0f0, 0.45).lineBetween(cross, WATER_Y, end[0], end[1])
+      g.lineBetween(tip[0], tip[1], cross, WATER_Y)
+      g.lineStyle(1, 0xf0f0f0, 0.45).lineBetween(cross, WATER_Y, end[0], end[1])
     }
     const id = patternId ?? 'basicDry', [ex, ey] = LINE_FLY_EYE[id] ?? LINE_FLY_EYE.basicDry
     fly.setTexture(this.lineFly(id)).setPosition(Math.round(end[0]) - ex, Math.round(end[1]) - ey)
@@ -246,6 +249,7 @@ export class FishingScene extends Phaser.Scene {
     const p = s.anglers[0], h = s.anglers[1]
     const ptr = trackCatch(this.tracks[0], p), htr = trackCatch(this.tracks[1], h)
     this.g.clear()
+    this.helperLine.clear()
 
     // Helper figure: one stands in for anglers[1]; the rest work out of sight. Its catches are never drawn.
     this.helper.setVisible(!!h)
@@ -255,7 +259,7 @@ export class FishingScene extends Phaser.Scene {
       this.helper.setTexture(`fig:helper:${pose}`).setPosition(hx, figY)
       const tip: [number, number] = [hx + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
       const backTip: Pt = [hx + ROD_TIP.back[0], figY + ROD_TIP.back[1]]
-      this.drawLine(this.linePos(s, h, htr, tip, backTip, place.helperFlyX, place, t + 1.7), this.flies[1], h.fly?.patternId)
+      this.drawLine(this.helperLine, this.linePos(s, h, htr, tip, backTip, place.helperFlyX, place, t + 1.7), this.flies[1], h.fly?.patternId)
     } else this.flies[1].setVisible(false)
 
     const pose = this.pose(p, ptr)
@@ -264,7 +268,7 @@ export class FishingScene extends Phaser.Scene {
     const tip: [number, number] = [px + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
     const backTip: Pt = [px + ROD_TIP.back[0], figY + ROD_TIP.back[1]]
     const line = this.linePos(s, p, ptr, tip, backTip, place.playerFlyX, place, t), fly = line && line[line.length - 1]
-    this.drawLine(line, this.flies[0], p.fly?.patternId)
+    this.drawLine(this.g, line, this.flies[0], p.fly?.patternId)
     this.biteText.setVisible(p.phase === 'bite').setPosition(place.playerX + 7, figY + BODY_Y - 2)
 
     // The catch picked at cast swims (or drifts) to the fly, bites, and is reeled in.
