@@ -15,6 +15,7 @@ describe('sound data', () => {
         if (n.to !== undefined) expect(n.to, id).toBeGreaterThan(0)
         expect(n.gain, id).toBeGreaterThan(0)
         expect(n.gain, id).toBeLessThanOrEqual(0.5)
+        if (n.attack !== undefined) expect(n.attack, id).toBeLessThan(n.dur)
       }
     }
   })

@@ -4,21 +4,26 @@ export type SoundId = 'castBack' | 'castForward' | 'plip' | 'bite' | 'reel' | 's
   | 'move' | 'select' | 'back' | 'nope' | 'buy' | 'sell' | 'season'
 export type Wave = 'square' | 'triangle' | 'noise'
 
-// One voice. Attack 5 ms, then decays to silence by `dur`. Tones: freq is pitch in Hz.
-// Noise: freq is the lowpass cutoff. `to` slides freq over the note (exponentially).
-export interface Note { wave: Wave; at: number; dur: number; freq: number; to?: number; gain: number }
+// One voice. Swells in over `attack` ms (default 5), then decays to silence by `dur`. Tones: freq is pitch in Hz.
+// Noise: freq is the lowpass cutoff, or the bandpass center when `q` is set. `to` slides freq over the note (exponentially).
+export interface Note { wave: Wave; at: number; dur: number; freq: number; to?: number; gain: number; attack?: number; q?: number }
 
 const sq = (at: number, dur: number, freq: number, gain = 0.12, to?: number): Note => ({ wave: 'square', at, dur, freq, gain, to })
 const tri = (at: number, dur: number, freq: number, gain = 0.3, to?: number): Note => ({ wave: 'triangle', at, dur, freq, gain, to })
 const noise = (at: number, dur: number, freq: number, gain: number, to?: number): Note => ({ wave: 'noise', at, dur, freq, gain, to })
+// A rod cutting the air: band-passed noise that swells up while its pitch climbs, then drops away as it passes.
+const swish = (at: number, rise: number, fall: number, lo: number, hi: number, gain: number): Note[] => [
+  { wave: 'noise', at, dur: rise + 20, freq: lo, to: hi, gain, attack: rise, q: 1.5 },
+  { wave: 'noise', at: at + rise, dur: fall, freq: hi, to: lo * 0.8, gain: gain * 0.8, attack: 10, q: 1.5 },
+]
 
 // Note pitches (Hz), equal temperament.
 const C5 = 523, D5 = 587, E5 = 659, G5 = 784, A5 = 880, C6 = 1047, E6 = 1319, G6 = 1568
 const arp = (pitches: number[], step: number, dur: number, gain = 0.1) => pitches.map((f, i) => sq(i * step, dur, f, gain))
 
 export const SFX: Record<SoundId, Note[]> = {
-  castBack: [noise(0, 220, 600, 0.25, 2400)],
-  castForward: [noise(0, 260, 2400, 0.3, 700)],
+  castBack: swish(0, 130, 120, 450, 1500, 0.3),
+  castForward: swish(0, 110, 160, 400, 2000, 0.45), // the harder stroke: faster, brighter, louder
   plip: [tri(0, 90, 1400, 0.3, 500), noise(0, 60, 3000, 0.12)],
   bite: [tri(0, 60, 500, 0.35, 1200), noise(0, 80, 2000, 0.2), tri(70, 60, 900, 0.25, 1600)],
   reel: Array.from({ length: 12 }, (_, i) => sq(i * 62, 18, i % 2 ? 2200 : 1900, 0.05)),

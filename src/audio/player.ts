@@ -102,14 +102,15 @@ export class SoundPlayer {
       const start = t0 + n.at / 1000, end = start + n.dur / 1000
       const env = ctx.createGain()
       env.gain.setValueAtTime(0, start)
-      env.gain.linearRampToValueAtTime(n.gain * scale, start + 0.005)
+      env.gain.linearRampToValueAtTime(n.gain * scale, start + (n.attack ?? 5) / 1000)
       env.gain.exponentialRampToValueAtTime(0.0001, end)
       env.connect(master)
       let src: AudioScheduledSourceNode, freq: AudioParam
       if (n.wave === 'noise') {
         const s = ctx.createBufferSource(), f = ctx.createBiquadFilter()
         s.buffer = this.noise; s.loop = true
-        f.type = 'lowpass'
+        f.type = n.q ? 'bandpass' : 'lowpass'
+        if (n.q) f.Q.value = n.q
         s.connect(f).connect(env)
         s.start(start, Math.random()) // a random spot in the buffer, so repeats don't sound identical
         src = s; freq = f.frequency
