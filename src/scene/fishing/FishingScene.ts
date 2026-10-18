@@ -299,11 +299,27 @@ export class FishingScene extends Phaser.Scene {
     this.placeText.setTexture(addText(this, LOCATIONS.find(l => l.id === s.location)!.name.toUpperCase(), TEXT_WHITE))
   }
 
+  // The same-species swimmer nearest the fly, preferring ones inside the camera's view so the catch never swims in from off-screen.
+  private nearest(id: string, fly: [number, number], t: number, place: Place): Swimmer | undefined {
+    const view = this.cameras.main.worldView
+    let best: Swimmer | undefined, bestD = Infinity
+    for (const f of this.fish) {
+      if (f.id !== id || f.stray) continue
+      const [x, y] = this.schoolPos(f, t, place)
+      const seen = x >= Math.max(view.x, place.waterLeft) && x + f.w <= view.right
+      const d = Math.hypot(x + f.w / 2 - fly[0], y - fly[1]) + (seen ? 0 : 1e6)
+      if (d < bestD) { best = f; bestD = d }
+    }
+    return best
+  }
+
   private moveChosen(c: Chosen, p: Angler, tr: Track, fly: [number, number], t: number, place: Place): void {
+    const a = p.phase === 'waiting' ? approach(p.timerMs, tr.waitMs) : { stage: 'swim' as const, k: 1 }
+    // Cruising, the catch is just one of the school; which swimmer goes for the fly is settled when the approach starts.
+    if (!c.from && a.stage !== 'cruise' && p.phase === 'waiting' && !c.sw.stray) c.sw = this.nearest(c.sw.id, fly, t, place) ?? c.sw
     const { sw } = c, mouth = fishMouth(sw.id)
     c.lastPhase = p.phase
     sw.img.setTexture(sw.frames[Math.floor(t * 8 + sw.phase) % 2])
-    const a = p.phase === 'waiting' ? approach(p.timerMs, tr.waitMs) : { stage: 'swim' as const, k: 1 }
     if (a.stage === 'cruise') {
       const [x, y] = this.schoolPos(sw, t, place)
       sw.img.setPosition(Math.round(x), Math.round(y))
