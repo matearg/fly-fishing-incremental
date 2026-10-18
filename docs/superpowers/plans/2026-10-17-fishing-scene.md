@@ -10,6 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-17-fishing-scene-design.md` (read it first; mockup `docs/superpowers/specs/2026-10-17-fishing-scene-patagonia-mockup.html`).
 
+## Status (2026-10-17)
+
+- Tasks 1–6 are built on branch `fishing-scene` (`c291519..6e2e6b4`). Review stops 1–3 are approved; at stop 3 the user also asked for unique El Cuero and Nahuelito shapes (`75938f2`).
+- The final whole-branch review found 0 critical, 2 important and 7 minor issues. Both important ones are fixed (`6e2e6b4`). The minors have their own plan: `plans/2026-10-17-fishing-scene-minors.md`.
+- **Open:** Task 6 Step 8 (review stop 4, the animations in the running game) and Step 9 (close-out and merge).
+
 ## Global Constraints
 
 - Work on branch `fishing-scene` off `master`; merge to `master` when the roadmap row says done.
@@ -41,24 +47,24 @@
 **Interfaces:**
 - Produces: `export type Pending = Omit<CatchItem, 'id'> & { location: LocationId }`; `Angler` gains `pending: Pending | null` (null whenever no catch is picked). Later tasks read `angler.pending`.
 
-- [ ] **Step 1: Create the branch** — `git switch -c fishing-scene`.
-- [ ] **Step 2: Write failing tests** in `src/game/sim.test.ts` (update `autoAngler()` to include `pending: null`):
+- [x] **Step 1: Create the branch** — `git switch -c fishing-scene`.
+- [x] **Step 2: Write failing tests** in `src/game/sim.test.ts` (update `autoAngler()` to include `pending: null`):
   - `it('the catch is picked at cast and is what lands')`: `castPlayer(s, r)`; `const p = s.anglers[0].pending!`; `expect(p.location).toBe(s.location)`; run to bite, `reelPlayer`, run `TIMING.reelMs + 100`; `expect(s.basket[0]).toMatchObject({ kind: p.kind, defId: p.defId, value: p.value, size: p.size })`; `expect(s.anglers[0].pending).toBeNull()`.
   - `it('travel while waiting re-picks for the new place')`: unlock `river` (set `s.unlockedLocations.push('river')`), cast at creek, `travel(s, 'river')`, `tick(s, 100, r)`; `expect(s.anglers[0].pending!.location).toBe('river')`; if `kind === 'fish'`, `expect(SPECIES.find(x => x.id === p.defId)!.location).toBe('river')`.
   - `it('travel during a bite keeps the hooked catch')`: cast, run to `bite`, `const p = structuredClone(s.anglers[0].pending)`, travel, `run(s, 1000)`; `expect(s.anglers[0].pending).toEqual(p)`.
   - `it('helpers pick at cast too')`: auto angler with a fly in the box; after one tick in `waiting`, `pending` is non-null.
-- [ ] **Step 3: Write failing tests** in `src/game/save.test.ts`:
+- [x] **Step 3: Write failing tests** in `src/game/save.test.ts`:
   - `it('an old save mid-bite without pending loads and lands')`: cast, run to bite, serialize, then in the parsed JSON `delete anglers[0].pending`; `parseSave(...)` → `anglers[0].pending` is `null`; `reelPlayer` + run → `basket` has 1 item.
   - `it('drops a pending catch of an unknown species')`: set `pending = { kind: 'fish', defId: 'noSuchFish', value: 1, size: 1, location: 'creek' }` → after `parseSave`, `null`.
-- [ ] **Step 4: Run** `npx vitest run src/game/sim.test.ts src/game/save.test.ts` — expect the new tests to FAIL.
-- [ ] **Step 5: Implement.**
+- [x] **Step 4: Run** `npx vitest run src/game/sim.test.ts src/game/save.test.ts` — expect the new tests to FAIL.
+- [x] **Step 5: Implement.**
   - `startWaiting(state, a, rand)` also sets `a.pending = { ...rollCatch(state, a.fly!, rand), location: state.location }`.
   - `stepAngler` `waiting`: before counting down, if `a.pending?.location !== state.location` re-roll it (this also fills `null` from old saves). Don't touch `bite`/`reeling`.
   - `land`: use `a.pending` (dropping `location`), falling back to `rollCatch` when `null`; then `a.pending = null`. The sorter rule is unchanged.
   - `sanitize`: `a.pending ??= null`; set it to `null` when its `defId` isn't in `SPECIES` (fish) or `JUNK` (junk).
   - `newGame` and `buyHelper` create anglers with `pending: null`.
-- [ ] **Step 6: Run** `npm test` — all pass, including `pacing.test.ts` (the random sequence shifts; the odds don't).
-- [ ] **Step 7: Commit** — `git commit -am "feat(sim): pick the catch at cast"`.
+- [x] **Step 6: Run** `npm test` — all pass, including `pacing.test.ts` (the random sequence shifts; the odds don't).
+- [x] **Step 7: Commit** — `git commit -am "feat(sim): pick the catch at cast"`.
 
 ---
 
@@ -71,14 +77,14 @@
 **Interfaces:**
 - Produces: `SPECIES` with 20 entries; ids `smallmouthBass` and `lakeTrout` gone.
 
-- [ ] **Step 1: Write failing tests.**
+- [x] **Step 1: Write failing tests.**
   - `data.test.ts`, `it('species carry the Patagonian names')`: `expect(SPECIES.map(s => [s.id, s.name])).toEqual([...])` with exactly the spec's table, in this order: dace Puyen, brookTrout Brook Trout, creekChub Otuno, brownTrout Brown Trout, grayling Peladilla, rainbowTrout Rainbow Trout, pike Bigmouth Perch, perch Creole Perch, walleye Chinook Salmon, catfish Velvet Catfish, muskie Limay King, cutthroat Big Puyen, goldenTrout Landlocked Salmon, arcticChar Glacier Trout, tigerTrout Andes Tiger, whitefish Pejerrey, cisco Steelhead, steelhead Sea-run Brown Trout, lakeSturgeon El Cuero, ghostSturgeon Nahuelito.
   - `fish.test.ts`, `it('colours exist for exactly the current species')`: `expect(Object.keys(FISH_COLORS).sort()).toEqual(SPECIES.map(s => s.id).sort())`.
   - `save.test.ts`, `it('a basket fish of a removed species survives load and sells')`: basket item `{ kind: 'fish', defId: 'lakeTrout', value: 50, ... }` → after `parseSave` it's still there; `sellAll` adds 50.
-- [ ] **Step 2: Run** `npm test` — the new tests FAIL.
-- [ ] **Step 3: Implement.** Rename the `name` fields; delete the two species and their `FISH_COLORS` entries. Palettes are retuned in Task 5.
-- [ ] **Step 4: Run** `npm test`. If `pacing.test.ts` fails, raise the weights of River's and Mountain Lake's remaining fish just enough to pass, and note the change in the commit message. Don't re-add species.
-- [ ] **Step 5: Commit** — `git commit -am "feat(data): Patagonian fish names"`.
+- [x] **Step 2: Run** `npm test` — the new tests FAIL.
+- [x] **Step 3: Implement.** Rename the `name` fields; delete the two species and their `FISH_COLORS` entries. Palettes are retuned in Task 5.
+- [x] **Step 4: Run** `npm test`. If `pacing.test.ts` fails, raise the weights of River's and Mountain Lake's remaining fish just enough to pass, and note the change in the commit message. Don't re-add species.
+- [x] **Step 5: Commit** — `git commit -am "feat(data): Patagonian fish names"`.
 
 ---
 
@@ -98,16 +104,16 @@
   - `bakeSideBank(look: PlaceLook, h: number, seed: number): Bitmap`: the left bank cut in side view, `look.shoreX` wide (wider when `dock`, which reaches out over the water). Row 0 is the walkable surface the anglers stand on.
   - `bakeBank` (top-down) stays and uses the new decor.
 
-- [ ] **Step 1: Write failing tests.**
+- [x] **Step 1: Write failing tests.**
   - `rand.test.ts`: `hashString('creek') !== hashString('river')`, and it's stable (same input, same output).
   - `places.test.ts`: keep the existing tests on `placeLook`; add: every place has ≥2 horizon layers; `deep` differs from `water[0]`; `bakeHorizon(look, 480, 80, 1)` is 480×80 with an opaque top-left pixel; `bakeSideBank(look, 120, 1)` has width `look.shoreX` (or more when `dock`) and an opaque pixel at row 0; `placeLook('creek', 'nope')` falls back to `default`.
-- [ ] **Step 2: Run** `npx vitest run src/art src/game/rand.test.ts` — FAIL.
-- [ ] **Step 3: Implement the five Patagonia looks** from the spec's table and the mockup (Creek steppe arroyo with coirón and lupines; River cobbles, bardas and poplars; Big River tall bardas, willows and driftwood; Mountain Lake turquoise water, lenga forest and close peaks; Great Lake deep blue water, the Andes filling the sky, cobble beach and dock). Decor and drift grids follow the existing `Decor` pattern.
-- [ ] **Step 4: Update `RiverBackdrop`**: use `placeLook`, seed with `hashString(location)`, and replace the lily pads with `look.drift`.
-- [ ] **Step 5: Create the preview page.** `preview.html` loads `src/preview.ts`, which draws baked bitmaps onto canvases at 2× with `image-rendering: pixelated`. One section per place: the top-down banks plus water bands, and the side view (horizon, water gradient from `water[0]` to `deep`, side bank). Later tasks add sections. Confirm `npm run build` still only emits the game: `dist/` has no `preview` entry.
-- [ ] **Step 6: Run** `npm test && npm run build` — pass.
-- [ ] **Step 7: Commit** — `git commit -am "feat(art): Patagonia place looks"` (add the new files first).
-- [ ] **Step 8: REVIEW STOP 1.** Run `npm run dev` and screenshot `/preview.html` and the title screen at each place (the dev console can set `state.location`). Show them to the user, apply their changes, and wait for approval.
+- [x] **Step 2: Run** `npx vitest run src/art src/game/rand.test.ts` — FAIL.
+- [x] **Step 3: Implement the five Patagonia looks** from the spec's table and the mockup (Creek steppe arroyo with coirón and lupines; River cobbles, bardas and poplars; Big River tall bardas, willows and driftwood; Mountain Lake turquoise water, lenga forest and close peaks; Great Lake deep blue water, the Andes filling the sky, cobble beach and dock). Decor and drift grids follow the existing `Decor` pattern.
+- [x] **Step 4: Update `RiverBackdrop`**: use `placeLook`, seed with `hashString(location)`, and replace the lily pads with `look.drift`.
+- [x] **Step 5: Create the preview page.** `preview.html` loads `src/preview.ts`, which draws baked bitmaps onto canvases at 2× with `image-rendering: pixelated`. One section per place: the top-down banks plus water bands, and the side view (horizon, water gradient from `water[0]` to `deep`, side bank). Later tasks add sections. Confirm `npm run build` still only emits the game: `dist/` has no `preview` entry.
+- [x] **Step 6: Run** `npm test && npm run build` — pass.
+- [x] **Step 7: Commit** — `git commit -am "feat(art): Patagonia place looks"` (add the new files first).
+- [x] **Step 8: REVIEW STOP 1.** Run `npm run dev` and screenshot `/preview.html` and the title screen at each place (the dev console can set `state.location`). Show them to the user, apply their changes, and wait for approval.
 
 ---
 
@@ -120,12 +126,12 @@
 **Interfaces:**
 - Produces: `type Pose = 'idle' | 'cast' | 'reel'`; `type FigureKind = 'angler' | 'helper'`; `FIGURE_STYLES: Record<FigureKind, Record<string, FigureStyle>>` (`default` only); `figureBitmaps(kind: FigureKind, style = 'default'): Record<Pose, Bitmap>`; `ROD_TIP: Record<Pose, [number, number]>` (pixel the line leaves from, relative to the sprite's top-left); `FEET_Y: number` (the sprite row that stands on the ground).
 
-- [ ] **Step 1: Write failing tests**: all three poses are the same size for both kinds; `ROD_TIP` for each pose is inside the sprite and on an opaque pixel; the angler's and helper's idle bitmaps differ (the helper uses a different shirt colour from the red player).
-- [ ] **Step 2: Run** `npx vitest run src/art/figures.test.ts` — FAIL.
-- [ ] **Step 3: Implement.** Roughly 16×26 px figures: hat, outline, rod. `cast` has the rod forward, `reel` has it raised and bent.
-- [ ] **Step 4: Add a figures section to the preview page** (both kinds × three poses, standing on each place's side bank).
-- [ ] **Step 5: Run** `npm test && npm run build`. **Commit** `feat(art): angler and helper figures`.
-- [ ] **Step 6: REVIEW STOP 2.** Screenshot the preview and wait for the user's approval.
+- [x] **Step 1: Write failing tests**: all three poses are the same size for both kinds; `ROD_TIP` for each pose is inside the sprite and on an opaque pixel; the angler's and helper's idle bitmaps differ (the helper uses a different shirt colour from the red player).
+- [x] **Step 2: Run** `npx vitest run src/art/figures.test.ts` — FAIL.
+- [x] **Step 3: Implement.** Roughly 16×26 px figures: hat, outline, rod. `cast` has the rod forward, `reel` has it raised and bent.
+- [x] **Step 4: Add a figures section to the preview page** (both kinds × three poses, standing on each place's side bank).
+- [x] **Step 5: Run** `npm test && npm run build`. **Commit** `feat(art): angler and helper figures`.
+- [x] **Step 6: REVIEW STOP 2.** Screenshot the preview and wait for the user's approval.
 
 ---
 
@@ -147,19 +153,19 @@
   - `JUNK_ART: Record<string, { grid: Grid; palette: Record<string, number> }>`.
   - `JUNK_SNAG: Record<string, [number, number]>`, where the line catches.
 
-- [ ] **Step 1: Write failing tests.**
+- [x] **Step 1: Write failing tests.**
   - The existing `FISH_TOP` size test is mirrored for `FISH_SIDE`.
   - `FISH_MOUTH` lands on an opaque pixel of frame 0.
   - `fishSideBitmaps` returns 2 bitmaps for every species.
   - `junk.test.ts`: every `JUNK` id has `JUNK_ART` and `JUNK_SNAG`, and `junkBitmap` paints each one.
-- [ ] **Step 2: Run** `npx vitest run src/art` — FAIL.
-- [ ] **Step 3: Implement.**
+- [x] **Step 2: Run** `npx vitest run src/art` — FAIL.
+- [x] **Step 3: Implement.**
   - Side shapes use the same outline and eye conventions as `fishGrid`.
   - Retune the `FISH_COLORS` palettes to match each renamed fish. For example: Puyen is translucent olive with silver; Velvet Catfish is dark and velvety; Pejerrey is silver with a lateral stripe; Nahuelito is pale and ghostly.
   - Junk: can, tangled line, boot, tire.
-- [ ] **Step 4: Add sections to the preview page.** Show every species in both views, grouped by place, plus the four junk items.
-- [ ] **Step 5: Run** `npm test && npm run build`, then commit with `feat(art): side-view fish and junk`.
-- [ ] **Step 6: REVIEW STOP 3.** Screenshot the preview and wait for approval. If the user asks for unique shapes for El Cuero or Nahuelito, add a per-species grid override here.
+- [x] **Step 4: Add sections to the preview page.** Show every species in both views, grouped by place, plus the four junk items.
+- [x] **Step 5: Run** `npm test && npm run build`, then commit with `feat(art): side-view fish and junk`.
+- [x] **Step 6: REVIEW STOP 3.** Screenshot the preview and wait for approval. If the user asks for unique shapes for El Cuero or Nahuelito, add a per-species grid override here.
 
 ---
 
@@ -181,16 +187,16 @@
   - `schoolKey(state: GameState): string`, which changes when the location or the licensed species there change.
   - Constants `APPROACH_MS`, `NOTICE_SHARE` and `CAST_MS`, starting at 2000, 0.4 and 300. Tune them at the review stop.
 
-- [ ] **Step 1: Write the failing tests** in `choreo.test.ts`:
+- [x] **Step 1: Write the failing tests** in `choreo.test.ts`:
   - `approach(5000, 6000).stage === 'cruise'`
   - `approach(0, 6000)` gives `{ stage: 'swim', k: 1 }`
   - A short wait: `approach(1500, 1500)` gives `{ stage: 'notice', k: 0 }`, and `approach(0, 1500).k === 1`
   - Over a wait, `k` never decreases within a stage
   - `castPose(3000, 2900) === true` and `castPose(3000, 1000) === false`
   - `schoolKey` differs after travel and after pushing a licence species for the current place
-- [ ] **Step 2: Run** `npx vitest run src/scene/choreo.test.ts` and confirm the tests FAIL.
-- [ ] **Step 3: Implement `choreo.ts`.**
-- [ ] **Step 4: Rewrite the scene.** The behaviour follows the spec's "What the player sees". Decisions the spec leaves open:
+- [x] **Step 2: Run** `npx vitest run src/scene/choreo.test.ts` and confirm the tests FAIL.
+- [x] **Step 3: Implement `choreo.ts`.**
+- [x] **Step 4: Rewrite the scene.** The behaviour follows the spec's "What the player sees". Decisions the spec leaves open:
   - **Layers, back to front:**
     - the horizon bitmap
     - the water gradient: per-row, from `look.water` to `look.deep`, with no bands
@@ -217,12 +223,12 @@
   - **HUD.** Top-left reads `Helpers ${anglers.length - 1}`, hidden at 0. Top-right keeps the place name and the menu button. The "!" sits over the player while in `bite`.
   - **Motion.** Fish tails swap frames at about 4 Hz. The fly bobs while waiting.
   - **Dock.** When `look.dock` is set, the figures stand on the dock.
-- [ ] **Step 5: Run** `npm test && npm run build` and confirm everything passes.
-- [ ] **Step 6: Manual run.** `npm run dev`, play at `?speed=20`, and check:
+- [x] **Step 5: Run** `npm test && npm run build` and confirm everything passes.
+- [x] **Step 6: Manual run.** `npm run dev`, play at `?speed=20`, and check:
   - catches at every place, at least one junk snag, and travel mid-wait
   - a state with 50 helpers, set from the console: one figure, "Helpers 50"
   - Esc and the menu button still work, and clicking the menu button doesn't cast
-- [ ] **Step 7: Commit.** `git commit -am "feat(scene): Patagonia fishing scene with visible bites"`
+- [x] **Step 7: Commit.** `git commit -am "feat(scene): Patagonia fishing scene with visible bites"`
 - [ ] **Step 8: REVIEW STOP 4.** Record a short GIF or screenshots of the approach, bite, reel, junk snag and the helper cycle. Show them to the user, tune the durations, and wait for approval.
 - [ ] **Step 9: Close out.**
   - In the roadmap, mark piece 3 done and drop the two deferred minors this piece fixed (the backdrop seed and `TIER_COUNT`).

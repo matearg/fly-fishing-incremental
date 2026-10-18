@@ -8,7 +8,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 |---|-------|--------|
 | 1 | Tying bench rework | **Done**, merged to `master` (`cc389c0`) |
 | 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec `specs/2026-10-17-title-screen-design.md`. Its plan was deleted once done; it's in git history up to `c8cc002` |
-| 3 | Fishing scene art + single helper + visible bites + per-place banks | **In progress.** Spec `specs/2026-10-17-fishing-scene-design.md` (adds the Patagonia look for title + scene, Patagonian fish names, swappable art styles). Plan next |
+| 3 | Fishing scene art + single helper + visible bites + per-place banks | **Built, awaiting review stop 4** (the animations) on branch `fishing-scene`. Spec `specs/2026-10-17-fishing-scene-design.md`, plan `plans/2026-10-17-fishing-scene.md`. Final review's minors: `plans/2026-10-17-fishing-scene-minors.md` |
 | 4 | Panel icons + owned-unlock styling | Not started |
 
 ## Decisions already made (carry into pieces 3 and 4)
@@ -45,4 +45,4 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - `FishingScene` keeps its own `TIER_COUNT`, which duplicates `TIER_SCHOOL` in `src/art/fish.ts`. Merge them during piece 3.
 
 ## How to resume
-Piece 3's design is approved. Its spec supersedes the "Piece 3" notes above where they differ (e.g. no visible depth bands, Patagonia palettes instead of today's `PLACE_LOOKS`). Build from its plan in `plans/`.
+Piece 3 is built on branch `fishing-scene` and waits on review stop 4 (the animations in the running game). After approval: fix the minors (`plans/2026-10-17-fishing-scene-minors.md`), do Task 6 Step 9 of the fishing scene plan (mark this row done, drop the two deferred minors piece 3 fixed: the backdrop seed and `TIER_COUNT`), and ask the user before merging to `master`.
