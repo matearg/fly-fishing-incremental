@@ -8,7 +8,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 |---|-------|--------|
 | 1 | Tying bench rework | **Done**, merged to `master` (`cc389c0`) |
 | 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec `specs/2026-10-17-title-screen-design.md`. Its plan was deleted once done; it's in git history up to `c8cc002` |
-| 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done** on branch `fishing-scene`. Spec `specs/2026-10-17-fishing-scene-design.md`, plans `plans/2026-10-17-fishing-scene.md` and `plans/2026-10-17-fishing-scene-minors.md` |
+| 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec `specs/2026-10-17-fishing-scene-design.md`, plans `plans/2026-10-17-fishing-scene.md` and `plans/2026-10-17-fishing-scene-minors.md` |
 | 4 | Panel icons + owned-unlock styling | Not started |
 
 ## Decisions already made (carry into pieces 3 and 4)
@@ -43,4 +43,4 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - A Space or Esc pressed on the exact frame the title's fade ends can reach the fishing scene, causing one cast or an instant return to the menu. Fix: ignore input for one frame after `wake`.
 
 ## How to resume
-Piece 3 is done on branch `fishing-scene`, awaiting the user's OK to merge to `master`. Next: piece 4 (panel icons and owned-unlock styling), starting with a brainstorm.
+Piece 3 is merged to `master`. Work continues on `develop`. Next: piece 4 (panel icons and owned-unlock styling), starting with a brainstorm.
