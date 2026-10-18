@@ -56,7 +56,8 @@ You keep hearing the same character and the same tune, but never the exact same 
 ## Calls I made (not discussed, flagged in the hand-off)
 
 - **Branch:** `feat/music` from `feat/sounds`, since it reuses the settings row and player from piece 6.
-- **Voices:** a soft square-wave melody and a triangle bass, both quiet next to the effects. Optionally a third, very quiet voice (a slow arpeggio or a held note) where a tune needs it. No drums or percussion: they make music feel busy and they wear out fastest.
+- **Parts:** a soft square-wave melody and a triangle bass, both quiet next to the effects, plus **a gentle beat** (the user's change at review, 2026-10-18: "keep melody and bass, add a gentle beat"). No other parts.
+- **The beat:** soft and sparse, made from the noise channel (a light hat or brush) and a low, quiet thump. It has a few patterns per tune and follows the same anti-repetition rules as the melody: it can change pattern between phrases, and now and then it rests for a phrase. It must never get busy or loud enough to fight the "calm and slow" goal.
 - **Tempo:** slow, roughly 60–80 BPM.
 - **Character per place** (a starting point to tune at the review stop): Title, warm and welcoming. Creek, light and playful but unhurried. River, flowing, with a running bass. Big River, warmer and lower. Mountain Lake, sparse and spacious, with more rests. Great Lake, the slowest and widest, almost a lullaby.
 - **Size:** each tune has at least 6 phrases of about 4 bars each, so it takes a few minutes before any combination comes back.
@@ -70,7 +71,7 @@ You keep hearing the same character and the same tune, but never the exact same 
 ## Left to the builder
 
 - **Composing the tunes:** keys, melodies, chord choices, exact tempo and gains. Iterate them at the review stop.
-- **Data format:** suggestion: write phrases as compact strings, one token per eighth note (a pitch name like `E5`, `-` to hold, `.` for a rest), parsed by a pure function that throws on a bad token or a phrase whose parts have different lengths, like `paint` does for pixel grids. Tests check that every phrase of every tune parses and has the expected length.
+- **Data format:** suggestion: write phrases as compact strings, one token per eighth note (a pitch name like `E5`, `-` to hold, `.` for a rest; the beat can use its own letters, e.g. `h` hat, `k` thump), parsed by a pure function that throws on a bad token or a phrase whose parts have different lengths, like `paint` does for pixel grids. Tests check that every phrase of every tune parses and has the expected length.
 - **Phrase picking:** a pure function taking the tune, the previous phrase, and an injected `rand`, so the rules above (no immediate repeat, melody rests, dropped notes) are unit-tested with `seqRand`/`lcg`.
 - **Scheduling:** Web Audio needs notes scheduled ahead of time. A common pattern is a short timer that queues the next phrase a second or so before the current one ends, using `AudioContext.currentTime`. Because a suspended context's clock stops, a hidden tab won't queue up notes, but the timer must not schedule into the past when the tab returns. Reuse `SoundPlayer`'s note-to-oscillator code (`notes()`), routed into a music gain node instead of the effects master.
 - **Wiring:** `main.ts` already calls `sound.ambience(...)` every frame from the session mode and location; a matching call can pick the tune (`title` or the current location). `TitleScene.volumeRow` already takes an icon and a setting, so the music row is a second call with `NOTES`; `menu.ts` needs a `music` row and actions in its existing style and tests.
