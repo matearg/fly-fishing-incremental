@@ -24,8 +24,9 @@ export function schoolKey(state: GameState): string {
   return `${state.location}:${placeSpecies(state.location, state.licenseSpecies).map(s => s.id).join(',')}`
 }
 
-// What the scene remembers per visible angler: the catch it last saw, the wait remaining when it appeared, and the last timer seen.
-export interface Track { pending: Pending | null; waitMs: number; lastMs: number }
+// What the scene remembers per visible angler: the catch it last saw, the wait remaining when it appeared (drives the approach),
+// the wait remaining when the cast began (drives the cast and sink), and the last timer seen.
+export interface Track { pending: Pending | null; waitMs: number; castMs: number; lastMs: number }
 
 // Compared by value: a reloaded save (tab return, another tab, Continue) rebuilds the same catch as new objects.
 export function sameCatch(a: Pending | null, b: Pending | null): boolean {
@@ -33,12 +34,18 @@ export function sameCatch(a: Pending | null, b: Pending | null): boolean {
 }
 
 // A new catch (a cast, or a re-pick after travel) restarts the approach within the wait that is left.
-// The timer jumping back up also means a new cast, even if the new catch happens to equal the last one.
+// Only the timer jumping back up is a new cast, even if the new catch happens to equal the last one.
 export function trackCatch(tr: Track, a: Angler | undefined): Track {
   const pending = a?.pending ?? null, ms = a?.timerMs ?? 0
-  if (!sameCatch(pending, tr.pending) || ms > tr.lastMs) tr.waitMs = ms
+  if (ms > tr.lastMs) tr.castMs = tr.waitMs = ms
+  else if (!sameCatch(pending, tr.pending)) tr.waitMs = ms
   tr.pending = pending; tr.lastMs = ms
   return tr
+}
+
+// A fish that was on the line has landed: it must not swim back into view.
+export function releaseOffscreen(lastPhase: Angler['phase']): boolean {
+  return lastPhase === 'bite' || lastPhase === 'reeling'
 }
 
 // While waiting, the catch heads for where the fly will rest (it may still be mid-cast); once hooked it follows the fly.

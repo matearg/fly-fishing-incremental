@@ -9,7 +9,7 @@ import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../art/fish'
 import { JUNK_SNAG, junkBitmap } from '../art/junk'
 import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../art/places'
 import { blank, mix, paint } from '../art/pixels'
-import { approach, approachTarget, CAST_MS, NOTICE_SHARE, sameCatch, schoolKey, trackCatch, type Track } from './choreo'
+import { approach, approachTarget, CAST_MS, castPose, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, trackCatch, type Track } from './choreo'
 import { addBitmap } from './textures'
 
 export const VIEW_W = 480
@@ -27,7 +27,7 @@ const MENU_BUTTON = ['oooooooooooo', 'obbbbbbbbbbo', 'obwwwwwwwwbo', 'obbbbbbbbb
 
 // stray: a hooked fish from another place, removed once it lands
 interface Swimmer { img: Phaser.GameObjects.Image; id: string; frames: [string, string]; x0: number; y: number; speed: number; phase: number; w: number; stray?: boolean }
-interface Chosen { sw: Swimmer; pending: Pending; from: [number, number] | null; right: boolean }
+interface Chosen { sw: Swimmer; pending: Pending; from: [number, number] | null; right: boolean; lastPhase: Angler['phase'] }
 interface Place { id: LocationId; look: PlaceLook; maxDepth: number; waterLeft: number; playerX: number; helperX: number; playerFlyX: number; helperFlyX: number }
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k
@@ -46,7 +46,7 @@ export class FishingScene extends Phaser.Scene {
   private fish: Swimmer[] = []
   private place: Place | null = null
   private school = ''
-  private tracks: [Track, Track] = [{ pending: null, waitMs: 0, lastMs: 0 }, { pending: null, waitMs: 0, lastMs: 0 }]
+  private tracks: [Track, Track] = [{ pending: null, waitMs: 0, castMs: 0, lastMs: 0 }, { pending: null, waitMs: 0, castMs: 0, lastMs: 0 }]
   private chosen: Chosen | null = null
   private rippleDots: { x0: number; y: number; len: number; speed: number }[] = []
 
@@ -123,11 +123,14 @@ export class FishingScene extends Phaser.Scene {
 
   // centerY: the swimmer's middle row; it lives until the next school rebuild.
   private addSwimmer(id: string, x0: number, centerY: number, speed: number, phase: number): Swimmer {
-    const [a, b] = fishSideBitmaps(id)
     const frames: [string, string] = [`fish-side:${id}:0`, `fish-side:${id}:1`]
-    addBitmap(this, frames[0], a); addBitmap(this, frames[1], b)
+    if (!this.textures.exists(frames[0])) {
+      const [a, b] = fishSideBitmaps(id)
+      addBitmap(this, frames[0], a); addBitmap(this, frames[1], b)
+    }
+    const { width: w, height: h } = this.textures.get(frames[0]).getSourceImage()
     const img = this.add.image(0, 0, frames[0]).setOrigin(0).setDepth(Z.fish).setFlipX(speed < 0)
-    const sw = { img, id, frames, x0, y: centerY - a.h / 2, speed, phase, w: a.w }
+    const sw = { img, id, frames, x0, y: centerY - h / 2, speed, phase, w }
     this.fish.push(sw)
     return sw
   }
@@ -159,7 +162,7 @@ export class FishingScene extends Phaser.Scene {
       const k = 1 - a.timerMs / TIMING.reelMs
       return [lerp(landX, Math.max(tip[0], place.waterLeft + 6), k), lerp(depthY, WATER_Y + 2, k)]
     }
-    const since = tr.waitMs - a.timerMs
+    const since = tr.castMs - a.timerMs
     if (since < CAST_MS) {
       const k = since / CAST_MS
       return [lerp(tip[0], landX, k), lerp(tip[1], WATER_Y, k) - Math.sin(k * Math.PI) * 24]
@@ -170,7 +173,7 @@ export class FishingScene extends Phaser.Scene {
 
   private pose(a: Angler | undefined, tr: Track): Pose {
     if (a?.phase === 'reeling') return 'reel'
-    return a?.phase === 'waiting' && tr.waitMs - a.timerMs < CAST_MS ? 'cast' : 'idle'
+    return a?.phase === 'waiting' && castPose(tr.castMs, a.timerMs) ? 'cast' : 'idle'
   }
 
   private drawLine(tip: [number, number], fly: [number, number]): void {
@@ -235,11 +238,11 @@ export class FishingScene extends Phaser.Scene {
 
     // The catch picked at cast swims (or drifts) to the fly, bites, and is reeled in.
     const pending = p.phase === 'idle' ? null : p.pending
-    if (this.chosen && !sameCatch(this.chosen.pending, pending)) this.release(t, place, p.phase === 'idle')
+    if (this.chosen && !sameCatch(this.chosen.pending, pending)) this.release(t, place, releaseOffscreen(this.chosen.lastPhase))
     if (pending?.kind === 'fish' && !this.chosen) {
       // A fish hooked at another place (travel during a bite) has no school here; it gets a sprite of its own.
       const sw = this.fish.find(f => f.id === pending.defId) ?? (p.phase !== 'waiting' && fly ? Object.assign(this.addSwimmer(pending.defId, fly[0], fly[1], -10, 0), { stray: true }) : undefined)
-      if (sw) this.chosen = { sw, pending, from: null, right: sw.speed > 0 }
+      if (sw) this.chosen = { sw, pending, from: null, right: sw.speed > 0, lastPhase: p.phase }
     }
     const aim = fly && approachTarget(p.phase, fly, this.restPos(s, p, place.playerFlyX, place))
     if (this.chosen && aim) this.moveChosen(this.chosen, p, ptr, aim, t, place)
@@ -252,6 +255,7 @@ export class FishingScene extends Phaser.Scene {
 
   private moveChosen(c: Chosen, p: Angler, tr: Track, fly: [number, number], t: number, place: Place): void {
     const { sw } = c, mouth = fishMouth(sw.id)
+    c.lastPhase = p.phase
     sw.img.setTexture(sw.frames[Math.floor(t * 8 + sw.phase) % 2])
     const a = p.phase === 'waiting' ? approach(p.timerMs, tr.waitMs) : { stage: 'swim' as const, k: 1 }
     if (a.stage === 'cruise') {
