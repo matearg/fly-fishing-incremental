@@ -10,6 +10,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec and plan deleted once done; in git history up to `3a27cc7` (spec) and `c8cc002` (plan) |
 | 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done**, merged to `master` (`cedadcc`). Spec, mockup and plans deleted once done; in git history up to `3a27cc7` |
 | 4 | Panel icons + owned-unlock styling (grew: field-journal look, stacked basket, bench bar, bulk trash) | **Done**, merged to `develop` (`cb6c9a7`). Spec and plan deleted once done; in git history up to `cb6c9a7` |
+| 5 | Cast animation, canvas fill without bars, fixed 3-row basket, pixel-font HUD, tied-fly sprite on the line | **Built** on `feat/cast-and-view`, not merged yet. Spec `docs/superpowers/specs/2026-10-18-cast-and-view-design.md`, plan `docs/superpowers/plans/2026-10-18-cast-and-view.md` |
 
 ## Decisions already made (carry into pieces 3 and 4)
 
@@ -41,8 +42,17 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 ### Bench (piece 1, as built)
 - A 10 s cooldown, cut by 25% per extra bench. It ties 1 fly per cooldown. The box holds at most 1 fly per angler, you included. The cooldown pauses while the box is full. Big River was made cheaper (12,000) to keep the pacing test smooth. The first season now takes about 47 minutes for the test bot.
 
+### Piece 5 (as built)
+- **Canvas fill:** the world stays 480×270. `main.ts` sizes the game to a crop of it matching `#game`'s aspect (`viewSize` in `src/scene/view.ts`, ENVELOP scale mode), and each scene scrolls its camera (`viewScroll`). The HUD is pinned with `setScrollFactor(0)`.
+- **Zoom limits:** fishing keeps world x 0–300 and y 50–262 in view (bank, figures, Great Lake landing spot, back-cast loop, deepest band); it cuts sky first, then deep water. Title keeps x 140–340, y 2–236, centered. Past a limit the game switches to FIT and thin bars return on that axis: e.g. 1280×1000 in game (cell 940×866) shows 10 px bars top and bottom, and 2560×900 shows side bars on both screens.
+- **Cast timing:** back 350 ms, straighten 250 ms, forward 400 ms (`CAST_MS` 1000), sink 400 ms; `CAST_MS + SINK_MS < TIMING.biteMinMs` is tested. Geometry is `castLine` in `choreo.ts`. The forward loop unrolls from behind on a high arc and the `cast` pose holds the rod high, so the line passes over both hats (tested). The helper lands its fly further out (`tipX + 110`) so its line clears the bank face, and it draws under the player, as a step behind.
+- **Art (approved 2026-10-18):** a `back` pose for both figures (sprites have 6 px left / 8 px top padding; place them at `x - BODY_X`), and a line-fly sprite per pattern (`src/art/sprites/flies.ts`, falls back to Basic Dry).
+- **Basket:** always 3 tile rows tall (tiles 32 px), extra rows scroll; Sell all sits on the first row (user's request).
+- **HUD text:** place name, helper count and bite "!" use the pixel font via `addText` (`src/scene/textures.ts`), shared with the title.
+- **Deferred minors (final review):** the helper's back-cast line runs up to 21 px off the world's left edge at non-dock places; `fit()` calls `setGameSize` even when the size is unchanged (possible one-frame clear while dragging the window, not seen); `lineFlyBitmap`'s `in` check would also match prototype keys (unreachable after `sanitize`).
+
 ### Saving
 - No manual save button. The user said "leave the save as it is": autosave every 5 s, plus saving on tab hide, page close, and going back to the menu. Nothing is saved while the title or menu is up.
 
 ## How to resume
-All four pieces of the overhaul are done. Next: merge `develop` into `master` to ship piece 4.
+Pieces 1–4 are done; piece 5 is built on `feat/cast-and-view` and waits to be merged into `develop`. Shipping still means merging `develop` into `master`.
