@@ -14,7 +14,7 @@
 
 - Tasks 1–6 are built on branch `fishing-scene` (`c291519..6e2e6b4`). Review stops 1–3 are approved; at stop 3 the user also asked for unique El Cuero and Nahuelito shapes (`75938f2`).
 - The final whole-branch review found 0 critical, 2 important and 7 minor issues. Both important ones are fixed (`6e2e6b4`). The minors have their own plan, `plans/2026-10-17-fishing-scene-minors.md`. It is done (`e96f9fc..beec9b0`), and its fresh review found 0 critical and 0 important issues.
-- **Open:** Task 6 Step 8 (review stop 4, the animations in the running game) and Step 9 (close-out and merge).
+- Review stop 4 approved on 2026-10-18; piece 3 is done. Only the merge to `master` is left.
 
 ## Global Constraints
 
@@ -229,8 +229,8 @@
   - a state with 50 helpers, set from the console: one figure, "Helpers 50"
   - Esc and the menu button still work, and clicking the menu button doesn't cast
 - [x] **Step 7: Commit.** `git commit -am "feat(scene): Patagonia fishing scene with visible bites"`
-- [ ] **Step 8: REVIEW STOP 4.** Record a short GIF or screenshots of the approach, bite, reel, junk snag and the helper cycle. Show them to the user, tune the durations, and wait for approval.
-- [ ] **Step 9: Close out.**
+- [x] **Step 8: REVIEW STOP 4.** Record a short GIF or screenshots of the approach, bite, reel, junk snag and the helper cycle. Show them to the user, tune the durations, and wait for approval.
+- [x] **Step 9: Close out.**
   - In the roadmap, mark piece 3 done and drop the two deferred minors this piece fixed (the backdrop seed and `TIER_COUNT`).
   - Commit `docs: mark piece 3 done`.
   - Ask the user before merging `fishing-scene` to `master`.

@@ -8,7 +8,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 |---|-------|--------|
 | 1 | Tying bench rework | **Done**, merged to `master` (`cc389c0`) |
 | 2 | Title screen + main menu | **Done**, merged to `master` (`c8cc002`). Spec `specs/2026-10-17-title-screen-design.md`. Its plan was deleted once done; it's in git history up to `c8cc002` |
-| 3 | Fishing scene art + single helper + visible bites + per-place banks | **Built, awaiting review stop 4** (the animations) on branch `fishing-scene`. Spec `specs/2026-10-17-fishing-scene-design.md`, plan `plans/2026-10-17-fishing-scene.md`. Final review's minors are fixed (`plans/2026-10-17-fishing-scene-minors.md`) |
+| 3 | Fishing scene art + single helper + visible bites + per-place banks | **Done** on branch `fishing-scene`. Spec `specs/2026-10-17-fishing-scene-design.md`, plans `plans/2026-10-17-fishing-scene.md` and `plans/2026-10-17-fishing-scene-minors.md` |
 | 4 | Panel icons + owned-unlock styling | Not started |
 
 ## Decisions already made (carry into pieces 3 and 4)
@@ -41,8 +41,6 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 ## Deferred minors (from the title screen's final review)
 - Settings → Fullscreen throws a TypeError on iPhone Safari (no `requestFullscreen`). Fix: show the item only when `document.fullscreenEnabled` is true.
 - A Space or Esc pressed on the exact frame the title's fade ends can reach the fishing scene, causing one cast or an instant return to the menu. Fix: ignore input for one frame after `wake`.
-- The Creek and the River share the same backdrop fish and pad layout, because `RiverBackdrop` seeds from the place id's length. Fix: seed from a hash of the id.
-- `FishingScene` keeps its own `TIER_COUNT`, which duplicates `TIER_SCHOOL` in `src/art/fish.ts`. Merge them during piece 3.
 
 ## How to resume
-Piece 3 is built on branch `fishing-scene` and waits on review stop 4 (the animations in the running game). The minors are fixed. After approval: do Task 6 Step 9 of the fishing scene plan (mark this row done, drop the two deferred minors piece 3 fixed: the backdrop seed and `TIER_COUNT`), and ask the user before merging to `master`.
+Piece 3 is done on branch `fishing-scene`, awaiting the user's OK to merge to `master`. Next: piece 4 (panel icons and owned-unlock styling), starting with a brainstorm.
