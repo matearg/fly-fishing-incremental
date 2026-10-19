@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { insectPos, letterWave } from './choreo'
 import { approach, approachTarget, BACK_LEN, BACK_MS, CAST_MS, castLine, castPose, releaseOffscreen, schoolKey, SINK_MS, STRAIGHT_MS, trackCatch, type Pt, type Track } from './choreo'
 import { TIMING } from '../../game/data'
 import { BODY_X, BODY_Y, ROD_TIP } from '../../art/sprites/figures'
@@ -151,5 +152,28 @@ describe('approachTarget', () => {
     expect(approachTarget('waiting', [10, 20], [200, 150])).toEqual([200, 150])
     expect(approachTarget('bite', [201, 152], [200, 150])).toEqual([201, 152])
     expect(approachTarget('reeling', [120, 115], [200, 150])).toEqual([120, 115])
+  })
+})
+
+describe('power-up motion', () => {
+  it('letterWave stays within ±3 px and ripples across letters', () => {
+    let rippled = false
+    for (let t = 0; t <= 2000; t += 50) for (let i = 0; i < 20; i++) {
+      const y = letterWave(i, t)
+      expect(Number.isInteger(y)).toBe(true)
+      expect(Math.abs(y)).toBeLessThanOrEqual(3)
+      if (y !== letterWave(i + 1, t)) rippled = true
+    }
+    expect(rippled).toBe(true)
+  })
+  it('insectPos stays inside its area and is stable', () => {
+    const area = { x0: 10, y0: 100, x1: 290, y1: 140 }
+    for (let i = 0; i < 20; i++) for (let t = 0; t <= 10_000; t += 100) {
+      const [x, y] = insectPos(i, t, area)
+      expect(x).toBeGreaterThanOrEqual(area.x0); expect(x).toBeLessThanOrEqual(area.x1)
+      expect(y).toBeGreaterThanOrEqual(area.y0); expect(y).toBeLessThanOrEqual(area.y1)
+      expect(insectPos(i, t, area)).toEqual([x, y])
+    }
+    expect(insectPos(0, 0, area)).not.toEqual(insectPos(0, 500, area))
   })
 })

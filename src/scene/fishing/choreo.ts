@@ -1,6 +1,8 @@
 // Pure timing for the fishing scene's animations; the scene reads sim state and asks these what to draw.
 import { placeSpecies } from '../../game/fishing/catch'
 import type { Angler, GameState, Pending } from '../../game/state'
+import { hashString, lcg } from '../../game/util/rand'
+import type { Rect } from '../view'
 
 export const APPROACH_MS = 2000 // the chosen fish's notice + swim to the fly, ending at the bite
 export const NOTICE_SHARE = 0.4 // first part of the approach: stop and turn toward the fly
@@ -88,4 +90,19 @@ export function releaseOffscreen(lastPhase: Angler['phase']): boolean {
 // While waiting, the catch heads for where the fly will rest (it may still be mid-cast); once hooked it follows the fly.
 export function approachTarget(phase: Angler['phase'], fly: [number, number], rest: [number, number]): [number, number] {
   return phase === 'waiting' ? rest : fly
+}
+
+// Power-up titles: each letter bobs on a sine, a little behind the one before it, so the word ripples.
+export function letterWave(i: number, tMs: number): number {
+  return Math.round(3 * Math.sin((tMs / 900) * 2 * Math.PI - i * 0.6))
+}
+
+// A hatch insect: a slow drift across the area with a quicker bob and a flutter, stable per insect.
+export function insectPos(i: number, tMs: number, area: Rect): Pt {
+  const r = lcg(hashString('insect' + i))
+  const px = r() * 2 * Math.PI, py = r() * 2 * Math.PI, sx = 0.0002 + r() * 0.0004, sy = 0.002 + r() * 0.004
+  const w = area.x1 - area.x0, h = area.y1 - area.y0
+  const x = area.x0 + w * (0.5 + 0.5 * Math.sin(tMs * sx + px))
+  const y = area.y0 + h * (0.5 + 0.4 * Math.sin(tMs * sy + py) + 0.1 * Math.sin(tMs * 0.02 + px))
+  return [Math.round(x), Math.round(y)]
 }

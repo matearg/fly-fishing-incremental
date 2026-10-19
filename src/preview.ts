@@ -14,6 +14,9 @@ import { BODY_X, FEET_Y, figureBitmaps, ROD_LOOKS, WADERS_LOOKS, type FigureKind
 import { lineFlyBitmap } from './art/sprites/flies'
 import { fishBitmaps, fishSideBitmaps } from './art/sprites/fish'
 import { junkBitmap } from './art/sprites/junk'
+import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from './art/banner'
+import { insectBitmaps } from './art/sprites/insects'
+import { letterWave } from './scene/fishing/choreo'
 
 const W = 480, H = 270, SCALE = 2
 const HORIZON_H = 110 // waterline of the side view
@@ -123,6 +126,22 @@ for (const j of JUNK) {
   fillRect(card, 0, 0, card.w, card.h, placeLook('river').water[1])
   blit(card, b, 2, 2)
   show(junk, card, j.name, 4)
+}
+
+const powerups = section('Power-ups — titles (wave frozen at t=0 and t=300 ms) and insects (4×)')
+for (const [text, style] of [[CHUM_TEXT, CHUM_STYLE], [HATCH_TEXT, HATCH_STYLE]] as const) for (const t of [0, 300]) {
+  const ls = bannerLetters(text, style), lh = ls.find(l => l)!.h, gap = 8
+  const card = blank(ls.reduce((w, l) => w + (l ? l.w : gap), 0) + 8, lh + 12)
+  fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
+  let x = 4
+  ls.forEach((l, i) => { if (l) blit(card, l, x, 6 + letterWave(i, t)); x += l ? l.w : gap })
+  show(powerups, card, `${text} t=${t}`)
+}
+for (const [k, b] of insectBitmaps().entries()) {
+  const card = blank(b.w + 4, b.h + 4)
+  fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
+  blit(card, b, 2, 2)
+  show(powerups, card, k ? 'wings down' : 'wings up', 4)
 }
 
 // Panel icons on the journal paper, at 3×.

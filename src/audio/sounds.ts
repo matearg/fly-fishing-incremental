@@ -1,7 +1,7 @@
 import { SPECIES, type LocationId } from '../game/data'
 
 export type SoundId = 'castBack' | 'castForward' | 'plip' | 'bite' | 'reel' | 'splashOut' | 'catch' | 'catchBig' | 'junk'
-  | 'move' | 'select' | 'back' | 'nope' | 'buy' | 'sell' | 'season'
+  | 'move' | 'select' | 'back' | 'nope' | 'buy' | 'sell' | 'season' | 'chum' | 'hatch'
 export type Wave = 'square' | 'triangle' | 'noise'
 
 // One voice. Swells in over `attack` ms (default 5), then decays to silence by `dur`. Tones: freq is pitch in Hz.
@@ -37,6 +37,8 @@ export const SFX: Record<SoundId, Note[]> = {
   nope: [sq(0, 130, 110, 0.1, 90)],
   buy: [sq(0, 70, 1976, 0.08), sq(70, 260, 2637, 0.08), noise(0, 40, 6000, 0.08)],
   sell: [sq(0, 50, 1568, 0.06), sq(55, 150, 2093, 0.06)],
+  chum: [noise(0, 400, 900, 0.4, 200), tri(0, 260, 150, 0.4, 70), noise(60, 200, 3000, 0.15, 800)], // a heavy bucket hitting the water
+  hatch: [...Array.from({ length: 6 }, (_, i) => sq(i * 60, 70, 400 + i * 100, 0.06, 450 + i * 100)), noise(0, 500, 5000, 0.08)], // a rising buzz
   season: [
     ...arp([G5, C6, E6, G6], 110, 140),
     sq(440, 220, E6, 0.1), sq(660, 600, G6, 0.1),
