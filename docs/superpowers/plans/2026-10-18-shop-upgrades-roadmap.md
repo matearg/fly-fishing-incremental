@@ -7,7 +7,7 @@ New bonuses, power-ups, helpers and shop items, agreed with the user on 2026-10-
 | # | Piece | Status |
 |---|-------|--------|
 | 1 | Catch & Release (trashing fish adds a bonus to the next Sell all), Buyer pause button, descriptions kept on owned items | Done. Spec `specs/2026-10-18-catch-and-release-design.md`, plan `plans/2026-10-18-catch-and-release.md` |
-| 2 | Gear: rods and waders | Not started |
+| 2 | Gear: rods and waders | Spec written, awaiting approval: `specs/2026-10-18-gear-design.md` |
 | 3 | Power-ups: chum bucket and hatch | Not started |
 | 4 | New helpers: Taxidermist and Guide | Not started |
 | 5 | Bonuses: combo, species log, basket set | Not started |
@@ -15,7 +15,7 @@ New bonuses, power-ups, helpers and shop items, agreed with the user on 2026-10-
 ## Decisions already made (carry into later pieces)
 
 - **Every shop item keeps its description once owned** (user's request). New items in pieces 2–5 follow the same rule.
-- **Gear (piece 2):** rods and waders make the fish caught while using them **sell for more** (user's request). This replaces my first pitch, where rods shortened the wait and waders went one band deeper. Still open: who "uses" them (the player only, or everyone) and whether they're equipped or always on.
+- **Gear (piece 2):** settled in `specs/2026-10-18-gear-design.md`. Rods make the player's catches of their tiers sell for more, and you pick which owned rod to fish with. Waders give a shop discount (best pair owned) and no sale value; any owned pair can be worn as a look. Only the player's angler uses gear, and it resets at New Season. This replaces the earlier pitch where waders also raised sale value.
 - **Power-ups (piece 3), as pitched:** the chum bucket costs money and raises rare odds for 60 s; the hatch is a random event at the current place where dry flies get more bites for 45 s, with insects on screen. Details not brainstormed yet.
 - **Helpers (piece 4), as pitched:** the Taxidermist mounts your first legendary of each species as a trophy worth a permanent +% for the season; the Guide raises your hired anglers' odds. Details not brainstormed yet.
 - **Bonuses (piece 5), as pitched:** combo (same species in a row raises a multiplier), species log (the first catch of each species pays a bounty), basket set (selling one of every species of a place pays a bonus). Details not brainstormed yet.
