@@ -14,6 +14,8 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 6 | Sounds: synthesized fishing, menu, panel and purchase sounds, water ambience per place, volume/mute row in Settings | **Done**, merged to `develop` (`f6fa4ee`), PR #7 to `master`. Spec and plan deleted once done; in git history up to `f6fa4ee` |
 | 7 | Background music: a calm chiptune tune for the title and each place, never audibly looping, own volume row in Settings | **Done**, merged to `develop` (`f6fa4ee`), PR #7 to `master`. Spec and plan deleted once done; in git history up to `f6fa4ee` |
 
+| 8 | Detailed places: half-size pixels for the whole world (places, figures, fish, flies, junk; text stays chunky), realistic per-place ground, banks, skylines and water in the fishing scene and the title backdrop | **Design approved** 2026-10-18 (`docs/superpowers/specs/2026-10-18-detailed-places-design.md`); plan next |
+
 ## Decisions already made (carry into pieces 3 and 4)
 
 ### Art, for every piece
