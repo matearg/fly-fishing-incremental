@@ -14,7 +14,7 @@
 
 - `FINE = 2` art pixels per world unit. World constants (`VIEW_W` 480, `VIEW_H` 270, `WATER_Y` 110, `GROUND_Y` 102, `shoreX`, figure spots, fly landing spots, depth bands, `FISHING_KEEP`, `TITLE_KEEP`) do not change.
 - Sprite anchor constants (`BODY_X`, `BODY_Y`, `FEET_Y`, `ROD_TIP`, `fishMouth`, `LINE_FLY_EYE`, `JUNK_SNAG`) stay in grid units, which equal world units. Fine bitmaps are exactly `FINE`× their grid.
-- Logo, menu text, HUD text and menu button stay chunky (scale 1, today's font).
+- Logo, menu text, HUD text, the power-up titles (`src/art/banner.ts`) and menu button stay chunky (scale 1, today's font).
 - `src/game/` is untouched. `npm test` (including `pacing.test.ts`) and `npm run build` stay green after every task.
 - All art is drawn in code, with no asset files. It is deterministic: seeded from `hashString(placeId)` or the passed seed, never `Math.random`.
 - `src/art/` stays pure (no Phaser, no DOM).
@@ -28,7 +28,7 @@
 1. **Input under camera zoom.** Clicking water casts. Clicking the menu button opens the menu and does not cast. Esc and Space still work. Checked in Task 1, step 4.
 2. **Window sizes.** No seams or 1-px gaps between the horizon, water and bank images, and no blurry or jittering sprites at half-unit positions. Bars appear only at clamped sizes. Check at 1280×720, 1280×1000 (10 px bars top and bottom expected), 2560×900 (side bars expected) and 800×900. Checked in Task 1, step 4 and Task 4, step 6.
 3. **Fish visible at the deepest band.** Over the bed and weeds at Mountain Lake and Great Lake, with the darkest species. Test `bedTop never rises above clear` in Task 3, plus a browser check.
-4. **No hitch when travelling.** Baking a place's fine side view (horizon + water + bank) takes under 150 ms in the browser. `preview.ts` logs per-place bake times. Checked in Task 4, step 6.
+4. **No hitch when travelling.** Baking a place's fine side view (horizon + water + bank) takes under 150 ms in the browser. `preview.ts` logs per-place bake times. Checked in Task 4, step 6. Also no hitch on equipping a new rod or waders: `FishingScene.playerFig` bakes that combination's four fine poses on first use.
 5. **Basket images.** At half scale on a devicePixelRatio 1 screen, the fish and junk in the basket must not look muddy. Check in Task 2, step 9, and report it at review stop A.
 
 ---
@@ -47,8 +47,8 @@
 
 - [ ] **Step 1:** Add `export const FINE = 2 // art pixels per world unit` to `src/art/pixels.ts`.
 - [ ] **Step 2:** In `main.ts`, the config is `width: VIEW_W * FINE, height: VIEW_H * FINE`, and `fit()` calls `game.scale.setGameSize(w * FINE, h * FINE)`. `viewSize` stays in world units.
-- [ ] **Step 3:** In both scenes' `create`, call `this.cameras.main.setOrigin(0).setZoom(FINE)`. Every `this.scale.width` and `this.scale.height` passed to `viewScroll`, or used to pin the HUD, becomes `/ FINE`. In `FishingScene.drawLine`, both `lineStyle(1, …)` become `lineStyle(1 / FINE, …)`. The ripple `fillRect(…, 1)` in `FishingScene.update` and `RiverBackdrop.update` gets height `1 / FINE`.
-- [ ] **Step 4: Verify in the browser** (`npm run dev`, the `mateo-test` skill). The title and fishing look as before, except the line and ripples are thinner and the text is still chunky. Check Review Focus 1 and 2 at the four window sizes: same crop as before, and bars only at 1280×1000 and 2560×900. If half-unit positions blur, set `roundPixels: true` in the game config.
+- [ ] **Step 3:** In both scenes' `create`, call `this.cameras.main.setOrigin(0).setZoom(FINE)`. Every `this.scale.width` and `this.scale.height` passed to `viewScroll`, or used to pin the HUD, becomes `/ FINE`. This includes `const w = this.scale.width` in `FishingScene.update`, which also centres the power-up titles in `drawPowerups`. In `FishingScene.drawLine`, both `lineStyle(1, …)` become `lineStyle(1 / FINE, …)`. The ripple `fillRect(…, 1)` in `FishingScene.update` and `RiverBackdrop.update` gets height `1 / FINE`.
+- [ ] **Step 4: Verify in the browser** (`npm run dev`, the `mateo-test` skill). The title and fishing look as before, except the line and ripples are thinner and the text is still chunky. Throw chum and trigger a hatch: both titles stay centred at the top and the insects fly over the water. Check Review Focus 1 and 2 at the four window sizes: same crop as before, and bars only at 1280×1000 and 2560×900. If half-unit positions blur, set `roundPixels: true` in the game config.
 - [ ] **Step 5:** Run `npm test && npm run build`. Expected: all pass.
 - [ ] **Step 6: Commit:** `git add -A src && git commit -m "render the world at twice the resolution"`
 
@@ -59,7 +59,7 @@
 **Files:**
 - Modify: `src/art/pixels.ts` (add `upscale`), `src/art/pixels.test.ts`
 - Create: `src/art/refine.ts`, `src/art/refine.test.ts`
-- Modify: `src/art/sprites/figures.ts`, `fish.ts`, `flies.ts`, `junk.ts` and their tests
+- Modify: `src/art/sprites/figures.ts`, `fish.ts`, `flies.ts`, `junk.ts`, `insects.ts` and their tests
 - Modify: `src/scene/textures.ts` (add `fineImage`)
 - Modify: `src/scene/fishing/FishingScene.ts`, `src/scene/title/RiverBackdrop.ts`, `src/ui/icons.ts:26-27`, `src/preview.ts`
 
@@ -69,7 +69,7 @@
   - `upscale(b: Bitmap, k: number): Bitmap`: nearest-neighbour.
   - `refine(b: Bitmap, outline?: number): Bitmap`: `FINE`× size, alpha identical per source pixel.
   - `fineImage(scene: Phaser.Scene, x: number, y: number, key: string): Phaser.GameObjects.Image`: `scene.add.image(x, y, key).setScale(1 / FINE)`.
-  - `figureBitmaps`, `fishBitmaps`, `fishSideBitmaps`, `lineFlyBitmap` and `junkBitmap` keep their signatures and now return fine bitmaps.
+  - `figureBitmaps(kind, gear)`, `fishBitmaps`, `fishSideBitmaps`, `lineFlyBitmap`, `junkBitmap` and `insectBitmaps` keep their signatures and now return fine bitmaps.
 
 **`refine` rule** (the tests pin it):
 1. Upscale ×`FINE`.
@@ -94,24 +94,27 @@
   - flies: the eye is opaque at `LINE_FLY_EYE * FINE`, and the size test is `[d.w * FINE, d.h * FINE]`.
   - junk: the snag is opaque at `JUNK_SNAG * FINE`.
   - Add a figures test: `the rod is one fine pixel thick`. In `idle`, the pixel at the rod midpoint ×FINE is opaque and its right fine neighbour is transparent.
+  - Add a figures test: `a wrapped rod keeps its wraps`. With `{ rod: 'carbonSpey' }`, the fine rod has pixels of its `R` colour.
+  - insects: both frames are `FINE`× their grid (5×3 → 10×6).
 
   Run `npx vitest run src/art/sprites`. Expected: FAIL.
 - [ ] **Step 6: Make the sprites fine:**
   - `fishBitmaps` and `fishSideBitmaps`: `refine(paint(...), OUTLINE)`.
   - `junkBitmap`: `refine(paint(...), O)`.
   - `lineFlyBitmap`: `refine(paint(...))`.
-  - `figureBitmaps`: `refine(paint(poseGrid(pose, false), pal), pal.o)`, then draw the rod at fine resolution: 1 fine px wide along the padded polyline `POSES[pose].rod.map(pad)` scaled by `FINE` (grid point p maps to fine p×FINE), colour `k` for the first 6 fine px and `r` after, ending exactly on `ROD_TIP×FINE`. `poseGrid(pose, withRod = true)` keeps `FIGURE_POSES` unchanged.
+  - `figureBitmaps`: `refine(paint(poseGrid(pose, false), pal), pal.o)`, then draw the rod at fine resolution: 1 fine px wide along the padded polyline `POSES[pose].rod.map(pad)` scaled by `FINE` (grid point p maps to fine p×FINE), colour `k` for the first 6 fine px, then `R` on every fine px j with `j % 8 === 0` (the grid's wraps, one fine px wide) and `r` elsewhere, ending exactly on `ROD_TIP×FINE`. `k`, `r` and `R` come from the gear palette (`ROD_LOOKS`), so the plain rod still draws unwrapped. `poseGrid(pose, withRod = true)` keeps `FIGURE_POSES` unchanged.
+  - `insectBitmaps`: `refine(paint(...))`.
 
   Run `npx vitest run src/art`. Expected: PASS.
 - [ ] **Step 7: Show them at half scale.**
-  - FishingScene: figures, fish, flies and junk are created with `fineImage`. In `addSwimmer`, `w` and `h` are the source size `/ FINE`.
+  - FishingScene: figures, fish, flies, junk and insects are created with `fineImage`. The player image (its texture comes from `playerFig`) gets the same `1 / FINE` scale. In `addSwimmer`, `w` and `h` are the source size `/ FINE`. The power-up titles stay at scale 1.
   - RiverBackdrop: fish and drift use `fineImage`, and the drift bitmap is `refine(paint(...))`.
   - `icons.ts` `catchImg` passes scale `1 / FINE`.
-  - `preview.ts`: sprite sections show at half their current scale. The place composites are built at fine size, with today's chunky place bitmaps run through `upscale(b, FINE)`, until Tasks 3–5 replace them.
+  - `preview.ts`: sprite sections show at half their current scale, including the gear section and the insects in the power-ups section, but not the power-up titles. The place composites are built at fine size, with today's chunky place bitmaps run through `upscale(b, FINE)`, until Tasks 3–5 replace them.
 - [ ] **Step 8:** Run `npm test && npm run build`. Expected: PASS.
-- [ ] **Step 9: Browser check.** Cast, bite, reel and junk all still line up: the fly sits on the line end, the fish mouth meets the fly, and junk snags. The basket icons are the same size (Review Focus 5, at DPR 1).
+- [ ] **Step 9: Browser check.** Cast, bite, reel and junk all still line up: the fly sits on the line end, the fish mouth meets the fly, and junk snags. Equip a wrapped rod: the line still leaves from the rod tip. The basket icons are the same size (Review Focus 5, at DPR 1).
 - [ ] **Step 10: Commit:** `git commit -m "redraw sprites at half-size pixels"`
-- [ ] **Step 11: Review stop A.** Show the user the figures, fish, flies and junk on `/preview.html` and in game. Wait for approval. Apply any changes they ask for in the grids or the `refine` constants.
+- [ ] **Step 11: Review stop A.** Show the user the figures (with each rod and waders), fish, flies, junk and insects on `/preview.html` and in game. Wait for approval. Apply any changes they ask for in the grids or the `refine` constants.
 
 ---
 

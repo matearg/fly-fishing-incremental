@@ -14,8 +14,8 @@ Success: switching places feels like arriving somewhere real and distinct, the b
 
 ### Pixel size (user's decision)
 - Everything in the world, in both the fishing scene and the title backdrop, is drawn with **pixels half the size of today's**: the 480×270 world shows 960×540 art pixels.
-- This covers the places (sky, skyline, bank, water, props, dock), the angler and helper in all poses, every fish (side and top view), the flies on the line, the junk, the fishing line and the ripples.
-- **Stays chunky (user's decision):** the logo, the menu text, and the HUD text (place name, helper count, bite "!"), plus the menu button. They keep today's pixel font and size, for readability.
+- This covers the places (sky, skyline, bank, water, props, dock), the angler and helper in all poses, every fish (side and top view), the flies on the line, the junk, the hatch insects, the fishing line and the ripples.
+- **Stays chunky (user's decision):** the logo, the menu text, and the HUD text (place name, helper count, bite "!"), plus the menu button. They keep today's pixel font and size, for readability. The power-up titles ("CHUM FRENZY!", "HATCH! USE DRY FLIES"), added with the shop upgrades after this was decided, count as HUD text and stay chunky too.
 - The HTML side panel is not restyled.
 
 ### Fishing scene (side view), for every place
@@ -39,9 +39,9 @@ Success: switching places feels like arriving somewhere real and distinct, the b
 - **Fish and drift:** the swimming fish (top view) and the drift (foam, leaves, twigs) get the finer pixels too.
 
 ### Sprites
-- **Angler and helper:** redrawn at the finer size in all four poses (idle, back, cast, reel), with a thin outline and shading. They keep today's look (felt hat, shirt, belt, waders, boots), and the helper still looks different from the player.
+- **Angler and helper:** redrawn at the finer size in all four poses (idle, back, cast, reel), with a thin outline and shading. They keep today's look (felt hat, shirt, belt, waders, boots), and the helper still looks different from the player. The player's gear still shows: each rod's colours and thread wraps, and each pair of waders' colours (`ROD_LOOKS`, `WADERS_LOOKS`).
 - **Fish:** side and top shapes redrawn at the finer size, still a few base shapes recoloured per species (`FISH_COLORS`), still growing with tier, plus El Cuero's and Nahuelito's own shapes.
-- **Flies on the line and junk:** redrawn at the finer size.
+- **Flies on the line, junk and hatch insects:** redrawn at the finer size.
 
 ## Must not change
 - **Game rules and balance:** nothing in `src/game/` changes.
@@ -62,8 +62,8 @@ Success: switching places feels like arriving somewhere real and distinct, the b
 New art is shown on `/preview.html` and approved before work continues. Suggested stops, in order:
 1. Mountain Lake side view at the finer size, in the real fishing scene (proves the rendering change end to end).
 2. The other four places' side views.
-3. Angler and helper, all poses.
-4. Fish (side and top), flies and junk.
+3. Angler and helper, all poses, and the angler with each rod and pair of waders.
+4. Fish (side and top), flies, junk and hatch insects.
 5. Title backdrop for all five places.
 
 ## Builder's calls (made by Claude, not by the user)

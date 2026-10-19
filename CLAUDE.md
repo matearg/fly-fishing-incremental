@@ -42,4 +42,4 @@ Branches: work happens on `develop`; pushing `master` runs tests + build and dep
 
 ## Docs and workflow
 
-Design specs and plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/`. `docs/superpowers/plans/2026-10-18-shop-upgrades-roadmap.md` tracks the current work (new shop items, helpers and bonuses): progress, decisions already made with the user, and deferred minors. Read it before starting a new piece, and update it as pieces land. `docs/superpowers/plans/2026-10-17-visual-overhaul-roadmap.md` is the finished visual overhaul, kept as history.
+Design specs and plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/`. `docs/superpowers/plans/2026-10-18-shop-upgrades-roadmap.md` tracks the current work (new shop items, helpers and bonuses): progress, decisions already made with the user, and deferred minors. Read it before starting a new piece, and update it as pieces land. `docs/superpowers/plans/2026-10-17-visual-overhaul-roadmap.md` tracks the visual overhaul: pieces 1–7 are done, and piece 8 (detailed places) is still open there.
