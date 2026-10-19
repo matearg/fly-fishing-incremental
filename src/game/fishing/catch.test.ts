@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { placeSpecies, rollCatch } from './catch'
 import { newGame, type Fly } from '../state'
-import { LICENSE_UPGRADES, LOCATIONS, RODS, SPECIES, TIERS } from '../data'
+import { CHUM, LICENSE_UPGRADES, LOCATIONS, RODS, SPECIES, TIERS } from '../data'
 import { seqRand, lcg } from '../util/testutil'
 
 const fly = (patternId: string, materialIds: string[] = []): Fly => ({ patternId, materialIds, wearLeft: 1 })
@@ -16,6 +16,23 @@ const fishIds = (state: ReturnType<typeof newGame>, f: Fly, n: number, rand: () 
 }
 
 describe('rollCatch', () => {
+  it('chum multiplies rare and legendary odds', () => {
+    const s = newGame(); s.location = 'bigRiver'
+    const count = (chum: boolean) => {
+      const rand = lcg(7), n = { rare: 0, common: 0, junk: 0 }
+      for (let i = 0; i < 2000; i++) {
+        const c = rollCatch(s, fly('woollyBugger'), rand, RODS[0], chum)
+        const tier = c.kind === 'fish' ? TIERS.indexOf(SPECIES.find(d => d.id === c.defId)!.tier) : -1
+        if (tier >= 2) n.rare++; else if (tier === 0) n.common++; else if (tier < 0) n.junk++
+      }
+      return n
+    }
+    const off = count(false), on = count(true)
+    expect(on.rare).toBeGreaterThan(3 * off.rare)
+    // junk weights don't change: junk keeps its ratio to common fish
+    expect(Math.abs(on.junk / on.common - off.junk / off.common) / (off.junk / off.common)).toBeLessThan(0.2)
+    expect(CHUM.mult).toBeGreaterThan(1)
+  })
   it('the rod raises the value of its tiers only', () => {
     const s = newGame(), f = fly('basicDry'), bamboo = RODS.find(r => r.id === 'bambooCane')!
     const plain = rollCatch(s, f, seqRand(0, 0.5)) // first species: Puyen, common

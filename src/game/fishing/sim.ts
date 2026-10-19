@@ -9,7 +9,7 @@ import type { Angler, GameState } from '../state'
 const rodOf = (state: GameState, a: Angler) => a.auto ? RODS[0] : equippedRod(state)
 
 function pick(state: GameState, a: Angler, rand: () => number): void {
-  a.pending = { ...rollCatch(state, a.fly!, rand, rodOf(state, a)), location: state.location }
+  a.pending = { ...rollCatch(state, a.fly!, rand, rodOf(state, a), !a.auto && state.chumMs > 0), location: state.location }
 }
 
 function startWaiting(state: GameState, a: Angler, rand: () => number): void {
@@ -60,6 +60,7 @@ export function tick(state: GameState, dtMs: number, rand: () => number): void {
   // Clamp so a hidden tab or laptop sleep can't produce a burst of catches.
   const dt = Math.min(dtMs, TIMING.maxTickMs)
   for (const a of state.anglers) stepAngler(state, a, dt, rand)
+  state.chumMs = Math.max(0, state.chumMs - dt)
   if (state.bench > 0 && !benchFull(state) && (state.benchTimerMs += dt) >= benchCooldownMs(state)) {
     state.benchTimerMs = 0
     tieFly(state) // an unaffordable tie is skipped silently

@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { tick, castPlayer, reelPlayer, benchFull } from './sim'
 import { newGame, type GameState } from '../state'
-import { PATTERNS, SPECIES, TIMING } from '../data'
+import { CHUM, PATTERNS, SPECIES, TIERS, TIMING } from '../data'
 import { travel } from '../progress/economy'
-import { seqRand } from '../util/testutil'
+import { lcg, seqRand } from '../util/testutil'
 
 const r = seqRand(0.1, 0.3, 0.5)
 const run = (s: GameState, ms: number) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
@@ -128,6 +128,43 @@ describe('auto anglers', () => {
     tick(s, 3_600_000, r)
     expect(s.basket.length).toBeLessThanOrEqual(1)
     expect(s.anglers[1].phase).toBe('waiting')
+  })
+})
+
+describe('chum bucket', () => {
+  const rareShare = (chum: boolean) => {
+    const s = newGame(); s.location = 'bigRiver'; s.money = 1e9
+    s.unlockedPatterns.push('woollyBugger'); s.recipe = { patternId: 'woollyBugger', materialIds: [] }
+    s.chumMs = chum ? 1e9 : 0
+    const rand = lcg(3); let rare = 0
+    for (let i = 0; i < 500; i++) {
+      castPlayer(s, rand)
+      const p = s.anglers[0]
+      if (p.pending!.kind === 'fish' && TIERS.indexOf(SPECIES.find(d => d.id === p.pending!.defId)!.tier) >= 2) rare++
+      p.phase = 'idle'
+    }
+    return rare
+  }
+  it('chum raises the player\'s rare odds', () => {
+    expect(rareShare(true)).toBeGreaterThan(2 * rareShare(false))
+  })
+  it('chum doesn\'t change a helper\'s rolls', () => {
+    const helperBasket = (chum: boolean) => {
+      const s = newGame(); s.location = 'bigRiver'; s.chumMs = chum ? 1e9 : 0
+      s.anglers.push(autoAngler())
+      s.flyBox.push({ patternId: 'woollyBugger', materialIds: [], wearLeft: 99 })
+      const rand = lcg(5)
+      for (let t = 0; t < 120_000; t += 100) tick(s, 100, rand)
+      return s.basket.map(c => c.defId)
+    }
+    const on = helperBasket(true)
+    expect(on.length).toBeGreaterThan(10)
+    expect(on).toEqual(helperBasket(false))
+  })
+  it('chum runs out after 60 s of ticks', () => {
+    const s = newGame(); s.chumMs = CHUM.ms
+    for (let t = 0; t < CHUM.ms; t += 250) tick(s, 250, () => 0.5)
+    expect(s.chumMs).toBe(0)
   })
 })
 

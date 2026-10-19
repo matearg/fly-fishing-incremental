@@ -1,4 +1,4 @@
-import { JUNK, LOCATIONS, RODS, SIZE, SPECIES, TIERS, type LocationId, type RodDef, type SpeciesDef } from '../data'
+import { CHUM, JUNK, LOCATIONS, RODS, SIZE, SPECIES, TIERS, type LocationId, type RodDef, type SpeciesDef } from '../data'
 import { flyStats } from './flies'
 import { licenseEffects } from '../progress/license'
 import type { CatchItem, Fly, GameState } from '../state'
@@ -15,13 +15,14 @@ export function speciesWeight(s: SpeciesDef, oddsBonus: number): number {
 
 // Depth is a ladder: the fly can catch anything from the surface down to its max depth.
 // The rod adds its bonus to the value of fish of its tiers; size, and so the release bonus, stays the same.
-export function rollCatch(state: GameState, fly: Fly, rand: () => number, rod: RodDef = RODS[0]): Omit<CatchItem, 'id'> {
+// Chum multiplies rare-or-better weights; junk is unchanged.
+export function rollCatch(state: GameState, fly: Fly, rand: () => number, rod: RodDef = RODS[0], chum = false): Omit<CatchItem, 'id'> {
   const loc = LOCATIONS.find(l => l.id === state.location)!
   const st = flyStats(state, fly)
   const depth = Math.min(st.maxDepth, loc.maxDepth)
   const fish = placeSpecies(loc.id, state.licenseSpecies).filter(s => s.depth <= depth)
   const options = [
-    ...fish.map(s => ({ w: speciesWeight(s, st.oddsBonus), fish: s, junk: null })),
+    ...fish.map(s => ({ w: speciesWeight(s, st.oddsBonus) * (chum && TIERS.indexOf(s.tier) >= 2 ? CHUM.mult : 1), fish: s, junk: null })),
     ...JUNK.map(j => ({ w: j.weight * loc.junkWeight, fish: null, junk: j })),
   ]
   let r = rand() * options.reduce((a, o) => a + o.w, 0)
