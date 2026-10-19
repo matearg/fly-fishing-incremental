@@ -9,8 +9,8 @@ New bonuses, power-ups, helpers and shop items, agreed with the user on 2026-10-
 | 1 | Catch & Release (trashing fish adds a bonus to the next Sell all), Buyer pause button, descriptions kept on owned items | Done. Spec `specs/2026-10-18-catch-and-release-design.md`, plan `plans/2026-10-18-catch-and-release.md` |
 | 2 | Gear: rods and waders | Done. Spec `specs/2026-10-18-gear-design.md`, plan `plans/2026-10-18-gear.md` |
 | 3 | Power-ups: chum bucket and hatch | Done. Spec `specs/2026-10-18-power-ups-design.md`, plan `plans/2026-10-18-power-ups.md` |
-| 4 | New helpers: Taxidermist and Guide | Not started |
-| 5 | Bonuses: combo, species log, basket set | Not started |
+| 4 | New helpers: Taxidermist and Guide | Not started. Moved to shop-upgrades v2 |
+| 5 | Bonuses: combo, species log, basket set | Not started. Moved to shop-upgrades v2 |
 
 ## Decisions already made (carry into later pieces)
 
@@ -46,4 +46,4 @@ New bonuses, power-ups, helpers and shop items, agreed with the user on 2026-10-
 - The Gear section heading reuses the Shop's fly icon.
 
 ## How to resume
-Piece 3 landed on 2026-10-18 on `feat/shop-upgrades`. Next up is piece 4 (Taxidermist and Guide), which has no spec yet: brainstorm it first. Start from the first piece not marked done: read its spec (or brainstorm it if there is none), then plan, then build. Update this table as pieces land.
+Piece 3 landed on 2026-10-18 on `feat/shop-upgrades`, which ends there: PR #9 ships pieces 1–3. The user moved pieces 4 and 5 to a separate shop-upgrades v2 (its own branch and PR, after #9). Next up there is piece 4 (Taxidermist and Guide), which has no spec yet: brainstorm it first. Start from the first piece not marked done: read its spec (or brainstorm it if there is none), then plan, then build. Update this table as pieces land.
