@@ -9,6 +9,14 @@ import { seqRand } from '../util/testutil'
 const item = (id: number, value: number, kind: CatchItem['kind'] = 'fish'): CatchItem => ({ id, kind, defId: 'x', value, size: 1 })
 const fish = (id: number, defId: string, size: number): CatchItem => ({ id, kind: 'fish', defId, value: SPECIES.find(d => d.id === defId)!.baseValue * size, size })
 
+describe('travel', () => {
+  it('travel ends the chum bucket and the hatch, not the hatch countdown', () => {
+    const s = newGame(); s.unlockedLocations.push('river'); s.chumMs = 10_000; s.hatchMs = 10_000; s.nextHatchMs = 5_000
+    travel(s, 'river')
+    expect([s.chumMs, s.hatchMs, s.nextHatchMs]).toEqual([0, 0, 5_000])
+  })
+})
+
 describe('selling and trash', () => {
   it('the release bonus is the same whatever rod caught the fish', () => {
     const s = newGame(), bamboo = RODS.find(r => r.id === 'bambooCane')!

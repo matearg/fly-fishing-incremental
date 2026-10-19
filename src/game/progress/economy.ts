@@ -92,6 +92,7 @@ export function unlockLocation(state: GameState, id: LocationId): boolean {
 export function travel(state: GameState, id: LocationId): boolean {
   if (!state.unlockedLocations.includes(id)) return false
   state.location = id
+  state.chumMs = 0; state.hatchMs = 0 // both belong to the water left behind
   return true
 }
 

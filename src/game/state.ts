@@ -1,4 +1,4 @@
-import { LICENSE_UPGRADES, LOCATIONS, PATTERNS, RODS, WADERS, type LicenseUpgradeId, type LocationId } from './data'
+import { HATCH, LICENSE_UPGRADES, LOCATIONS, PATTERNS, RODS, WADERS, type LicenseUpgradeId, type LocationId } from './data'
 import { licenseEffects } from './progress/license'
 
 export interface Fly { patternId: string; materialIds: string[]; wearLeft: number }
@@ -19,6 +19,7 @@ export interface GameState {
   basket: CatchItem[]; nextCatchId: number
   rods: string[]; rod: string; waders: string[]; wearing: string // owned rods, equipped rod, owned waders, worn waders
   licenses: number; licenseLevels: Record<LicenseUpgradeId, number>; licenseSpecies: string[]
+  chumMs: number; hatchMs: number; nextHatchMs: number // power-ups: time left (0 = off), and the countdown to the next hatch
 }
 export type Carry = Pick<GameState, 'licenses' | 'licenseLevels' | 'licenseSpecies'>
 
@@ -39,5 +40,6 @@ export function newGame(carry?: Carry): GameState {
     basket: [], nextCatchId: 1,
     rods: [RODS[0].id], rod: RODS[0].id, waders: [WADERS[0].id], wearing: WADERS[0].id,
     licenses: carry?.licenses ?? 0, licenseLevels: { ...licenseLevels }, licenseSpecies: [...(carry?.licenseSpecies ?? [])],
+    chumMs: 0, hatchMs: 0, nextHatchMs: HATCH.firstMs,
   }
 }

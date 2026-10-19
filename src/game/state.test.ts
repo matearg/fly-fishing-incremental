@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { newGame } from './state'
-import { PATTERNS, LICENSE_UPGRADES } from './data'
+import { PATTERNS, LICENSE_UPGRADES, HATCH } from './data'
 import { licenseEffects } from './progress/license'
 
 const zero = Object.fromEntries(LICENSE_UPGRADES.map(u => [u.id, 0])) as Record<(typeof LICENSE_UPGRADES)[number]['id'], number>
 
 describe('newGame', () => {
+  it('a new game has no power-up running and the first hatch on its countdown', () => {
+    const s = newGame()
+    expect(s.chumMs).toBe(0); expect(s.hatchMs).toBe(0); expect(s.nextHatchMs).toBe(HATCH.firstMs)
+  })
   it('a new game owns and uses only the plain gear', () => {
     const s = newGame()
     expect(s.rods).toEqual(['plainRod']); expect(s.rod).toBe('plainRod')

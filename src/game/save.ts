@@ -31,6 +31,7 @@ function sanitize(raw: GameState): GameState {
   s.licenseSpecies = s.licenseSpecies.filter(id => has(SPECIES, id))
   if (!validRecipe(s.recipe)) s.recipe = basicRecipe()
   s.releaseBonus = Number.isFinite(s.releaseBonus) ? Math.min(RELEASE.cap, Math.max(0, s.releaseBonus)) : 0
+  for (const k of ['chumMs', 'hatchMs', 'nextHatchMs'] as const) if (!(Number.isFinite(s[k]) && s[k] >= 0)) s[k] = d[k]
   s.flyBox = s.flyBox.filter((f: Fly) => validRecipe(f))
   for (const a of s.anglers) {
     if (a.fly && !validRecipe(a.fly)) { a.fly = null; a.phase = 'idle'; a.pending = null }

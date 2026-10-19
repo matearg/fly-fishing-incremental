@@ -6,9 +6,16 @@ import { basicRecipe, flyStats, tieFly } from './fishing/flies'
 import { rollCatch } from './fishing/catch'
 import { castPlayer, reelPlayer, tick } from './fishing/sim'
 import { sellAll } from './progress/economy'
-import { RELEASE, TIMING } from './data'
+import { HATCH, RELEASE, TIMING } from './data'
 
 describe('save', () => {
+  it('power-up timers: bad values fall back to defaults, running ones resume', () => {
+    const s = newGame(); s.chumMs = 30_000
+    expect(parseSave(serialize(s))!.chumMs).toBe(30_000)
+    const raw = JSON.parse(serialize(newGame())); raw.hatchMs = -5; raw.nextHatchMs = 'x'; delete raw.chumMs
+    const t = parseSave(JSON.stringify(raw))!
+    expect([t.chumMs, t.hatchMs, t.nextHatchMs]).toEqual([0, 0, HATCH.firstMs])
+  })
   it('drops unknown gear and falls back to plain', () => {
     const s = newGame()
     Object.assign(s, { rods: ['plainRod', 'willowRod', 'goneRod'], rod: 'goneRod', waders: ['canvasWaders'], wearing: 'neopreneWaders' })
