@@ -59,7 +59,7 @@ The user wants short bursts that change how the next minute plays. The chum buck
 
 ### My calls
 
-- **Faster bites:** while a hatch is on and the player's fly is a dry pattern (`cls: 'dry'`), the wait after a cast is drawn from the normal range times `HATCH.waitMult` (start 0.4, so 0.6–1.6 s instead of 1.5–4 s). Applied when the wait starts. Nothing else changes; dry flies still only reach depth-0 fish, so the hatch trades depth for speed.
+- **Faster bites:** while a hatch is on and the player's fly is a dry pattern (`cls: 'dry'`), the wait after a cast is drawn from 1.5–2 s (`TIMING.biteMinMs` to `HATCH.waitMaxMs`) instead of 1.5–4 s. Applied when the wait starts. The minimum stays at 1.5 s because the cast animation (back cast, forward cast, sink) takes 1.4 s, and a shorter wait would bite before the fly lands (found while planning). Nothing else changes; dry flies still only reach depth-0 fish, so the hatch trades depth for speed.
 - **How often:** the next hatch comes a random 3–6 min of play after the last one ended (or after the game starts / a new season). Tunable in `HATCH`. The countdown runs in `tick` only.
 - **Travelling ends a hatch** (it belongs to that water); the countdown to the next one keeps running.
 - **Overlaps with the chum bucket** are fine; both titles show, stacked.
