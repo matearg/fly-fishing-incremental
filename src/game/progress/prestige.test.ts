@@ -4,6 +4,12 @@ import { newGame } from '../state'
 import { LICENSE_UPGRADES, SEASON, SPECIES } from '../data'
 
 describe('New Season', () => {
+  it('a new season starts with plain gear only', () => {
+    const s = newGame(); s.seasonEarnings = SEASON.minEarnings
+    s.rods.push('carbonSpey'); s.rod = 'carbonSpey'; s.waders.push('guideProWaders'); s.wearing = 'guideProWaders'
+    const t = startNewSeason(s)
+    expect([t.rods, t.rod, t.waders, t.wearing]).toEqual([['plainRod'], 'plainRod', ['plainWaders'], 'plainWaders'])
+  })
   it('licenses = floor(sqrt(earnings / divisor))', () => {
     const s = newGame()
     s.seasonEarnings = SEASON.licenseDivisor * 9
