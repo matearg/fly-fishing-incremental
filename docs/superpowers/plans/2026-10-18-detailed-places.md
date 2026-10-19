@@ -10,6 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-18-detailed-places-design.md`. The visual reference is option C of the mockup, `.superpowers/brainstorm/87152-1792371879/content/pixel-size-v2.html`. Copy its noise, ramp and shading ideas, with rounder mountains.
 
+## Progress
+
+- **Task 1** done (`e0af3ce`). 800×900 also shows bars: `viewSize` is unchanged, so this matches the old build.
+- **Task 2** done (`7a90f95`), review stop A approved. Decision: basket and license-shop catch icons show at native fine size (1:1, twice the old size), because at DPR 1 the half scale blurred them (Review Focus 5).
+- **Task 3** in progress.
+- **Tasks 4–6** not started.
+
 ## Global Constraints
 
 - `FINE = 2` art pixels per world unit. World constants (`VIEW_W` 480, `VIEW_H` 270, `WATER_Y` 110, `GROUND_Y` 102, `shoreX`, figure spots, fly landing spots, depth bands, `FISHING_KEEP`, `TITLE_KEEP`) do not change.
@@ -45,12 +52,12 @@
 **Interfaces:**
 - Produces: `export const FINE = 2` in `src/art/pixels.ts`. Scenes read the visible world size as `this.scale.width / FINE` and `this.scale.height / FINE`.
 
-- [ ] **Step 1:** Add `export const FINE = 2 // art pixels per world unit` to `src/art/pixels.ts`.
-- [ ] **Step 2:** In `main.ts`, the config is `width: VIEW_W * FINE, height: VIEW_H * FINE`, and `fit()` calls `game.scale.setGameSize(w * FINE, h * FINE)`. `viewSize` stays in world units.
-- [ ] **Step 3:** In both scenes' `create`, call `this.cameras.main.setOrigin(0).setZoom(FINE)`. Every `this.scale.width` and `this.scale.height` passed to `viewScroll`, or used to pin the HUD, becomes `/ FINE`. This includes `const w = this.scale.width` in `FishingScene.update`, which also centres the power-up titles in `drawPowerups`. In `FishingScene.drawLine`, both `lineStyle(1, …)` become `lineStyle(1 / FINE, …)`. The ripple `fillRect(…, 1)` in `FishingScene.update` and `RiverBackdrop.update` gets height `1 / FINE`.
-- [ ] **Step 4: Verify in the browser** (`npm run dev`, the `mateo-test` skill). The title and fishing look as before, except the line and ripples are thinner and the text is still chunky. Throw chum and trigger a hatch: both titles stay centred at the top and the insects fly over the water. Check Review Focus 1 and 2 at the four window sizes: same crop as before, and bars only at 1280×1000 and 2560×900. If half-unit positions blur, set `roundPixels: true` in the game config.
-- [ ] **Step 5:** Run `npm test && npm run build`. Expected: all pass.
-- [ ] **Step 6: Commit:** `git add -A src && git commit -m "render the world at twice the resolution"`
+- [x] **Step 1:** Add `export const FINE = 2 // art pixels per world unit` to `src/art/pixels.ts`.
+- [x] **Step 2:** In `main.ts`, the config is `width: VIEW_W * FINE, height: VIEW_H * FINE`, and `fit()` calls `game.scale.setGameSize(w * FINE, h * FINE)`. `viewSize` stays in world units.
+- [x] **Step 3:** In both scenes' `create`, call `this.cameras.main.setOrigin(0).setZoom(FINE)`. Every `this.scale.width` and `this.scale.height` passed to `viewScroll`, or used to pin the HUD, becomes `/ FINE`. This includes `const w = this.scale.width` in `FishingScene.update`, which also centres the power-up titles in `drawPowerups`. In `FishingScene.drawLine`, both `lineStyle(1, …)` become `lineStyle(1 / FINE, …)`. The ripple `fillRect(…, 1)` in `FishingScene.update` and `RiverBackdrop.update` gets height `1 / FINE`.
+- [x] **Step 4: Verify in the browser** (`npm run dev`, the `mateo-test` skill). The title and fishing look as before, except the line and ripples are thinner and the text is still chunky. Throw chum and trigger a hatch: both titles stay centred at the top and the insects fly over the water. Check Review Focus 1 and 2 at the four window sizes: same crop as before, and bars only at 1280×1000 and 2560×900. If half-unit positions blur, set `roundPixels: true` in the game config.
+- [x] **Step 5:** Run `npm test && npm run build`. Expected: all pass.
+- [x] **Step 6: Commit:** `git add -A src && git commit -m "render the world at twice the resolution"`
 
 ---
 
@@ -78,17 +85,17 @@
    - If T is empty (an inner line): a sub-pixel whose up or left outer side is in I takes that neighbour's colour. So inner lines keep their bottom or right fine pixel.
 3. Rim shading. A non-outline fine pixel whose right or lower fine neighbour is transparent or outline is darkened (`mix(c, 0x000000, 0.2)`). Otherwise, one whose left or upper fine neighbour is transparent or outline is lightened (`mix(c, 0xffffff, 0.15)`).
 
-- [ ] **Step 1: Write the failing tests** in `src/art/refine.test.ts`. Use `paint` grids with palette `{ o: 0x101010, c: 0x808080, h: 0xa06030, s: 0xe0c0a0 }`.
+- [x] **Step 1: Write the failing tests** in `src/art/refine.test.ts`. Use `paint` grids with palette `{ o: 0x101010, c: 0x808080, h: 0xa06030, s: 0xe0c0a0 }`.
   - `upscale copies each pixel into a k×k block`. A 2×1 bitmap upscaled ×2 is 4×2, and pixels (0,0), (1,1) equal source (0,0).
   - `refine doubles the size and keeps alpha per source pixel`. For the 7×7 ring grid (`ooooooo`, then 5 rows of `occccco`, then `ooooooo`), `out.w === 14`, and `alpha(out, x, y) === alpha(src, x >> 1, y >> 1)` for every pixel.
   - `the outer outline is one fine pixel thick`. On that ring, `rgb(out, x, 0) === o` for x in 1..12, and `rgb(out, 7, 1) !== o`.
   - `an inner outline line is one fine pixel thick`. Grid `['ooo','oho','ooo','oso','ooo']`: `rgb(out, 2, 4) !== o` and `rgb(out, 2, 5) === o`.
   - `without an outline colour nothing becomes outline`. A grid of only `c` refined with no outline has no pixel equal to `o`, and every pixel is opaque.
-  - `rim shading darkens the right edge and lightens the left`. On the ring, the luma at (12,7) is below the luma at (7,7), and the luma at (2,7) is above it.
-- [ ] **Step 2:** Run `npx vitest run src/art/refine.test.ts`. Expected: FAIL (no module).
-- [ ] **Step 3:** Implement `upscale` in `pixels.ts` and `refine` in `src/art/refine.ts` per the rule.
-- [ ] **Step 4:** Run `npx vitest run src/art/refine.test.ts`. Expected: PASS.
-- [ ] **Step 5: Update the sprite tests to fine coordinates (failing first):**
+  - `rim shading darkens the right edge and lightens the left`. On the ring, the luma at (12,7) is below the luma at (7,7), and the luma at (1,7) is above it (fine x=1 is the thinned outline cell's inner half, so it is the rim pixel; the original (2,7) contradicted the rule).
+- [x] **Step 2:** Run `npx vitest run src/art/refine.test.ts`. Expected: FAIL (no module).
+- [x] **Step 3:** Implement `upscale` in `pixels.ts` and `refine` in `src/art/refine.ts` per the rule.
+- [x] **Step 4:** Run `npx vitest run src/art/refine.test.ts`. Expected: PASS.
+- [x] **Step 5: Update the sprite tests to fine coordinates (failing first):**
   - figures: the rod tip is opaque at `(ROD_TIP[p][0] * FINE, ROD_TIP[p][1] * FINE)`, and `FEET_Y * FINE + FINE - 1 === b.h - 1`.
   - fish: the mouth is opaque at `fishMouth(id) * FINE`, and the size-growth tests are unchanged.
   - flies: the eye is opaque at `LINE_FLY_EYE * FINE`, and the size test is `[d.w * FINE, d.h * FINE]`.
@@ -98,7 +105,7 @@
   - insects: both frames are `FINE`× their grid (5×3 → 10×6).
 
   Run `npx vitest run src/art/sprites`. Expected: FAIL.
-- [ ] **Step 6: Make the sprites fine:**
+- [x] **Step 6: Make the sprites fine:**
   - `fishBitmaps` and `fishSideBitmaps`: `refine(paint(...), OUTLINE)`.
   - `junkBitmap`: `refine(paint(...), O)`.
   - `lineFlyBitmap`: `refine(paint(...))`.
@@ -106,15 +113,15 @@
   - `insectBitmaps`: `refine(paint(...))`.
 
   Run `npx vitest run src/art`. Expected: PASS.
-- [ ] **Step 7: Show them at half scale.**
+- [x] **Step 7: Show them at half scale.**
   - FishingScene: figures, fish, flies, junk and insects are created with `fineImage`. The player image (its texture comes from `playerFig`) gets the same `1 / FINE` scale. In `addSwimmer`, `w` and `h` are the source size `/ FINE`. The power-up titles stay at scale 1.
   - RiverBackdrop: fish and drift use `fineImage`, and the drift bitmap is `refine(paint(...))`.
   - `icons.ts` `catchImg` passes scale `1 / FINE`.
   - `preview.ts`: sprite sections show at half their current scale, including the gear section and the insects in the power-ups section, but not the power-up titles. The place composites are built at fine size, with today's chunky place bitmaps run through `upscale(b, FINE)`, until Tasks 3–5 replace them.
-- [ ] **Step 8:** Run `npm test && npm run build`. Expected: PASS.
-- [ ] **Step 9: Browser check.** Cast, bite, reel and junk all still line up: the fly sits on the line end, the fish mouth meets the fly, and junk snags. Equip a wrapped rod: the line still leaves from the rod tip. The basket icons are the same size (Review Focus 5, at DPR 1).
-- [ ] **Step 10: Commit:** `git commit -m "redraw sprites at half-size pixels"`
-- [ ] **Step 11: Review stop A.** Show the user the figures (with each rod and waders), fish, flies, junk and insects on `/preview.html` and in game. Wait for approval. Apply any changes they ask for in the grids or the `refine` constants.
+- [x] **Step 8:** Run `npm test && npm run build`. Expected: PASS.
+- [x] **Step 9: Browser check.** Cast, bite, reel and junk all still line up: the fly sits on the line end, the fish mouth meets the fly, and junk snags. Equip a wrapped rod: the line still leaves from the rod tip. The basket icons are the same size (Review Focus 5, at DPR 1). Result: same size but blurred; trying 2× instead (see Progress).
+- [x] **Step 10: Commit:** `git commit -m "redraw sprites at half-size pixels"`
+- [x] **Step 11: Review stop A.** Show the user the figures (with each rod and waders), fish, flies, junk and insects on `/preview.html` and in game. Wait for approval. Apply any changes they ask for in the grids or the `refine` constants.
 
 ---
 
