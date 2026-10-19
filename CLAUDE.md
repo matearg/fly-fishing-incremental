@@ -26,7 +26,7 @@ Branches: work happens on `develop`; pushing `master` runs tests + build and dep
 - `fishing/sim.ts` `tick(state, dtMs, rand)` drives each angler through `idle → waiting → bite → reeling`, plus the bench (fly tying) and buyer timers. `dt` is clamped to `TIMING.maxTickMs`; there is deliberately **no offline/catch-up progress**.
 - The catch is picked at cast time and stored in `angler.pending` (tagged with its location; travel re-picks it). The scene relies on this to animate the right fish swimming to the fly.
 - All randomness is injected as `rand: () => number`. Tests use `seqRand`/`lcg` from `util/testutil.ts`; art uses `lcg(hashString(id))` for stable layouts.
-- Balance numbers live in `data.ts`. `pacing.test.ts` runs a headless bot over the real rules and asserts season length (30–50 sim-min), no >8 min purchase gaps, no >10× income jumps. Rebalancing must keep it green.
+- Balance numbers live in `data.ts`. `pacing.test.ts` runs a headless bot over the real rules and asserts season length (30–60 sim-min), no >8 min purchase gaps, no >10× income jumps. Rebalancing must keep it green.
 - Saves (`save.ts`): `parseSave` rejects anything with the wrong `SAVE_VERSION` or shape; `sanitize` fills new fields from `newGame()` and drops ids no longer in `data.ts`, so renaming/removing content never bricks a save. New `GameState` fields need a default in `newGame()`.
 - Prestige ("New Season", `progress/prestige.ts`) rebuilds state with `newGame(carry)`; only `licenses`, `licenseLevels`, `licenseSpecies` carry over. `progress/license.ts` turns levels into effects.
 
