@@ -1,8 +1,8 @@
 import { rollCatch } from './catch'
-import { BENCH_SPEEDUP, RODS, TIMING } from '../data'
+import { BENCH_SPEEDUP, HATCH, RODS, TIMING } from '../data'
 import { sellAll } from '../progress/economy'
 import { equippedRod } from '../progress/gear'
-import { basicRecipe, tieFly } from './flies'
+import { basicRecipe, isDry, tieFly } from './flies'
 import type { Angler, GameState } from '../state'
 
 // Only the player fishes with the bought rods; helpers keep the plain one.
@@ -15,7 +15,9 @@ function pick(state: GameState, a: Angler, rand: () => number): void {
 function startWaiting(state: GameState, a: Angler, rand: () => number): void {
   a.phase = 'waiting'
   pick(state, a, rand)
-  a.timerMs = TIMING.biteMinMs + rand() * (TIMING.biteMaxMs - TIMING.biteMinMs)
+  // The minimum stays at biteMinMs so a bite never comes before the cast animation lands the fly.
+  const max = !a.auto && state.hatchMs > 0 && isDry(a.fly!) ? HATCH.waitMaxMs : TIMING.biteMaxMs
+  a.timerMs = TIMING.biteMinMs + rand() * (max - TIMING.biteMinMs)
 }
 
 function land(state: GameState, a: Angler, rand: () => number): void {
@@ -61,6 +63,10 @@ export function tick(state: GameState, dtMs: number, rand: () => number): void {
   const dt = Math.min(dtMs, TIMING.maxTickMs)
   for (const a of state.anglers) stepAngler(state, a, dt, rand)
   state.chumMs = Math.max(0, state.chumMs - dt)
+  if (state.hatchMs > 0) {
+    if ((state.hatchMs -= dt) <= 0) { state.hatchMs = 0; state.nextHatchMs = HATCH.gapMinMs + rand() * (HATCH.gapMaxMs - HATCH.gapMinMs) }
+  } else if ((state.nextHatchMs -= dt) <= 0) state.hatchMs = HATCH.ms
+  hatchSwap(state, rand)
   if (state.bench > 0 && !benchFull(state) && (state.benchTimerMs += dt) >= benchCooldownMs(state)) {
     state.benchTimerMs = 0
     tieFly(state) // an unaffordable tie is skipped silently
@@ -71,6 +77,22 @@ export function tick(state: GameState, dtMs: number, rand: () => number): void {
   }
 }
 
+// During a hatch with a dry recipe, the player's non-dry fly goes back to the front of the box and a dry one goes on:
+// the box's first dry fly, else one tied from the recipe, else the free basic fly. A fish already biting lands first.
+export function hatchSwap(state: GameState, rand: () => number): boolean {
+  const p = state.anglers[0]
+  if (!(state.hatchMs > 0 && isDry(state.recipe) && p.fly && !isDry(p.fly) && (p.phase === 'idle' || p.phase === 'waiting'))) return false
+  state.flyBox.unshift(p.fly)
+  const i = state.flyBox.findIndex(isDry)
+  if (i >= 0) p.fly = state.flyBox.splice(i, 1)[0]
+  else {
+    if (!tieFly(state)) tieFly(state, basicRecipe())
+    p.fly = state.flyBox.pop()!
+  }
+  if (p.phase === 'waiting') startWaiting(state, p, rand) // re-pick for the new fly, with the hatch's wait
+  return true
+}
+
 export function castPlayer(state: GameState, rand: () => number): boolean {
   const p = state.anglers[0]
   if (p.phase !== 'idle') return false
@@ -79,6 +101,7 @@ export function castPlayer(state: GameState, rand: () => number): boolean {
     if (!state.flyBox.length && !tieFly(state)) tieFly(state, basicRecipe())
     p.fly = state.flyBox.shift()!
   }
+  hatchSwap(state, rand)
   startWaiting(state, p, rand)
   return true
 }

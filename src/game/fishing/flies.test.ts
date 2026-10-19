@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flyStats, tieFly, basicRecipe } from './flies'
+import { flyStats, tieFly, basicRecipe, isDry } from './flies'
 import { newGame } from '../state'
 import { PATTERNS, MATERIALS, LICENSE_UPGRADES } from '../data'
 
@@ -42,5 +42,11 @@ describe('tieFly', () => {
     const s = newGame()
     expect(tieFly(s, basicRecipe())).toBe(true)
     expect(s.flyBox).toHaveLength(1)
+  })
+})
+
+describe('isDry', () => {
+  it('isDry follows the pattern class', () => {
+    for (const p of PATTERNS) expect(isDry({ patternId: p.id })).toBe(p.cls === 'dry')
   })
 })
