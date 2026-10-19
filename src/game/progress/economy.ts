@@ -13,8 +13,9 @@ export function wadersDiscount(state: GameState): number {
 }
 
 // What a money purchase from the panel costs; the panel shows this, never its own math.
+// Whole dollars, so the panel's number is exactly what is charged.
 export function price(state: GameState, base: number): number {
-  return base * (1 - wadersDiscount(state))
+  return Math.round(base * (1 - wadersDiscount(state)))
 }
 
 // Junk can make amount negative; money never drops below 0 and losses don't count against earnings.

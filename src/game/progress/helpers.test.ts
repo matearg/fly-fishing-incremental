@@ -31,10 +31,10 @@ describe('helper costs', () => {
     expect(buyHelper(s, 'angler')).toBe(true)
     expect(s.anglers).toHaveLength(2)
     expect(s.anglers[1].auto).toBe(true)
-    expect(helperCost(s, 'angler')).toBeCloseTo(HELPERS.angler.baseCost * HELPERS.angler.growth)
+    expect(helperCost(s, 'angler')).toBe(Math.round(HELPERS.angler.baseCost * HELPERS.angler.growth))
     s.licenseLevels.helperDiscount = 1
     const per = LICENSE_UPGRADES.find(u => u.id === 'helperDiscount')!.perLevel
-    expect(helperCost(s, 'angler')).toBeCloseTo(HELPERS.angler.baseCost * HELPERS.angler.growth * (1 - per))
+    expect(helperCost(s, 'angler')).toBe(Math.round(HELPERS.angler.baseCost * HELPERS.angler.growth * (1 - per)))
   })
   it('broke purchase changes nothing; one-offs only once', () => {
     const s = newGame()

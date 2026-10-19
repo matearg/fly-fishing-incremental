@@ -162,6 +162,12 @@ describe('waders discount', () => {
     expect(wadersDiscount(s)).toBeCloseTo(0.06)
     expect(price(s, 1000)).toBeCloseTo(940)
   })
+  it('prices are whole dollars, so the shown price is the one charged', () => {
+    const s = newGame(); s.waders.push('rubberWaders')
+    for (const p of PATTERNS) expect(Number.isInteger(price(s, p.unlockCost)), p.id).toBe(true)
+    const pat = PATTERNS[1]; s.money = Math.floor(price(s, pat.unlockCost))
+    expect(unlockPattern(s, pat.id)).toBe(true)
+  })
   it('unlocks charge the discounted price', () => {
     const s = newGame(); s.waders.push('guideProWaders')
     const pat = PATTERNS[1]; s.money = price(s, pat.unlockCost)
