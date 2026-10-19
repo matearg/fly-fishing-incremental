@@ -2,12 +2,22 @@ import { describe, it, expect } from 'vitest'
 import { price, releaseBonusOf, saleValue, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe, wadersDiscount } from './economy'
 import { flyStats, tieFly } from '../fishing/flies'
 import { newGame, type CatchItem } from '../state'
-import { PATTERNS, MATERIALS, RELEASE, SPECIES } from '../data'
+import { PATTERNS, MATERIALS, RELEASE, RODS, SPECIES } from '../data'
+import { rollCatch } from '../fishing/catch'
+import { seqRand } from '../util/testutil'
 
 const item = (id: number, value: number, kind: CatchItem['kind'] = 'fish'): CatchItem => ({ id, kind, defId: 'x', value, size: 1 })
 const fish = (id: number, defId: string, size: number): CatchItem => ({ id, kind: 'fish', defId, value: SPECIES.find(d => d.id === defId)!.baseValue * size, size })
 
 describe('selling and trash', () => {
+  it('the release bonus is the same whatever rod caught the fish', () => {
+    const s = newGame(), bamboo = RODS.find(r => r.id === 'bambooCane')!
+    const f = { patternId: 'basicDry', materialIds: [], wearLeft: 1 }
+    const a = { id: 1, ...rollCatch(s, f, seqRand(0, 0.5)) }
+    const b = { id: 2, ...rollCatch(s, f, seqRand(0, 0.5), bamboo) }
+    expect(b.value).toBeGreaterThan(a.value)
+    expect(releaseBonusOf(b)).toBe(releaseBonusOf(a))
+  })
   it('sellAll sums fish and junk', () => {
     const s = newGame()
     s.basket = [item(1, 10), item(2, 5), item(3, -3, 'junk')]

@@ -87,6 +87,19 @@ describe('catch picked at cast', () => {
     run(s, 1000)
     expect(s.anglers[0].pending).toEqual(p)
   })
+  // rand 0 picks the Creek's first species, Puyen, a common fish
+  it('only the player fishes with the rod, and switching keeps the picked catch', () => {
+    const base = (p: { defId: string; size: number }) => SPECIES.find(x => x.id === p.defId)!.baseValue * p.size
+    const s = newGame(); s.rods.push('bambooCane'); s.rod = 'bambooCane'
+    s.anglers.push(autoAngler())
+    for (let i = 0; i < 2; i++) s.flyBox.push({ patternId: 'basicDry', materialIds: [], wearLeft: 3 })
+    castPlayer(s, seqRand(0, 0.5, 0.5)); tick(s, 100, seqRand(0, 0.5, 0.5))
+    const [me, helper] = [s.anglers[0].pending!, s.anglers[1].pending!]
+    expect(me.value).toBeCloseTo(base(me) * 1.4)
+    expect(helper.value).toBeCloseTo(base(helper))
+    s.rod = 'plainRod'; tick(s, 100, seqRand(0.5))
+    expect(s.anglers[0].pending!.value).toBeCloseTo(me.value)
+  })
   it('helpers pick at cast too', () => {
     const s = newGame()
     s.anglers.push(autoAngler())

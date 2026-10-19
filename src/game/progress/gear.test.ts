@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buyRod, buyWaders, equipRod, equippedRod, wearWaders } from './gear'
+import { bestRod, buyRod, buyWaders, equipRod, equippedRod, rodGain, wearWaders } from './gear'
+import { LOCATIONS, RODS } from '../data'
 import { wadersDiscount } from './economy'
 import { newGame } from '../state'
 
@@ -26,5 +27,18 @@ describe('gear', () => {
     const s = newGame(); s.waders.push('rubberWaders', 'neopreneWaders')
     expect(wearWaders(s, 'rubberWaders')).toBe(true)
     expect(wadersDiscount(s)).toBeCloseTo(0.06)
+  })
+  it('with every rod owned, each rod is the single best somewhere', () => {
+    const best = new Set<string>()
+    for (const ob of [0, 0.2, 0.4]) for (const loc of LOCATIONS) for (let d = 0; d <= loc.maxDepth; d++) {
+      const g = RODS.slice(1).map(r => ({ id: r.id, v: rodGain(r, loc.id, d, ob, []) })).sort((x, y) => y.v - x.v)
+      if (g[0].v > g[1].v * 1.05) best.add(g[0].id)
+    }
+    expect([...best].sort()).toEqual(RODS.slice(1).map(r => r.id).sort())
+  })
+  it('bestRod picks the owned rod that pays most here', () => {
+    const s = newGame(); s.location = 'mountainLake'; s.unlockedLocations.push('mountainLake')
+    s.rods.push('bambooCane', 'fiberglassRod') // basic dry reaches only Mountain Lake's commons
+    expect(bestRod(s)).toBe('bambooCane')
   })
 })

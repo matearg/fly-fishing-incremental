@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { placeSpecies, rollCatch } from './catch'
 import { newGame, type Fly } from '../state'
-import { LICENSE_UPGRADES, LOCATIONS, SPECIES, TIERS } from '../data'
+import { LICENSE_UPGRADES, LOCATIONS, RODS, SPECIES, TIERS } from '../data'
 import { seqRand, lcg } from '../util/testutil'
 
 const fly = (patternId: string, materialIds: string[] = []): Fly => ({ patternId, materialIds, wearLeft: 1 })
@@ -16,6 +16,14 @@ const fishIds = (state: ReturnType<typeof newGame>, f: Fly, n: number, rand: () 
 }
 
 describe('rollCatch', () => {
+  it('the rod raises the value of its tiers only', () => {
+    const s = newGame(), f = fly('basicDry'), bamboo = RODS.find(r => r.id === 'bambooCane')!
+    const plain = rollCatch(s, f, seqRand(0, 0.5)) // first species: Puyen, common
+    const boosted = rollCatch(s, f, seqRand(0, 0.5), bamboo)
+    expect(boosted.value).toBeCloseTo(plain.value * 1.4); expect(boosted.size).toBe(plain.size)
+    const fiber = RODS.find(r => r.id === 'fiberglassRod')!
+    expect(rollCatch(s, f, seqRand(0, 0.5), fiber).value).toBeCloseTo(plain.value)
+  })
   it('dry fly never reaches below the surface', () => {
     const s = newGame()
     for (let i = 0; i < 500; i++) {
