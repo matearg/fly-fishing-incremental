@@ -106,6 +106,21 @@ describe('trackCatch', () => {
   })
 })
 
+describe('trackCatch on a hatch swap', () => {
+  it('a new fly on the line mid-wait recasts, even when the new wait is shorter', () => {
+    const c = { kind: 'junk', defId: 'can', value: 0, size: 1, location: 'creek' } as any
+    const on = (patternId: string, timerMs: number) => ({ auto: false, phase: 'waiting' as const, timerMs, fly: { patternId, materialIds: [], wearLeft: 3 }, pending: c })
+    const tr: Track = { pending: null, waitMs: 0, castMs: 0, lastMs: 0 }
+    trackCatch(tr, on('pheasantTail', 3500))
+    trackCatch(tr, on('pheasantTail', 3400))
+    expect(tr.castMs).toBe(3500)
+    trackCatch(tr, on('basicDry', 1800))
+    expect([tr.castMs, tr.waitMs]).toEqual([1800, 1800])
+    trackCatch(tr, { ...on('basicDry', 1700), fly: { patternId: 'basicDry', materialIds: [], wearLeft: 3 } }) // same fly, new object (reload)
+    expect(tr.castMs).toBe(1800)
+  })
+})
+
 describe('trackCatch after a reload', () => {
   const angler = (pending: object | null, timerMs: number) => ({ auto: false, phase: 'waiting' as const, timerMs, fly: null, pending: pending as any })
   const c = { kind: 'junk', defId: 'can', value: 0, size: 1, location: 'creek' }

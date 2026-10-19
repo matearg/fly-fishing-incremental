@@ -64,8 +64,8 @@ export function schoolKey(state: GameState): string {
 }
 
 // What the scene remembers per visible angler: the catch it last saw, the wait remaining when it appeared (drives the approach),
-// the wait remaining when the cast began (drives the cast and sink), and the last timer seen.
-export interface Track { pending: Pending | null; waitMs: number; castMs: number; lastMs: number }
+// the wait remaining when the cast began (drives the cast and sink), the last timer seen, and the fly it was on.
+export interface Track { pending: Pending | null; waitMs: number; castMs: number; lastMs: number; fly?: string }
 
 // Compared by value: a reloaded save (tab return, another tab, Continue) rebuilds the same catch as new objects.
 export function sameCatch(a: Pending | null, b: Pending | null): boolean {
@@ -73,12 +73,14 @@ export function sameCatch(a: Pending | null, b: Pending | null): boolean {
 }
 
 // A new catch (a cast, or a re-pick after travel) restarts the approach within the wait that is left.
-// Only the timer jumping back up is a new cast, even if the new catch happens to equal the last one.
+// The timer jumping back up is a new cast, even if the new catch happens to equal the last one; so is a new fly
+// mid-wait (a hatch swap), whose wait may be shorter than what was left. Flies compare by value, like catches.
 export function trackCatch(tr: Track, a: Angler | undefined): Track {
   const pending = a?.pending ?? null, ms = a?.timerMs ?? 0
-  if (ms > tr.lastMs) tr.castMs = tr.waitMs = ms
+  const fly = a?.fly ? [a.fly.patternId, ...a.fly.materialIds].join('+') : ''
+  if (ms > tr.lastMs || (a?.phase === 'waiting' && tr.fly !== undefined && fly !== tr.fly)) tr.castMs = tr.waitMs = ms
   else if (!sameCatch(pending, tr.pending)) tr.waitMs = ms
-  tr.pending = pending; tr.lastMs = ms
+  tr.pending = pending; tr.lastMs = ms; tr.fly = fly
   return tr
 }
 

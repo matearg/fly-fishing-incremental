@@ -10,10 +10,12 @@ import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
 import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../../art/places'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import { blank, mix } from '../../art/pixels'
-import { approach, approachTarget, CAST_MS, castLine, castPose, ease, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
+import { approach, approachTarget, CAST_MS, castLine, castPose, ease, insectPos, letterWave, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
+import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from '../../art/banner'
+import { insectBitmaps } from '../../art/sprites/insects'
 import { LINE_FLY_EYE, lineFlyBitmap } from '../../art/sprites/flies'
 import { addBitmap, addText, TEXT_WHITE, TEXT_YELLOW } from '../textures'
-import { anglerCues, cueFrame, type CueFrame } from '../../audio/cues'
+import { anglerCues, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
 import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
 import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
@@ -22,7 +24,8 @@ const GROUND_Y = WATER_Y - 8 // the row the anglers stand on
 const WRAP = 30 // off-screen margin so fish leave fully before wrapping
 // Draw order, back to front.
 // The helper stands a step behind the player: it, its line and its fly draw under the player.
-const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, helper: 5.5, figures: 6, line: 7, hud: 8 }
+const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, helper: 5.5, figures: 6, line: 7, insects: 7.6, hud: 8 }
+const INSECTS = 16
 
 export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void; play: (id: SoundId, scale?: number) => void }
 
@@ -58,6 +61,10 @@ export class FishingScene extends Phaser.Scene {
   // Last frame's player and visible helper, for the sounds of what changed since. Reset when the state object is swapped.
   private cues: [CueFrame | null, CueFrame | null] = [null, null]
   private cueState: GameState | null = null
+  private prevHatchMs: number | null = null // null right after a wake or a state swap: no hatch buzz for an effect already on
+  // Power-up titles, one image per letter with its x from the title's left edge; and the hatch insects.
+  private banners!: { chum: { img: Phaser.GameObjects.Image; dx: number }[]; hatch: { img: Phaser.GameObjects.Image; dx: number }[] }
+  private insects: Phaser.GameObjects.Image[] = []
 
   constructor(private hooks: SceneHooks) {
     super('fishing')
@@ -82,8 +89,21 @@ export class FishingScene extends Phaser.Scene {
     // A click on the menu button is not a cast.
     this.input.on('pointerdown', (_: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => { if (!over.length && !this.settling) this.hooks.onWaterClick() })
     this.input.keyboard?.on('keydown-ESC', () => { if (!this.settling) this.hooks.onMenu() })
+    const banner = (key: string, text: string, style: typeof CHUM_STYLE) => {
+      let x = 0
+      return bannerLetters(text, style).flatMap((b, i) => {
+        if (!b) { x += 8; return [] }
+        addBitmap(this, `banner:${key}:${i}`, b)
+        const out = { img: this.add.image(0, 0, `banner:${key}:${i}`).setOrigin(0).setDepth(Z.hud).setScrollFactor(0).setVisible(false), dx: x }
+        x += b.w
+        return [out]
+      })
+    }
+    this.banners = { chum: banner('chum', CHUM_TEXT, CHUM_STYLE), hatch: banner('hatch', HATCH_TEXT, HATCH_STYLE) }
+    insectBitmaps().forEach((b, k) => addBitmap(this, `insect:${k}`, b))
+    this.insects = Array.from({ length: INSECTS }, () => this.add.image(0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
     this.cameras.main.fadeIn(300)
-    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.cameras.main.fadeIn(300) })
+    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
     this.input.keyboard?.on('keydown-SPACE', () => { if (!this.settling && !document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
@@ -262,7 +282,10 @@ export class FishingScene extends Phaser.Scene {
     const p = s.anglers[0], h = s.anglers[1]
     const ptr = trackCatch(this.tracks[0], p), htr = trackCatch(this.tracks[1], h)
     // An adopted save, Continue or New Season swaps the state: comparing across it would play phantom splashes.
-    if (s !== this.cueState) { this.cues = [null, null]; this.cueState = s }
+    if (s !== this.cueState) { this.cues = [null, null]; this.prevHatchMs = null; this.cueState = s }
+    if (this.prevHatchMs !== null) for (const id of hatchCue(this.prevHatchMs, s.hatchMs)) this.hooks.play(id)
+    this.prevHatchMs = s.hatchMs
+    this.drawPowerups(s, time, place, w)
     const frames = [cueFrame(p, ptr), cueFrame(h, htr)] as const
     for (const id of anglerCues(this.cues[0], frames[0])) this.hooks.play(id)
     for (const id of anglerCues(this.cues[1], frames[1])) this.hooks.play(id, HELPER_GAIN)
@@ -305,6 +328,22 @@ export class FishingScene extends Phaser.Scene {
     const helpers = s.anglers.length - 1
     this.helperText.setVisible(helpers > 0).setTexture(addText(this, `HELPERS: ${helpers}`, TEXT_WHITE))
     this.placeText.setTexture(addText(this, LOCATIONS.find(l => l.id === s.location)!.name.toUpperCase(), TEXT_WHITE))
+  }
+
+  // Waving titles pinned to the top of the crop (chum above hatch when both are on), and insects over the water in a hatch.
+  private drawPowerups(s: GameState, time: number, place: Place, w: number): void {
+    const titles = [[this.banners.chum, s.chumMs > 0], [this.banners.hatch, s.hatchMs > 0]] as const
+    let y = 24
+    for (const [letters, on] of titles) {
+      const last = letters[letters.length - 1], x0 = Math.round((w - last.dx - last.img.width) / 2)
+      letters.forEach((l, i) => l.img.setVisible(on).setPosition(x0 + l.dx, y + letterWave(i, time)))
+      if (on) y += 20
+    }
+    const area = { x0: place.waterLeft, y0: WATER_Y - 34, x1: VIEW_W - 4, y1: WATER_Y - 4 }
+    this.insects.forEach((img, i) => {
+      img.setVisible(s.hatchMs > 0)
+      if (s.hatchMs > 0) img.setPosition(...insectPos(i, time, area)).setTexture(`insect:${Math.floor(time / 83 + i) % 2}`) // ≈12 Hz wings
+    })
   }
 
   // The same-species swimmer nearest the fly, preferring ones inside the camera's view so the catch never swims in from off-screen.

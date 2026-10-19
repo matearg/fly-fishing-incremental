@@ -33,5 +33,11 @@ const PURCHASES = new Set(['hire', 'unlockPattern', 'unlockMaterial', 'unlockLoc
 export function panelCue(action: string, result: unknown): SoundId {
   if (PURCHASES.has(action)) return result ? 'buy' : 'nope'
   if (action === 'sell') return result ? 'sell' : 'select'
+  if (action === 'throwChum') return result ? 'chum' : 'nope'
   return 'select'
+}
+
+// Frame to frame, like anglerCues: a hatch sounds once, as it starts.
+export function hatchCue(prevHatchMs: number, curHatchMs: number): SoundId[] {
+  return prevHatchMs <= 0 && curHatchMs > 0 ? ['hatch'] : []
 }

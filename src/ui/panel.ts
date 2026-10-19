@@ -1,6 +1,7 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SEASON, SPECIES, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
 import { price, saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern, wadersDiscount } from '../game/progress/economy'
 import { buyRod, buyWaders, equipRod, wearWaders } from '../game/progress/gear'
+import { chumPrice, chumReach, throwChum } from '../game/progress/powerups'
 import { flyStats, tieFly } from '../game/fishing/flies'
 import { benchCooldownMs, benchFull } from '../game/fishing/sim'
 import { formatNumber as fmt } from '../game/util/format'
@@ -84,6 +85,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     <aside class="side">
       <div class="money" data-sec="money"></div>
       <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Fly</h2><div data-sec="fly"></div><div data-sec="recipe"></div></section>
+      <section><h2>${icon('ui', 'basket', UI_ICONS.basket, 1)}Power-ups</h2><div data-sec="powerups"></div></section>
       <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Shop</h2><div data-sec="shop"></div></section>
       <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Gear</h2><div data-sec="gear"></div></section>
       <section><h2>${icon('helper', 'angler', HELPER_ICONS.angler, 1)}Helpers</h2><div data-sec="helpers"></div></section>
@@ -113,6 +115,12 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         + `<p class="stats">Depth ${st.maxDepth} · Wear ${st.wear} · Odds +${pct(st.oddsBonus)}${st.sizeBonus ? ` · Size +${pct(st.sizeBonus)}` : ''}</p>`
         + btn('tie', '', `Tie fly ($${fmt(st.tieCost)})`, { disabled: s.money < st.tieCost, cls: 'wide' })
         + (s.bench > 0 ? benchBar(s) : '')
+    },
+    powerups: s => {
+      const cost = chumPrice(s), reach = chumReach(s)
+      const right = s.chumMs > 0 ? `${Math.ceil(s.chumMs / 1000)} s left` : reach ? `$${fmt(cost)}` : 'No rare fish within reach of your fly'
+      return btn('throwChum', '', `${lbl(icon('ui', 'basket', UI_ICONS.basket), 'Chum bucket <small>Rare and legendary fish bite more for 60 s</small>')}<b>${right}</b>`, { disabled: s.chumMs > 0 || !reach || s.money < cost })
+        + (s.hatchMs > 0 ? `<p>Hatch! Dry flies bite faster: ${Math.ceil(s.hatchMs / 1000)} s</p>` : '')
     },
     shop: s => {
       const pats = PATTERNS.map(p => s.unlockedPatterns.includes(p.id) ? owned(icon('fly', p.id, FLY_ICONS[p.id]), p.name, undefined, patternDesc(p)) : btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${patternDesc(p)}</small>`)}<b>$${fmt(price(s, p.unlockCost))}</b>`, { disabled: s.money < price(s, p.unlockCost) }))
@@ -195,6 +203,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
   function run(a: string, id: string): unknown {
     switch (a) {
       case 'tie': return act(s => tieFly(s))
+      case 'throwChum': return act(s => throwChum(s))
       case 'recipePattern': return act(s => setRecipe(s, { ...s.recipe, patternId: id }))
       case 'recipeMaterial': return act(s => setRecipe(s, { ...s.recipe, materialIds: s.recipe.materialIds.includes(id) ? s.recipe.materialIds.filter(m => m !== id) : [...s.recipe.materialIds, id] }))
       case 'unlockPattern': return act(s => unlockPattern(s, id))
