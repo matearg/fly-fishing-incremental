@@ -27,7 +27,7 @@ export function anglerCues(prev: CueFrame | null, cur: CueFrame | null): SoundId
   return out
 }
 
-const PURCHASES = new Set(['hire', 'unlockPattern', 'unlockMaterial', 'unlockLocation', 'licenseUpgrade', 'licenseSpecies'])
+const PURCHASES = new Set(['hire', 'unlockPattern', 'unlockMaterial', 'unlockLocation', 'licenseUpgrade', 'licenseSpecies', 'buyRod', 'buyWaders'])
 
 // `result` is what the action returned: whether a purchase went through, or the money a sale made.
 export function panelCue(action: string, result: unknown): SoundId {

@@ -31,6 +31,7 @@ button[aria-pressed="true"], button[aria-pressed="true"]:hover, button[aria-expa
 button.wide, .side section > div > button:not(.row button) { display: flex; width: 100%; }
 button.danger, button.danger:hover:not(:disabled) { background: var(--danger); color: #fff; }
 button small, .owned small { color: var(--owned); display: block; font-size: 12px; }
+button[aria-pressed="true"] small { color: var(--bevel-dark); }
 button b { font: 13px/1 var(--head); color: var(--rust); margin-left: auto; white-space: nowrap; }
 button.danger b, button[aria-pressed="true"] b { color: inherit; }
 .txt { flex: 1; min-width: 0; }

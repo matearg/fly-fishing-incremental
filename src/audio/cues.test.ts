@@ -55,4 +55,10 @@ describe('panelCue', () => {
     expect(panelCue('sell', 0)).toBe('select')
     expect(panelCue('travel', true)).toBe('select')
   })
+  it('rings gear purchases, and equipping is a select', () => {
+    expect(panelCue('buyRod', true)).toBe('buy')
+    expect(panelCue('buyWaders', false)).toBe('nope')
+    expect(panelCue('equipRod', true)).toBe('select')
+    expect(panelCue('wearWaders', true)).toBe('select')
+  })
 })

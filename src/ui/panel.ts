@@ -1,12 +1,13 @@
-import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SEASON, SPECIES, type LicenseUpgradeId, type LocationId } from '../game/data'
-import { price, saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/progress/economy'
+import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SEASON, SPECIES, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
+import { price, saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern, wadersDiscount } from '../game/progress/economy'
+import { buyRod, buyWaders, equipRod, wearWaders } from '../game/progress/gear'
 import { flyStats, tieFly } from '../game/fishing/flies'
 import { benchCooldownMs, benchFull } from '../game/fishing/sim'
 import { formatNumber as fmt } from '../game/util/format'
 import { buyHelper, helperCost, toggleBuyerPause, type HelperKind } from '../game/progress/helpers'
 import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason, licenseUpgradeCost, startNewSeason } from '../game/progress/prestige'
 import type { CatchItem, GameState } from '../game/state'
-import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS } from '../art/icons'
+import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS } from '../art/icons'
 import { catchImg, icon } from './icons'
 import { keepOpen, stackBasket, STACK_LIST_MAX, type Stack } from './basket'
 import { panelCue } from '../audio/cues'
@@ -25,6 +26,8 @@ const HELPER_DESC: Record<HelperKind, string> = {
 }
 const patternDesc = (p: (typeof PATTERNS)[number]) => `${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}`
 const materialDesc = (m: (typeof MATERIALS)[number]) => [m.depthBonus && `depth +${m.depthBonus}`, m.wearBonus && `wear +${m.wearBonus}`, m.oddsBonus && `odds +${pct(m.oddsBonus)}`, m.sizeBonus && `size +${pct(m.sizeBonus)}`].filter(Boolean).join(', ') + ` · tie $${fmt(m.tieCost)}`
+const rodDesc = (r: (typeof RODS)[number]) => r.tiers.length ? `+${pct(r.bonus)} on ${r.tiers.join(' and ')} fish` : 'No bonus'
+const wadersDesc = (w: (typeof WADERS)[number]) => w.discount ? `${pct(w.discount)} off the shop` : 'No discount'
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
 const money = (n: number) => `${n < 0 ? '-' : ''}$${fmt(Math.abs(n))}`
 const pct = (x: number) => `${Math.round(x * 100)}%`
@@ -82,6 +85,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       <div class="money" data-sec="money"></div>
       <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Fly</h2><div data-sec="fly"></div><div data-sec="recipe"></div></section>
       <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Shop</h2><div data-sec="shop"></div></section>
+      <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Gear</h2><div data-sec="gear"></div></section>
       <section><h2>${icon('helper', 'angler', HELPER_ICONS.angler, 1)}Helpers</h2><div data-sec="helpers"></div></section>
       <section><h2>${icon('place', 'creek', PLACE_ICONS.creek, 1)}Places</h2><div data-sec="places"></div></section>
       <section><h2>${icon('ui', 'season', UI_ICONS.season, 1)}New Season</h2><div data-sec="season"></div></section>
@@ -114,6 +118,17 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       const pats = PATTERNS.map(p => s.unlockedPatterns.includes(p.id) ? owned(icon('fly', p.id, FLY_ICONS[p.id]), p.name, undefined, patternDesc(p)) : btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${patternDesc(p)}</small>`)}<b>$${fmt(price(s, p.unlockCost))}</b>`, { disabled: s.money < price(s, p.unlockCost) }))
       const mats = MATERIALS.map(m => s.unlockedMaterials.includes(m.id) ? owned(icon('mat', m.id, MATERIAL_ICONS[m.id]), m.name, undefined, materialDesc(m)) : btn('unlockMaterial', m.id, `${lbl(icon('mat', m.id, MATERIAL_ICONS[m.id]), `${m.name} <small>${materialDesc(m)}</small>`)}<b>$${fmt(price(s, m.unlockCost))}</b>`, { disabled: s.money < price(s, m.unlockCost) }))
       return [...pats, ...mats].join('')
+    },
+    gear: s => {
+      // Owned gear toggles which one is in use; the rest is for sale.
+      const item = (def: { id: string; name: string; cost: number }, ico: string, desc: string, own: boolean, active: boolean, use: string, buy: string, inUse: string) => {
+        const text = lbl(ico, `${def.name} <small>${desc}</small>`), cost = price(s, def.cost)
+        return own ? btn(use, def.id, `${text}<b>${active ? inUse : 'OWNED'}</b>`, { pressed: active })
+          : btn(buy, def.id, `${text}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
+      }
+      return '<p class="label">Rods</p>' + RODS.map(r => item(r, icon('rod', r.id, ROD_ICONS[r.id]), rodDesc(r), s.rods.includes(r.id), s.rod === r.id, 'equipRod', 'buyRod', 'FISHING')).join('')
+        + '<p class="label">Waders</p>' + WADERS.map(w => item(w, icon('waders', w.id, WADERS_ICONS[w.id]), wadersDesc(w), s.waders.includes(w.id), s.wearing === w.id, 'wearWaders', 'buyWaders', 'WEARING')).join('')
+        + `<p class="stats">Discount now: ${pct(wadersDiscount(s))}</p>`
     },
     helpers: s => (Object.keys(HELPER_LABELS) as HelperKind[]).map(k => {
       const cost = helperCost(s, k)
@@ -185,6 +200,10 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       case 'unlockPattern': return act(s => unlockPattern(s, id))
       case 'unlockMaterial': return act(s => unlockMaterial(s, id))
       case 'hire': return act(s => buyHelper(s, id as HelperKind))
+      case 'buyRod': return act(s => buyRod(s, id))
+      case 'equipRod': return act(s => equipRod(s, id))
+      case 'buyWaders': return act(s => buyWaders(s, id))
+      case 'wearWaders': return act(s => wearWaders(s, id))
       case 'unlockLocation': return act(s => unlockLocation(s, id as LocationId))
       case 'travel': return act(s => travel(s, id as LocationId))
       case 'licenseUpgrade': return act(s => buyLicenseUpgrade(s, id as LicenseUpgradeId))

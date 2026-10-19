@@ -70,12 +70,10 @@ export class FishingScene extends Phaser.Scene {
     this.biteText = this.add.image(0, 0, addText(this, '!', TEXT_YELLOW)).setOrigin(0.5, 1).setDepth(Z.hud)
     this.placeText = this.add.image(VIEW_W - 22, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0)
     this.helperText = this.add.image(6, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(0).setDepth(Z.hud).setScrollFactor(0)
-    for (const kind of ['angler', 'helper'] as FigureKind[]) {
-      const bmps = figureBitmaps(kind)
-      for (const pose of Object.keys(bmps) as Pose[]) addBitmap(this, `fig:${kind}:${pose}`, bmps[pose])
-    }
+    const helperBmps = figureBitmaps('helper')
+    for (const pose of Object.keys(helperBmps) as Pose[]) addBitmap(this, `fig:helper:${pose}`, helperBmps[pose])
     this.helper = this.add.image(0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.helper)
-    this.player = this.add.image(0, 0, 'fig:angler:idle').setOrigin(0).setDepth(Z.figures)
+    this.player = this.add.image(0, 0, this.playerFig('plainRod', 'plainWaders', 'idle')).setOrigin(0).setDepth(Z.figures)
     this.flies = [Z.line + 0.5, Z.helper + 0.2].map(z => this.add.image(0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(z).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
     for (const j of JUNK) addBitmap(this, `junk:${j.id}`, junkBitmap(j.id))
     this.junk = this.add.image(0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
@@ -206,6 +204,16 @@ export class FishingScene extends Phaser.Scene {
     fly.setTexture(this.lineFly(id)).setPosition(Math.round(end[0]) - ex, Math.round(end[1]) - ey)
   }
 
+  // The player wears their gear; each rod and waders combination is baked on first use.
+  private playerFig(rod: string, waders: string, pose: Pose): string {
+    const key = (p: Pose) => `fig:angler:${rod}:${waders}:${p}`
+    if (!this.textures.exists(key(pose))) {
+      const bmps = figureBitmaps('angler', { rod, waders })
+      for (const p of Object.keys(bmps) as Pose[]) addBitmap(this, key(p), bmps[p])
+    }
+    return key(pose)
+  }
+
   // An unknown pattern (an old save) gets the Basic Dry's art under its own key.
   private lineFly(patternId: string): string {
     const key = `linefly:${patternId}`
@@ -275,7 +283,7 @@ export class FishingScene extends Phaser.Scene {
 
     const pose = this.pose(p, ptr)
     const px = place.playerX - BODY_X
-    this.player.setTexture(`fig:angler:${pose}`).setPosition(px, figY)
+    this.player.setTexture(this.playerFig(s.rod, s.wearing, pose)).setPosition(px, figY)
     const tip: [number, number] = [px + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
     const backTip: Pt = [px + ROD_TIP.back[0], figY + ROD_TIP.back[1]]
     const line = this.linePos(s, p, ptr, tip, backTip, place.playerFlyX, place, t), fly = line && line[line.length - 1]
