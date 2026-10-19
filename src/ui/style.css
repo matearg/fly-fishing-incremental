@@ -17,6 +17,8 @@ body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template
 .side, .basket { background: var(--paper); border: 3px solid var(--ink); box-shadow: inset 3px 3px 0 var(--bevel-light), inset -3px -3px 0 var(--bevel-dark); }
 .side { grid-column: 2; grid-row: 1 / span 2; overflow-y: auto; padding: 12px; overflow-wrap: anywhere; }
 .money { display: flex; align-items: center; gap: 8px; font: 28px/1 var(--head); color: var(--money); font-variant-numeric: tabular-nums; }
+/* Money stays in view while the panel scrolls; top is measured inside the 12px padding, so -9px stops it 3px down, under the bevel; and its shadow repaints the bevel over the content scrolling under it. */
+.money { position: sticky; top: -9px; z-index: 1; margin: -9px -9px 0; padding: 9px 9px 8px; background: var(--paper); border-bottom: 2px dashed var(--rule); box-shadow: 0 -3px 0 var(--bevel-light); }
 section { margin-top: 14px; }
 h2 { display: flex; align-items: center; gap: 6px; font: 14px/1 var(--head); color: var(--rust); margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px dashed var(--rule); }
 p { margin: 4px 0; }
