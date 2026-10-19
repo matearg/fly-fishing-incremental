@@ -6,6 +6,11 @@ import { licenseEffects } from './progress/license'
 const zero = Object.fromEntries(LICENSE_UPGRADES.map(u => [u.id, 0])) as Record<(typeof LICENSE_UPGRADES)[number]['id'], number>
 
 describe('newGame', () => {
+  it('a new game owns and uses only the plain gear', () => {
+    const s = newGame()
+    expect(s.rods).toEqual(['plainRod']); expect(s.rod).toBe('plainRod')
+    expect(s.waders).toEqual(['plainWaders']); expect(s.wearing).toBe('plainWaders')
+  })
   it('fresh season', () => {
     const s = newGame()
     expect(s.money).toBe(0)

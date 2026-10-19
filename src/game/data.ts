@@ -9,6 +9,8 @@ export interface PatternDef { id: string; name: string; cls: 'dry' | 'nymph' | '
 export interface MaterialDef { id: string; name: string; depthBonus: number; wearBonus: number; oddsBonus: number; sizeBonus: number; tieCost: number; unlockCost: number }
 // licenseCost set ⇒ absent from the water until bought with licenses
 export interface SpeciesDef { id: string; name: string; location: LocationId; depth: number; tier: Tier; weight: number; baseValue: number; licenseCost?: number }
+export interface RodDef { id: string; name: string; tiers: Tier[]; bonus: number; cost: number }
+export interface WadersDef { id: string; name: string; discount: number; cost: number }
 export interface JunkDef { id: string; name: string; value: number; weight: number }
 export type LicenseUpgradeId = 'startPattern' | 'extraWear' | 'valueMult' | 'helperDiscount' | 'startLocation'
 // max level = costs.length
@@ -82,6 +84,23 @@ export const LICENSE_UPGRADES: LicenseUpgradeDef[] = [
   { id: 'startLocation', name: 'Start one place further', costs: [3, 10, 30, 80], perLevel: 1 },
 ]
 
+// gear: index 0 is the free starter every season begins with
+export const RODS: RodDef[] = [
+  { id: 'plainRod', name: 'Plain Rod', tiers: [], bonus: 0, cost: 0 },
+  { id: 'willowRod', name: 'Willow Rod', tiers: ['common', 'uncommon'], bonus: 0.25, cost: 500 },
+  { id: 'bambooCane', name: 'Bamboo Cane', tiers: ['common'], bonus: 0.4, cost: 3_000 },
+  { id: 'fiberglassRod', name: 'Fiberglass', tiers: ['uncommon'], bonus: 0.45, cost: 15_000 },
+  { id: 'graphiteRod', name: 'Graphite', tiers: ['rare'], bonus: 0.4, cost: 60_000 },
+  { id: 'carbonSpey', name: 'Carbon Spey', tiers: ['legendary'], bonus: 0.4, cost: 500_000 },
+]
+export const WADERS: WadersDef[] = [
+  { id: 'plainWaders', name: 'Plain Waders', discount: 0, cost: 0 },
+  { id: 'rubberWaders', name: 'Rubber Waders', discount: 0.02, cost: 300 },
+  { id: 'canvasWaders', name: 'Canvas Waders', discount: 0.04, cost: 4_000 },
+  { id: 'neopreneWaders', name: 'Neoprene Waders', discount: 0.06, cost: 40_000 },
+  { id: 'breathableWaders', name: 'Breathable Waders', discount: 0.08, cost: 400_000 },
+  { id: 'guideProWaders', name: 'Guide Pro Waders', discount: 0.1, cost: 3_000_000 },
+]
 export const TIMING = { biteMinMs: 1_500, biteMaxMs: 4_000, reelMs: 800, benchTieMs: 10_000, buyerIntervalMs: 5_000, maxTickMs: 250 }
 export const HELPERS = {
   angler: { baseCost: 40, growth: 1.4 },

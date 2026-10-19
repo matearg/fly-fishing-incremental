@@ -9,6 +9,18 @@ import { sellAll } from './progress/economy'
 import { RELEASE, TIMING } from './data'
 
 describe('save', () => {
+  it('drops unknown gear and falls back to plain', () => {
+    const s = newGame()
+    Object.assign(s, { rods: ['plainRod', 'willowRod', 'goneRod'], rod: 'goneRod', waders: ['canvasWaders'], wearing: 'neopreneWaders' })
+    const t = parseSave(serialize(s))!
+    expect(t.rods).toEqual(['plainRod', 'willowRod']); expect(t.rod).toBe('plainRod')
+    expect(t.waders).toEqual(['plainWaders', 'canvasWaders']); expect(t.wearing).toBe('plainWaders')
+  })
+  it('an old save without gear fields gets plain gear', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.rods; delete raw.rod; delete raw.waders; delete raw.wearing
+    const t = parseSave(JSON.stringify(raw))!
+    expect(t.rod).toBe('plainRod'); expect(t.wearing).toBe('plainWaders')
+  })
   it('round-trips a mid-game state', () => {
     const s = newGame()
     s.money = 1e6
