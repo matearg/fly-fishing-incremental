@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { chumPrice, chumReach, throwChum } from './powerups'
-import { newGame } from '../state'
-import { CHUM } from '../data'
+import { newGame, type GameState, type Recipe } from '../state'
+import { CHUM, LOCATIONS, MATERIALS, PATTERNS, SPECIES, type LocationId } from '../data'
+import { flyStats } from '../fishing/flies'
+import { castPlayer, reelPlayer, tick } from '../fishing/sim'
+import { travel } from './economy'
+import { lcg } from '../util/testutil'
+
+declare const process: { env: Record<string, string | undefined> }
 
 const creekWithNymph = () => {
   const s = newGame(); s.money = 1000
@@ -41,5 +47,37 @@ describe('chum bucket', () => {
     expect(chumPrice(s)).toBe(CHUM.cost.creek)
     s.waders.push('guideProWaders')
     expect(chumPrice(s)).toBe(Math.round(CHUM.cost.creek * 0.9))
+  })
+})
+
+// The first pattern, plus at most one material, that reaches the place's deepest non-licensed fish.
+function paybackFly(s: GameState, loc: LocationId): Recipe {
+  const need = Math.max(...SPECIES.filter(d => d.location === loc && !d.licenseCost).map(d => d.depth))
+  for (const p of PATTERNS) for (const m of [[], ...MATERIALS.map(x => [x.id])]) {
+    const r = { patternId: p.id, materialIds: m }
+    if (flyStats(s, r).maxDepth >= need) return r
+  }
+  throw new Error('no fly reaches ' + loc)
+}
+
+// One minute of the player alone at loc, plain rod, no hatch; what the basket is worth.
+function runMinute(loc: LocationId, seed: number, chum: boolean): number {
+  const s = newGame(), rand = lcg(seed), DT = 100
+  s.unlockedLocations = LOCATIONS.map(l => l.id); s.unlockedPatterns = PATTERNS.map(p => p.id); s.unlockedMaterials = MATERIALS.map(m => m.id)
+  travel(s, loc)
+  s.recipe = paybackFly(s, loc); s.money = 1e12; s.nextHatchMs = Infinity
+  if (chum) s.chumMs = CHUM.ms
+  for (let t = 0; t < 60_000; t += DT) { castPlayer(s, rand) || reelPlayer(s); tick(s, DT, rand) }
+  return s.basket.reduce((a, c) => a + c.value, 0)
+}
+
+describe('chum payback', () => {
+  const seeds = [1, 2, 3, 4, 5, 6, 7, 8]
+  const mean = (xs: number[]) => xs.reduce((a, x) => a + x, 0) / xs.length
+  it.each(LOCATIONS.map(l => l.id))('a bucket at %s pays back 1.5–4× its price', loc => {
+    const extra = mean(seeds.map(seed => runMinute(loc, seed, true) - runMinute(loc, seed, false)))
+    if (process.env.PACING_LOG) console.log(`chum ${loc}: extra ${Math.round(extra)}, cost ${CHUM.cost[loc]}, payback ${(extra / CHUM.cost[loc]).toFixed(2)}x`)
+    expect(extra / CHUM.cost[loc]).toBeGreaterThanOrEqual(1.5)
+    expect(extra / CHUM.cost[loc]).toBeLessThanOrEqual(4)
   })
 })

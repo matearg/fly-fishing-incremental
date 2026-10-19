@@ -103,7 +103,7 @@ export const WADERS: WadersDef[] = [
 ]
 export const TIMING = { biteMinMs: 1_500, biteMaxMs: 4_000, reelMs: 800, benchTieMs: 10_000, buyerIntervalMs: 5_000, maxTickMs: 250 }
 // Power-ups, player only. chum: rare-or-better weights ×mult for ms; cost per place (goes through price()).
-export const CHUM = { ms: 60_000, mult: 10, cost: { creek: 80, river: 500, bigRiver: 4_000, mountainLake: 30_000, greatLake: 100_000 } as Record<LocationId, number> }
+export const CHUM = { ms: 60_000, mult: 10, cost: { creek: 78, river: 540, bigRiver: 4_600, mountainLake: 46_000, greatLake: 120_000 } as Record<LocationId, number> }
 // hatch: lasts ms; first one after firstMs of play, then gapMin–gapMax after each ends; dry-fly waits biteMinMs–waitMaxMs
 export const HATCH = { ms: 45_000, firstMs: 240_000, gapMinMs: 180_000, gapMaxMs: 360_000, waitMaxMs: 2_000 }
 export const HELPERS = {
