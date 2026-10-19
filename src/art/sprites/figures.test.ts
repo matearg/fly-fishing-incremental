@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { BODY_X, FEET_Y, FIGURE_POSES, figureBitmaps, ROD_TIP, type FigureKind, type Pose } from './figures'
+import { BODY_X, FEET_Y, FIGURE_POSES, figureBitmaps, ROD_LOOKS, ROD_TIP, WADERS_LOOKS, type FigureKind, type Pose } from './figures'
+import { RODS, WADERS } from '../../game/data'
 
 const POSES: Pose[] = ['idle', 'back', 'cast', 'reel']
 const KINDS: FigureKind[] = ['angler', 'helper']
@@ -31,7 +32,15 @@ describe('figures', () => {
   it('the helper looks different from the player', () => {
     expect(figureBitmaps('helper').idle.data).not.toEqual(figureBitmaps('angler').idle.data)
   })
-  it('an unknown style falls back to default', () => {
-    expect(figureBitmaps('angler', 'nope').idle.data).toEqual(figureBitmaps('angler').idle.data)
+  it('rods and waders recolor the angler, and plain or unknown gear draws as before', () => {
+    const plain = figureBitmaps('angler').idle.data
+    expect(figureBitmaps('angler', { rod: 'plainRod', waders: 'plainWaders' }).idle.data).toEqual(plain)
+    expect(figureBitmaps('angler', { rod: 'carbonSpey' }).idle.data).not.toEqual(plain)
+    expect(figureBitmaps('angler', { waders: 'canvasWaders' }).idle.data).not.toEqual(plain)
+    expect(figureBitmaps('angler', { rod: 'gone', waders: 'gone' }).idle.data).toEqual(plain)
+  })
+  it('every rod and pair has a look', () => {
+    expect(Object.keys(ROD_LOOKS).sort()).toEqual(RODS.map(r => r.id).sort())
+    expect(Object.keys(WADERS_LOOKS).sort()).toEqual(WADERS.map(w => w.id).sort())
   })
 })

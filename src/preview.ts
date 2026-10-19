@@ -1,7 +1,7 @@
 // Dev-only art review page: draws baked bitmaps at 2× so the user can approve them.
-import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './game/data'
+import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SPECIES, WADERS } from './game/data'
 import { hashString } from './game/util/rand'
-import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS, iconBitmap, type Icon } from './art/icons'
+import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS, iconBitmap, type Icon } from './art/icons'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
 import { blank, blit, mix, paint, stylize, type Bitmap, type TextStyle } from './art/pixels'
 import { SMALL, textMask } from './art/font'
@@ -10,7 +10,7 @@ import { SoundPlayer } from './audio/player'
 import { SFX, TITLE_AMBIENCE, type SoundId } from './audio/sounds'
 import { TUNES, type TuneId } from './audio/music'
 import { TEXT_GREY, TEXT_WHITE, TEXT_YELLOW } from './scene/textures'
-import { BODY_X, FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
+import { BODY_X, FEET_Y, figureBitmaps, ROD_LOOKS, WADERS_LOOKS, type FigureKind, type Pose } from './art/sprites/figures'
 import { lineFlyBitmap } from './art/sprites/flies'
 import { fishBitmaps, fishSideBitmaps } from './art/sprites/fish'
 import { junkBitmap } from './art/sprites/junk'
@@ -80,6 +80,10 @@ const KINDS: FigureKind[] = ['angler', 'helper']
 const sprites = section('Figures — angler and helper, idle / back / cast / reel (4×)')
 for (const k of KINDS) for (const p of POSES) show(sprites, figureBitmaps(k)[p], `${k} · ${p}`, 4)
 
+const gear = section('Gear — angler with each rod, then each pair of waders, idle / reel (4×)')
+for (const rod of Object.keys(ROD_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { rod })[p], `${rod} · ${p}`, 4)
+for (const waders of Object.keys(WADERS_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { waders })[p], `${waders} · ${p}`, 4)
+
 // Each place's fishing view with the two figures on the bank (on the dock at the Great Lake), one pose per place.
 const onBank = section('Figures on each bank')
 LOCATIONS.forEach((loc, i) => {
@@ -131,6 +135,8 @@ for (const p of PATTERNS) onPaper(FLY_ICONS[p.id], p.name)
 for (const m of MATERIALS) onPaper(MATERIAL_ICONS[m.id], m.name)
 for (const l of LOCATIONS) onPaper(PLACE_ICONS[l.id], l.name)
 for (const [k, i] of Object.entries(HELPER_ICONS)) onPaper(i, `helper · ${k}`)
+for (const r of RODS) onPaper(ROD_ICONS[r.id], r.name)
+for (const w of WADERS) onPaper(WADERS_ICONS[w.id], w.name)
 for (const u of LICENSE_UPGRADES) onPaper(LICENSE_ICONS[u.id], u.name)
 for (const [k, i] of Object.entries(UI_ICONS)) onPaper(i, `ui · ${k}`)
 
