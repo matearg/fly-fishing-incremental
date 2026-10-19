@@ -189,6 +189,14 @@ describe('hatch', () => {
     expect(s.hatchMs).toBe(0)
     expect(s.nextHatchMs).toBe(HATCH.gapMinMs + 0.5 * (HATCH.gapMaxMs - HATCH.gapMinMs))
   })
+  it('travelling ends a hatch for good; the countdown to the next one runs', () => {
+    const s = newGame(); s.unlockedLocations.push('river'); s.nextHatchMs = 100
+    tick(s, 100, () => 0.5); tick(s, 100, () => 0.5)
+    expect(s.hatchMs).toBeGreaterThan(0)
+    travel(s, 'river'); tick(s, 100, () => 0.5)
+    expect(s.hatchMs).toBe(0)
+    expect(s.nextHatchMs).toBeGreaterThan(HATCH.gapMinMs - 1_000)
+  })
   it('hatch waits are 1.5–2 s, only for the player on a dry fly', () => {
     expect(HATCH.waitMaxMs).toBeGreaterThan(TIMING.biteMinMs)
     const hi = () => 0.999

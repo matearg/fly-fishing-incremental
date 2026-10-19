@@ -63,9 +63,12 @@ export function tick(state: GameState, dtMs: number, rand: () => number): void {
   const dt = Math.min(dtMs, TIMING.maxTickMs)
   for (const a of state.anglers) stepAngler(state, a, dt, rand)
   state.chumMs = Math.max(0, state.chumMs - dt)
-  if (state.hatchMs > 0) {
-    if ((state.hatchMs -= dt) <= 0) { state.hatchMs = 0; state.nextHatchMs = HATCH.gapMinMs + rand() * (HATCH.gapMaxMs - HATCH.gapMinMs) }
-  } else if ((state.nextHatchMs -= dt) <= 0) state.hatchMs = HATCH.ms
+  // The next gap is drawn as a hatch starts, so a hatch ended early (travel) still leaves a running countdown.
+  if (state.hatchMs > 0) state.hatchMs = Math.max(0, state.hatchMs - dt)
+  else if ((state.nextHatchMs -= dt) <= 0) {
+    state.hatchMs = HATCH.ms
+    state.nextHatchMs = HATCH.gapMinMs + rand() * (HATCH.gapMaxMs - HATCH.gapMinMs)
+  }
   hatchSwap(state, rand)
   if (state.bench > 0 && !benchFull(state) && (state.benchTimerMs += dt) >= benchCooldownMs(state)) {
     state.benchTimerMs = 0
