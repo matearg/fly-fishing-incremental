@@ -24,6 +24,13 @@ New bonuses, power-ups, helpers and shop items, agreed with the user on 2026-10-
   - After piece 3: season 1 is 51.9 sim-min (max purchase gap 1.9 min, worst income jump 7.9×). The bot never throws chum, and the hatch needed no retune. Chum bucket prices, set by the payback test (one minute alone at the place, plain rod, the first fly reaching its deepest non-licensed fish, seeds 1–8) to about 2.5× payback: Creek $78 (extra $195, 2.50×), River $540 ($1,359, 2.52×), Big River $4,600 ($11,612, 2.52×), Mountain Lake $46K ($114K, 2.48×), Great Lake $120K ($291K, 2.43×).
 - **Rules for the panel (piece 1):** the panel shows sale totals through `saleValue(state, withBonus)` in `economy.ts`, never its own bonus math.
 
+## Panel changes after piece 3 (user's requests, 2026-10-18)
+
+- The Chum bucket's blocked reason ("No rare fish within reach of your fly") sits under its description; in the price slot it doesn't wrap and crushed the label.
+- The money bar is sticky at the top of the side panel, so it stays in view while scrolling.
+- The body font is Jersey 10 instead of Pixelify Sans (Silkscreen still does headings, money and prices). Jersey 10 draws small, so body text went from 15 to 20 px, labels from 13 to 17, descriptions from 12 to 16.
+- Building piece 3 also taught the scene to recast when the fly on the line changes mid-wait (`trackCatch` in `choreo.ts`), and fixed a hatch ended by travel restarting on the next tick (the next gap is drawn when a hatch starts).
+
 ## Deferred minors (from piece 3's review)
 
 - The hatch swap runs in `tick`, so it also fires when a hatch starts while the recipe is dry and a non-dry fly is on the line (intended, same rule as `castPlayer`).
