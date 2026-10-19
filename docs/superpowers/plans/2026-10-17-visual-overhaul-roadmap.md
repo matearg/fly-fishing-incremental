@@ -73,4 +73,4 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - **Setting:** `flyfishing-music`, default 50%, row right below the sound row with the `NOTES` icon.
 
 ## How to resume
-All seven pieces are done and on `develop`; PR #7 ships pieces 5–7 to `master`. No further piece is planned. Open leftovers: piece 5's deferred minors, piece 6's not-checked-live list, and the pacing slack (season 1 at 49.98 of 50 sim-min). A new piece starts with a brainstorm, then a spec and plan as before.
+Pieces 1–7 are done and on `develop`; PR #7 ships pieces 5–7 to `master`. Piece 8 (detailed places) is designed and planned on `feat/scene-graphics`, rebased on `develop` after shop upgrades v1 (PR #9). Next: build it from Task 1 of `docs/superpowers/plans/2026-10-18-detailed-places.md`, stopping for the user's review at the end of Tasks 2–5. The visual reference is option C of `.superpowers/brainstorm/87152-1792371879/content/pixel-size-v2.html` (ignored, local only). Open leftovers: piece 5's deferred minors and piece 6's not-checked-live list. A new piece starts with a brainstorm, then a spec and plan as before.
