@@ -8,6 +8,10 @@ import { seqRand } from '../util/testutil'
 const run = (s: GameState, ms: number, r = seqRand(0.1, 0.3, 0.5)) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
 
 describe('helper costs', () => {
+  it('helpers stack the license discount and the waders discount', () => {
+    const s = newGame(); s.licenseLevels.helperDiscount = 1; s.waders.push('guideProWaders')
+    expect(helperCost(s, 'buyer')).toBeCloseTo(HELPERS.buyer.cost * 0.9 * 0.9)
+  })
   it('catch & release is a one-off helper', () => {
     const s = newGame()
     expect(s.release).toBe(false)

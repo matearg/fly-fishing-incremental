@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { releaseBonusOf, saleValue, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
+import { price, releaseBonusOf, saleValue, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe, wadersDiscount } from './economy'
+import { flyStats, tieFly } from '../fishing/flies'
 import { newGame, type CatchItem } from '../state'
 import { PATTERNS, MATERIALS, RELEASE, SPECIES } from '../data'
 
@@ -140,5 +141,27 @@ describe('catch & release', () => {
     s.basket = [item(2, 10)]
     expect(sellAll(s)).toBe(10)
     expect(s.releaseBonus).toBe(0.5)
+  })
+})
+
+describe('waders discount', () => {
+  it('is the best pair owned', () => {
+    const s = newGame()
+    expect(wadersDiscount(s)).toBe(0)
+    s.waders.push('neopreneWaders', 'rubberWaders')
+    expect(wadersDiscount(s)).toBeCloseTo(0.06)
+    expect(price(s, 1000)).toBeCloseTo(940)
+  })
+  it('unlocks charge the discounted price', () => {
+    const s = newGame(); s.waders.push('guideProWaders')
+    const pat = PATTERNS[1]; s.money = price(s, pat.unlockCost)
+    expect(unlockPattern(s, pat.id)).toBe(true)
+    expect(s.money).toBeCloseTo(0)
+  })
+  it('tying a fly is not discounted', () => {
+    const s = newGame(); s.waders.push('guideProWaders'); s.unlockedPatterns.push('pheasantTail')
+    setRecipe(s, { patternId: 'pheasantTail', materialIds: [] }); s.money = 100
+    tieFly(s)
+    expect(s.money).toBe(100 - flyStats(s, s.recipe).tieCost)
   })
 })

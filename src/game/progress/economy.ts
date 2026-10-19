@@ -1,10 +1,20 @@
-import { LOCATIONS, MATERIALS, PATTERNS, RELEASE, SPECIES, type LocationId } from '../data'
+import { LOCATIONS, MATERIALS, PATTERNS, RELEASE, SPECIES, WADERS, type LocationId } from '../data'
 import type { CatchItem, GameState, Recipe } from '../state'
 
 export function spend(state: GameState, cost: number): boolean {
   if (state.money < cost) return false
   state.money -= cost
   return true
+}
+
+// The best pair of waders owned sets the discount, whichever pair is worn.
+export function wadersDiscount(state: GameState): number {
+  return Math.max(0, ...WADERS.filter(w => state.waders.includes(w.id)).map(w => w.discount))
+}
+
+// What a money purchase from the panel costs; the panel shows this, never its own math.
+export function price(state: GameState, base: number): number {
+  return base * (1 - wadersDiscount(state))
 }
 
 // Junk can make amount negative; money never drops below 0 and losses don't count against earnings.
@@ -58,7 +68,7 @@ export function trashStack(state: GameState, kind: CatchItem['kind'], defId: str
 }
 
 function unlock(state: GameState, owned: string[], def: { id: string; unlockCost: number } | undefined): boolean {
-  if (!def || owned.includes(def.id) || !spend(state, def.unlockCost)) return false
+  if (!def || owned.includes(def.id) || !spend(state, price(state, def.unlockCost))) return false
   owned.push(def.id)
   return true
 }

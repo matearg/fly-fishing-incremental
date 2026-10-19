@@ -1,5 +1,5 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SEASON, SPECIES, type LicenseUpgradeId, type LocationId } from '../game/data'
-import { saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/progress/economy'
+import { price, saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/progress/economy'
 import { flyStats, tieFly } from '../game/fishing/flies'
 import { benchCooldownMs, benchFull } from '../game/fishing/sim'
 import { formatNumber as fmt } from '../game/util/format'
@@ -111,8 +111,8 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         + (s.bench > 0 ? benchBar(s) : '')
     },
     shop: s => {
-      const pats = PATTERNS.map(p => s.unlockedPatterns.includes(p.id) ? owned(icon('fly', p.id, FLY_ICONS[p.id]), p.name, undefined, patternDesc(p)) : btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${patternDesc(p)}</small>`)}<b>$${fmt(p.unlockCost)}</b>`, { disabled: s.money < p.unlockCost }))
-      const mats = MATERIALS.map(m => s.unlockedMaterials.includes(m.id) ? owned(icon('mat', m.id, MATERIAL_ICONS[m.id]), m.name, undefined, materialDesc(m)) : btn('unlockMaterial', m.id, `${lbl(icon('mat', m.id, MATERIAL_ICONS[m.id]), `${m.name} <small>${materialDesc(m)}</small>`)}<b>$${fmt(m.unlockCost)}</b>`, { disabled: s.money < m.unlockCost }))
+      const pats = PATTERNS.map(p => s.unlockedPatterns.includes(p.id) ? owned(icon('fly', p.id, FLY_ICONS[p.id]), p.name, undefined, patternDesc(p)) : btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${patternDesc(p)}</small>`)}<b>$${fmt(price(s, p.unlockCost))}</b>`, { disabled: s.money < price(s, p.unlockCost) }))
+      const mats = MATERIALS.map(m => s.unlockedMaterials.includes(m.id) ? owned(icon('mat', m.id, MATERIAL_ICONS[m.id]), m.name, undefined, materialDesc(m)) : btn('unlockMaterial', m.id, `${lbl(icon('mat', m.id, MATERIAL_ICONS[m.id]), `${m.name} <small>${materialDesc(m)}</small>`)}<b>$${fmt(price(s, m.unlockCost))}</b>`, { disabled: s.money < price(s, m.unlockCost) }))
       return [...pats, ...mats].join('')
     },
     helpers: s => (Object.keys(HELPER_LABELS) as HelperKind[]).map(k => {
@@ -123,7 +123,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     places: s => {
       const next = LOCATIONS.find(l => !s.unlockedLocations.includes(l.id))
       return `<div class="row">${s.unlockedLocations.map(id => btn('travel', id, lbl(icon('place', id, PLACE_ICONS[id], 1), LOCATIONS.find(l => l.id === id)!.name), { pressed: s.location === id })).join('')}</div>`
-        + (next ? btn('unlockLocation', next.id, `${lbl(icon('place', next.id, PLACE_ICONS[next.id]), `Unlock ${next.name}`)}<b>$${fmt(next.unlockCost)}</b>`, { disabled: s.money < next.unlockCost, cls: 'wide' }) : '')
+        + (next ? btn('unlockLocation', next.id, `${lbl(icon('place', next.id, PLACE_ICONS[next.id]), `Unlock ${next.name}`)}<b>$${fmt(price(s, next.unlockCost))}</b>`, { disabled: s.money < price(s, next.unlockCost), cls: 'wide' }) : '')
     },
     season: s => {
       const can = canStartSeason(s)
