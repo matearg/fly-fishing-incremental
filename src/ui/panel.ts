@@ -118,8 +118,10 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     },
     powerups: s => {
       const cost = chumPrice(s), reach = chumReach(s)
-      const right = s.chumMs > 0 ? `${Math.ceil(s.chumMs / 1000)} s left` : reach ? `$${fmt(cost)}` : 'No rare fish within reach of your fly'
-      return btn('throwChum', '', `${lbl(icon('ui', 'basket', UI_ICONS.basket), 'Chum bucket <small>Rare and legendary fish bite more for 60 s</small>')}<b>${right}</b>`, { disabled: s.chumMs > 0 || !reach || s.money < cost })
+      // The reason goes under the description: the price slot doesn't wrap.
+      const why = s.chumMs > 0 || reach ? '' : '<small>No rare fish within reach of your fly</small>'
+      const right = s.chumMs > 0 ? `${Math.ceil(s.chumMs / 1000)} s left` : `$${fmt(cost)}`
+      return btn('throwChum', '', `${lbl(icon('ui', 'basket', UI_ICONS.basket), `Chum bucket <small>Rare and legendary fish bite more for 60 s</small>${why}`)}<b>${right}</b>`, { disabled: s.chumMs > 0 || !reach || s.money < cost })
         + (s.hatchMs > 0 ? `<p>Hatch! Dry flies bite faster: ${Math.ceil(s.hatchMs / 1000)} s</p>` : '')
     },
     shop: s => {
