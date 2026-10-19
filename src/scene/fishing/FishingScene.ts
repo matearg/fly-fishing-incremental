@@ -7,11 +7,12 @@ import type { Angler, GameState, Pending } from '../../game/state'
 import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, ROD_TIP, type Pose } from '../../art/sprites/figures'
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
-import { BANK_SURFACE, bakeSideBank, placeLook, type PlaceLook } from '../../art/places'
+import { placeLook, type PlaceLook } from '../../art/places'
+import { BANK_SURFACE, bakeSideBank } from '../../art/scenery/bank'
 import { bakeHorizon } from '../../art/scenery/skyline'
 import { bakeSideWater } from '../../art/scenery/water'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
-import { FINE, upscale } from '../../art/pixels'
+import { FINE } from '../../art/pixels'
 import { approach, approachTarget, CAST_MS, castLine, castPose, ease, insectPos, letterWave, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
 import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from '../../art/banner'
 import { insectBitmaps } from '../../art/sprites/insects'
@@ -122,9 +123,8 @@ export class FishingScene extends Phaser.Scene {
       const clear = depthY(maxDepth, maxDepth) - WATER_Y + 8 // the bed stays below the deepest fish
       addBitmap(this, `horizon:${id}`, horizon)
       addBitmap(this, `water:${id}`, bakeSideWater(look, horizon, VIEW_W, VIEW_H - WATER_Y, clear, hashString(id)))
+      addBitmap(this, `sidebank:${id}`, bakeSideBank(look, VIEW_H - GROUND_Y + BANK_SURFACE, WATER_Y - GROUND_Y + BANK_SURFACE, hashString(id)))
     }
-    // shortcut: the bank is chunky art upscaled until Task 4 bakes it fine.
-    addBitmap(this, `sidebank:${id}`, upscale(bakeSideBank(look, VIEW_H - GROUND_Y + BANK_SURFACE, hashString(id)), FINE))
     this.statics = [
       fineImage(this, 0, 0, `horizon:${id}`).setOrigin(0).setDepth(Z.horizon),
       fineImage(this, 0, WATER_Y, `water:${id}`).setOrigin(0).setDepth(Z.water),

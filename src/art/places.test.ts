@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { LOCATIONS } from '../game/data'
-import { BANK_SURFACE, bakeBank, bakeSideBank, placeLook } from './places'
+import { bakeBank, placeLook } from './places'
+import { sideProp } from './scenery/props'
 import { paint, type Bitmap } from './pixels'
 
 const alpha = (b: Bitmap, x: number, y: number) => b.data[(y * b.w + x) * 4 + 3]
@@ -22,11 +23,18 @@ describe('place looks', () => {
     const keys = LOCATIONS.map(l => `${placeLook(l.id).water[0]}/${placeLook(l.id).bank}`)
     expect(new Set(keys).size).toBe(LOCATIONS.length)
   })
-  it('paint accepts every decor, prop and drift grid with its palette', () => {
+  it('paint accepts every decor and drift grid with its palette', () => {
     for (const loc of LOCATIONS) {
       const look = placeLook(loc.id)
-      for (const d of [...look.decor, ...look.props, look.drift]) expect(() => paint(d.grid, d.palette), loc.id).not.toThrow()
+      for (const d of [...look.decor, look.drift]) expect(() => paint(d.grid, d.palette), loc.id).not.toThrow()
     }
+  })
+  it('every prop kind paints', () => {
+    for (const loc of LOCATIONS) for (const p of placeLook(loc.id).props)
+      expect(sideProp(p, 1).data.some((v, i) => i % 4 === 3 && v > 0), `${loc.id} ${p.kind}`).toBe(true)
+  })
+  it('every place has a ground and the five grounds are all different', () => {
+    expect(new Set(LOCATIONS.map(l => placeLook(l.id).ground)).size).toBe(LOCATIONS.length)
   })
   it('every place has ≥2 horizon layers and water that darkens', () => {
     for (const loc of LOCATIONS) {
@@ -49,20 +57,6 @@ describe('bakeBank', () => {
     for (const x of [0, 100, 479]) {
       expect(rgb(above, x, 59)).toBe(look.edge)
       expect(rgb(below, x, 0)).toBe(look.edge)
-    }
-  })
-})
-
-describe('side view', () => {
-  it('bakeSideBank is shoreX wide (wider with a dock) and solid at the surface', () => {
-    for (const loc of LOCATIONS) {
-      const look = placeLook(loc.id)
-      const b = bakeSideBank(look, 120, 1)
-      expect(b.h).toBe(120)
-      if (look.dock) expect(b.w, loc.id).toBeGreaterThan(look.shoreX)
-      else expect(b.w, loc.id).toBe(look.shoreX)
-      expect(alpha(b, 4, BANK_SURFACE), loc.id).toBe(255)
-      for (let x = 0; x < b.w; x++) expect(alpha(b, x, 0), `${loc.id} x=${x}`).toBe(0) // props fit under row 0
     }
   })
 })

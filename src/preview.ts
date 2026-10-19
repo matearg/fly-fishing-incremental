@@ -2,7 +2,8 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SPECIES, WADERS } from './game/data'
 import { hashString } from './game/util/rand'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS, iconBitmap, type Icon } from './art/icons'
-import { BANK_SURFACE, bakeBank, bakeSideBank, placeLook } from './art/places'
+import { bakeBank, placeLook } from './art/places'
+import { BANK_SURFACE, bakeSideBank } from './art/scenery/bank'
 import { bakeHorizon } from './art/scenery/skyline'
 import { bakeSideWater } from './art/scenery/water'
 import { blank, blit, FINE, mix, paint, stylize, upscale, type Bitmap, type TextStyle } from './art/pixels'
@@ -72,7 +73,7 @@ function sideView(loc: (typeof LOCATIONS)[number]): Bitmap {
   const clear = ((loc.maxDepth + 0.5) / (loc.maxDepth + 1)) * (H - HORIZON_H) + 8
   const water = bakeSideWater(look, horizon, W, H - HORIZON_H, clear, seed)
   const surface = HORIZON_H - BANK_ABOVE_WATER
-  const bank = upscale(bakeSideBank(look, H - surface + BANK_SURFACE, seed), FINE)
+  const bank = bakeSideBank(look, H - surface + BANK_SURFACE, BANK_ABOVE_WATER + BANK_SURFACE, seed)
   console.log(`bake ${loc.id}: ${(performance.now() - t0).toFixed(0)} ms`)
   const b = blank(W * FINE, H * FINE)
   blit(b, horizon, 0, 0); blit(b, water, 0, HORIZON_H * FINE); blit(b, bank, 0, (surface - BANK_SURFACE) * FINE)

@@ -14,8 +14,9 @@
 
 - **Task 1** done (`e0af3ce`). 800×900 also shows bars: `viewSize` is unchanged, so this matches the old build.
 - **Task 2** done (`7a90f95`), review stop A approved. Decision: basket and license-shop catch icons show at native fine size (1:1, twice the old size), because at DPR 1 the half scale blurred them (Review Focus 5).
-- **Task 3** done, at review stop B. Bakes measured in the browser: 56–141 ms per place (horizon + water + the still-chunky bank), first bake slowest. `mix` lost its `reduce` and ridge profiles are sampled per column to get there. `depthY` is now a module function of `(depth, maxDepth)` so `buildPlace` can compute `clear`. The horizon and water are baked once per place, not on every travel. Rounded tree crowns use the mockup's tiered profile, so lenga stands read a little like conifers.
-- **Tasks 4–6** not started.
+- **Task 3** done (`3a6510c`), review stop B approved. Bakes measured in the browser: 56–141 ms per place (horizon + water + the still-chunky bank), first bake slowest. `mix` lost its `reduce` and ridge profiles are sampled per column to get there. `depthY` is now a module function of `(depth, maxDepth)` so `buildPlace` can compute `clear`. The horizon and water are baked once per place, not on every travel. Rounded tree crowns use the mockup's tiered profile, so lenga stands read a little like conifers.
+- **Task 4** done, at review stop C. Bakes in the browser: 57–148 ms per place (horizon + water + fine bank); the very first, cold bake is the 148. Review Focus 2 checked at the four sizes: no seams, bars as before. The poplar prop kind exists but no place's side view uses it yet (Task 5's top-down decor may). Mountain Lake's lenga takes its autumn red in patches.
+- **Tasks 5–6** not started.
 
 ## Global Constraints
 
@@ -176,7 +177,7 @@ What to draw (the mockup is the reference):
   - In `preview.ts`, `sideView` uses the same calls.
 - [x] **Step 7:** Run `npm test && npm run build`. Expected: PASS. **Browser check:** Review Focus 3 at Mountain Lake and Great Lake, plus the five skylines.
 - [x] **Step 8: Commit:** `git commit -m "draw detailed skylines and water"`
-- [ ] **Step 9: Review stop B.** Show the five skylines and waters to the user (mountains rounder than the mockup). Wait for approval.
+- [x] **Step 9: Review stop B.** Show the five skylines and waters to the user (mountains rounder than the mockup). Wait for approval.
 
 ---
 
@@ -213,20 +214,20 @@ What to draw:
 - **Cut, shared:** under the surface, topsoil (`shade(look.soil, -.35)`) with roots poking out of the face, then 4 strata from `look.soil` with wavy bands and speckle, and shaded stones from `look.edge`. The face has a 1-fine-px dark edge. Rows below `waterY` mix toward `look.deep` by 0.12 + 0.5·depth (at most 0.65).
 - **Dock:** planks with grain, seams every 8 world units, shaded posts down into the water, and a darker underside.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - props: for every kind, `sideProp` is non-empty, fits `PROP_SIZE × FINE`, has an opaque pixel on its bottom row, and is identical for the same seed.
   - bank: for every place, `bakeSideBank(look, 176, 72, 1)` is `(shoreX + (dock ? 110 : 0)) * FINE` wide and `176 * FINE` tall. It is opaque at fine `(4 * FINE, BANK_SURFACE * FINE)` and fully transparent on row 0. Places with props have an opaque pixel above the surface row.
   - places: `every place has a ground and the five grounds are all different`; `every prop kind paints` (replaces the grid test for `props`).
-- [ ] **Step 2:** Run `npx vitest run src/art`. Expected: FAIL.
-- [ ] **Step 3:** Implement `props.ts`, `bank.ts` and the `places.ts` changes. Each place's `props` keeps today's character: Creek coirón and lupines; River coirón and rocks; Big River willow and log; Mountain Lake lenga, rock and log; Great Lake one green lenga.
-- [ ] **Step 4:** Run `npx vitest run src/art`. Expected: PASS.
-- [ ] **Step 5: Wire it into the scene.** In `FishingScene.buildPlace`, the bank is a `fineImage` of `bakeSideBank(look, VIEW_H - GROUND_Y + BANK_SURFACE, WATER_Y - GROUND_Y + BANK_SURFACE, seed)` at `(0, GROUND_Y - BANK_SURFACE)`. `preview.ts` uses the same, and logs `performance.now()` bake time per place (horizon + water + bank).
-- [ ] **Step 6:** Run `npm test && npm run build`. Expected: PASS. **Browser check:**
+- [x] **Step 2:** Run `npx vitest run src/art`. Expected: FAIL.
+- [x] **Step 3:** Implement `props.ts`, `bank.ts` and the `places.ts` changes. Each place's `props` keeps today's character: Creek coirón and lupines; River coirón and rocks; Big River willow and log; Mountain Lake lenga, rock and log; Great Lake one green lenga.
+- [x] **Step 4:** Run `npx vitest run src/art`. Expected: PASS.
+- [x] **Step 5: Wire it into the scene.** In `FishingScene.buildPlace`, the bank is a `fineImage` of `bakeSideBank(look, VIEW_H - GROUND_Y + BANK_SURFACE, WATER_Y - GROUND_Y + BANK_SURFACE, seed)` at `(0, GROUND_Y - BANK_SURFACE)`. `preview.ts` uses the same, and logs `performance.now()` bake time per place (horizon + water + bank).
+- [x] **Step 6:** Run `npm test && npm run build`. Expected: PASS. **Browser check:**
   - Review Focus 2: no seams between bank, water and horizon at the four sizes.
   - Review Focus 4: bake times under 150 ms in the preview log.
   - Figures stand on the ground at every place, and on the dock at Great Lake.
   - Trees don't hide the player, the helper or the cast loop.
-- [ ] **Step 7: Commit:** `git commit -m "draw per-place ground, bank cuts and props"`
+- [x] **Step 7: Commit:** `git commit -m "draw per-place ground, bank cuts and props"`
 - [ ] **Step 8: Review stop C.** Show the five side views with figures to the user. Wait for approval.
 
 ---
