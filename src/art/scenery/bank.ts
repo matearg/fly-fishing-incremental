@@ -8,53 +8,73 @@ import { PROP_SIZE, sideProp } from './props'
 import { fill, fineBlank } from './raster'
 
 export const BANK_SURFACE = 64 // world rows above the walkable ground, room for the tallest prop
-const SLOPE = 20 // world units over which the bank drops into the water
+const SLOPE = 20 // world units from the shoulder to shoreX
 const DOCK_LEN = 110
 const EDGE = 1 / FINE
 
+// The face's x at depth d below the ground: a rounded shoulder, a steep uneven face, then a gentler
+// underwater slope flaring out to a toe on the bed. The wobble can leave small overhangs.
+function faceX(d: number, flat: number, seed: number): number {
+  if (d <= 0) return flat
+  const wobble = 5 * (fbm(d * 0.045, seed + 26) - 0.5) + 1.2 * (noise1(d * 0.35, seed + 27) - 0.5)
+  return flat + 7 * (1 - Math.exp(-d / 4)) + 0.15 * d + 0.0003 * d * d + 0.000004 * d * d * d + Math.min(1, d / 6) * wobble
+}
+
 // h: bitmap height; waterY: texture-local world row of the waterline.
 export function bakeSideBank(look: PlaceLook, h: number, waterY: number, seed: number): Bitmap {
-  const w = look.shoreX + (look.dock ? DOCK_LEN : 0), b = fineBlank(w, h), rand = lcg(seed)
-  const S = BANK_SURFACE, flat = look.shoreX - SLOPE
-  const surf = (x: number) => (x < flat ? S - 0.5 * noise1(x * 0.2, seed + 20) : S + Math.pow(x - flat, 1.35) * 0.9)
+  const S = BANK_SURFACE, flat = look.shoreX - SLOPE, rand = lcg(seed)
+  // Per fine row, where the bank ends on the right; the bitmap is as wide as its widest row (or the dock).
+  const faces = Float64Array.from({ length: h * FINE }, (_, py) => faceX((py + 0.5) / FINE - S, flat, seed))
+  const w = Math.max(Math.ceil(Math.max(...faces)) + 1, look.dock ? look.shoreX + DOCK_LEN : 0)
+  const b = fineBlank(w, h)
+  const flatTop = (x: number) => S - 0.5 * noise1(x * 0.2, seed + 20)
+  const solid = (x: number, y: number) => y >= flatTop(x) && x < faces[Math.max(0, Math.min(faces.length - 1, Math.floor(y * FINE)))]
+  // Per fine column, the top of the bank (the ground on the flat, the face beyond the shoulder).
+  const tops = Float64Array.from({ length: b.w }, (_, px) => {
+    const x = (px + 0.5) / FINE
+    let py = Math.floor((S - 1) * FINE)
+    while (py < b.h && !solid(x, (py + 0.5) / FINE)) py++
+    return py / FINE
+  })
+  const surf = (x: number) => tops[Math.max(0, Math.min(b.w - 1, Math.floor(x * FINE)))]
   const below = (c: number, y: number) => (y < waterY ? c : mix(c, look.deep, Math.min(0.65, 0.12 + ((y - waterY) / (h - waterY)) * 0.5)))
   const top = GROUND_DEPTH[look.ground]
   const strata = [look.soil, shade(look.soil, -0.12), shade(look.soil, 0.08), shade(look.soil, -0.22)]
   const topsoil = shade(look.soil, -0.35), faceEdge = shade(look.soil, -0.6)
 
-  // Ground surface, topsoil, strata; the sloping face is a little darker with a dark outer edge.
-  fill(b, 0, S - 1, look.shoreX, h, (px, py, x, y) => {
-    const t = surf(x)
-    if (y < t) return null
-    const d = y - t
+  // The ground only covers the top and the shoulder; the face below shows topsoil and strata,
+  // weathered darker near its edge, with a dark outline where the air begins.
+  fill(b, 0, S - 1, w, h, (px, py, x, y) => {
+    if (!solid(x, y)) return null
+    const t = surf(x), d = y - t
     let c: number
-    if (d < top) c = groundAt(look, x, y, d, seed)
-    else if (d < top + 4) c = noise2(x * 0.9, y * 0.9, seed + 22) > 0.55 ? shade(topsoil, 0.1) : topsoil
+    if (t < S + 4 && d < top) c = groundAt(look, x, y, d, seed)
+    else if (t < S + 10 && d < top + 4) c = noise2(x * 0.9, y * 0.9, seed + 22) > 0.55 ? shade(topsoil, 0.1) : topsoil
     else {
       c = strata[Math.floor((y + 6 * fbm(x * 0.04, seed + 23)) / 6) % 4]
       const k = noise2(x * 1.4, y * 1.4, seed + 24)
       if (k > 0.7) c = shade(c, 0.08)
       else if (k < 0.25) c = shade(c, -0.12)
     }
-    if (x > flat) c = shade(c, -0.1)
-    if (x > flat && (y < surf(x + EDGE) || x + EDGE >= look.shoreX)) c = faceEdge
+    if (faces[py] - x < 3) c = shade(c, -0.1)
+    if (x + EDGE >= faces[py] || (x > flat && !solid(x, y - EDGE))) c = faceEdge
     return below(c, y)
   })
   // Roots poking out of the face under the topsoil.
   for (let i = 0; i < 9; i++) {
-    const x0 = flat + 1 + rand() * 14, len = 4 + rand() * 9, ph = rand() * 6
+    const x0 = flat + rand() * 10, len = 4 + rand() * 9, ph = rand() * 6
     for (let v = 0; v < len; v += EDGE) {
       const x = x0 + 1.5 + v * 0.25 + Math.sin(v * 0.5 + ph) * 0.8, y = surf(x0) + top + 1 + v
-      if (y < surf(x) || x >= look.shoreX) continue
+      if (!solid(x, y)) continue
       fill(b, x, y, x + EDGE, y + EDGE, () => below(v < 1 ? 0x8a6a46 : 0x6a4a2e, y))
     }
   }
-  // Stones in the cut, lit from the upper left.
+  // Stones in the cut, lit from the upper left; some lie out on the toe.
   const stone = [shade(look.edge, -0.6), shade(look.edge, 0.15), look.edge, shade(look.edge, -0.3)]
-  for (let i = 0; i < (look.shoreX * h) / 500; i++) {
-    const cx = rand() * (look.shoreX - 2), rx = 1.4 + rand() * 3.4, ry = rx * (0.55 + rand() * 0.25), cy = surf(cx) + top + 6 + rand() * (h - surf(cx) - top - 6)
+  for (let i = 0; i < (w * h) / 500; i++) {
+    const cx = rand() * (w - 2), rx = 1.4 + rand() * 3.4, ry = rx * (0.55 + rand() * 0.25), cy = surf(cx) + top + 6 + rand() * (h - surf(cx) - top - 6)
     fill(b, cx - rx, cy - ry, cx + rx, cy + ry, (_px, _py, x, y) => {
-      if (y < surf(x) + top + 4 || x >= look.shoreX) return null
+      if (!solid(x, y) || y < surf(x) + top + 4) return null
       const nx = (x - cx) / rx, ny = (y - cy) / ry, r = nx * nx + ny * ny
       if (r > 1) return null
       const l = -(nx + ny) * 0.55
