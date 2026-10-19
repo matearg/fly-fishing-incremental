@@ -7,7 +7,7 @@ New bonuses, power-ups, helpers and shop items, agreed with the user on 2026-10-
 | # | Piece | Status |
 |---|-------|--------|
 | 1 | Catch & Release (trashing fish adds a bonus to the next Sell all), Buyer pause button, descriptions kept on owned items | Done. Spec `specs/2026-10-18-catch-and-release-design.md`, plan `plans/2026-10-18-catch-and-release.md` |
-| 2 | Gear: rods and waders | Spec written, awaiting approval: `specs/2026-10-18-gear-design.md` |
+| 2 | Gear: rods and waders | Done. Spec `specs/2026-10-18-gear-design.md`, plan `plans/2026-10-18-gear.md` |
 | 3 | Power-ups: chum bucket and hatch | Not started |
 | 4 | New helpers: Taxidermist and Guide | Not started |
 | 5 | Bonuses: combo, species log, basket set | Not started |
@@ -20,6 +20,7 @@ New bonuses, power-ups, helpers and shop items, agreed with the user on 2026-10-
 - **Helpers (piece 4), as pitched:** the Taxidermist mounts your first legendary of each species as a trophy worth a permanent +% for the season; the Guide raises your hired anglers' odds. Details not brainstormed yet.
 - **Bonuses (piece 5), as pitched:** combo (same species in a row raises a multiplier), species log (the first catch of each species pays a bounty), basket set (selling one of every species of a place pays a bonus). Details not brainstormed yet.
 - **Pacing:** every piece keeps `pacing.test.ts` green. Before piece 1, season 1 was at 49.98 of 50 sim-min, so each piece retunes `data.ts` as needed. After piece 1: season 1 is 49.0 sim-min (max purchase gap 2.4 min, worst income jump 7.2×). Piece 1 set Catch & Release $1,500, Junk sorter $1,000 (from $450) and Mountain Lake $150K (from $200K); the release price alone could not make room, since season 1 moved within noise (50.0–50.5) for any price from $1K to $8K.
+  - After piece 2: the user raised season 1's limit to 60 sim-min (2026-10-18). Season 1 is 52.0 sim-min (max purchase gap 1.9 min, worst income jump 8.5×); gear prices unchanged from the spec. The bot buys every rod and pair cheapest-first and fishes with `bestRod`. Across seeds 1–8 season 1 runs 49.5–52.0 min with gear and 47.0–49.7 without, so buying gear costs the bot about 3 min. That holds at any gear price from 0.3× to 2×, because the cheap early pairs and rods delay the first helpers. Owning all gear free from the start would finish in about 42 min, and switching rods is worth about 2 min of that.
 - **Rules for the panel (piece 1):** the panel shows sale totals through `saleValue(state, withBonus)` in `economy.ts`, never its own bonus math.
 
 ## How to resume
