@@ -9,7 +9,7 @@ import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
 import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../../art/places'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
-import { blank, mix } from '../../art/pixels'
+import { blank, FINE, mix } from '../../art/pixels'
 import { approach, approachTarget, CAST_MS, castLine, castPose, ease, insectPos, letterWave, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
 import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from '../../art/banner'
 import { insectBitmaps } from '../../art/sprites/insects'
@@ -102,7 +102,7 @@ export class FishingScene extends Phaser.Scene {
     this.banners = { chum: banner('chum', CHUM_TEXT, CHUM_STYLE), hatch: banner('hatch', HATCH_TEXT, HATCH_STYLE) }
     insectBitmaps().forEach((b, k) => addBitmap(this, `insect:${k}`, b))
     this.insects = Array.from({ length: INSECTS }, () => this.add.image(0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
-    this.cameras.main.fadeIn(300)
+    this.cameras.main.setOrigin(0).setZoom(FINE).fadeIn(300)
     this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
@@ -211,14 +211,14 @@ export class FishingScene extends Phaser.Scene {
   private drawLine(g: Phaser.GameObjects.Graphics, pts: Pt[] | null, fly: Phaser.GameObjects.Image, patternId: string | undefined): void {
     fly.setVisible(!!pts)
     if (!pts) return
-    g.lineStyle(1, 0xf0f0f0, 0.8)
+    g.lineStyle(1 / FINE, 0xf0f0f0, 0.8)
     const [tip, end] = [pts[0], pts[pts.length - 1]]
     if (pts.length > 2) for (let i = 1; i < pts.length; i++) g.lineBetween(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1])
     else if (end[1] <= WATER_Y) g.lineBetween(tip[0], tip[1], end[0], end[1])
     else {
       const cross = lerp(tip[0], end[0], (WATER_Y - tip[1]) / (end[1] - tip[1]))
       g.lineBetween(tip[0], tip[1], cross, WATER_Y)
-      g.lineStyle(1, 0xf0f0f0, 0.45).lineBetween(cross, WATER_Y, end[0], end[1])
+      g.lineStyle(1 / FINE, 0xf0f0f0, 0.45).lineBetween(cross, WATER_Y, end[0], end[1])
     }
     const id = patternId ?? 'basicDry', [ex, ey] = LINE_FLY_EYE[id] ?? LINE_FLY_EYE.basicDry
     fly.setTexture(this.lineFly(id)).setPosition(Math.round(end[0]) - ex, Math.round(end[1]) - ey)
@@ -259,8 +259,8 @@ export class FishingScene extends Phaser.Scene {
   update(time: number): void {
     this.settling = false
     // The HUD is pinned to the corners of whatever crop is showing.
-    const w = this.scale.width
-    this.cameras.main.setScroll(...viewScroll(w, this.scale.height, FISHING_KEEP, FISHING_ANCHOR))
+    const w = this.scale.width / FINE
+    this.cameras.main.setScroll(...viewScroll(w, this.scale.height / FINE, FISHING_KEEP, FISHING_ANCHOR))
     this.menuButton.x = w - 4
     this.placeText.x = w - 22
     const s = this.hooks.getState()
@@ -270,7 +270,7 @@ export class FishingScene extends Phaser.Scene {
     if (this.school !== schoolKey(s)) { this.school = schoolKey(s); this.buildSchool(s, place) }
 
     this.ripples.clear().fillStyle(place.look.ripple)
-    for (const r of this.rippleDots) this.ripples.fillRect(Math.floor(this.wrapX(r.x0 + t * r.speed, place)), r.y, r.len, 1)
+    for (const r of this.rippleDots) this.ripples.fillRect(Math.floor(this.wrapX(r.x0 + t * r.speed, place)), r.y, r.len, 1 / FINE)
 
     for (const f of this.fish) {
       if (f === this.chosen?.sw) continue

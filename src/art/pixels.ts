@@ -1,6 +1,8 @@
 // Code-drawn pixel art: grids of chars + a palette, baked to RGBA buffers.
 // Pure (no DOM) so it runs in tests; scenes upload the result as textures.
 
+export const FINE = 2 // art pixels per world unit
+
 export type Grid = string[] // one char per pixel, '.' = transparent
 export interface Bitmap { w: number; h: number; data: Uint8ClampedArray }
 export interface Mask { w: number; h: number; on: Uint8Array }

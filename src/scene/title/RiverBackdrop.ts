@@ -4,7 +4,7 @@ import type { LocationId } from '../../game/data'
 import { hashString, lcg } from '../../game/util/rand'
 import { fishBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { bakeBank, placeLook } from '../../art/places'
-import { paint } from '../../art/pixels'
+import { FINE, paint } from '../../art/pixels'
 import { addBitmap } from '../textures'
 import { VIEW_H, VIEW_W } from '../view'
 
@@ -75,7 +75,7 @@ export class RiverBackdrop {
     }
     for (const p of this.drift) p.img.setX(Math.round(wrapX(p.x0 + t * p.speed)))
     this.g.clear().fillStyle(this.rippleColor)
-    for (const r of this.ripples) this.g.fillRect(Math.floor(wrapX(r.x0 + t * r.speed)), r.y, r.len, 1)
+    for (const r of this.ripples) this.g.fillRect(Math.floor(wrapX(r.x0 + t * r.speed)), r.y, r.len, 1 / FINE)
   }
 
   destroy(): void {
