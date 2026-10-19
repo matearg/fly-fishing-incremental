@@ -4,8 +4,9 @@ import { blank, blit, mix, paint, type Bitmap, type Grid } from './pixels'
 
 export interface Decor { grid: Grid; palette: Record<string, number>; perBank: number }
 // Side-view skyline layer, drawn far to near standing on the waterline.
-// trees: width = crown px (default 7), cover = share of the skyline with groves (default 1)
-export interface HorizonLayer { kind: 'peaks' | 'hills' | 'bardas' | 'trees'; colors: number[]; height: number; width?: number; cover?: number }
+// trees: width = crown px (default 7), cover = share of the skyline with groves (default 1).
+// haze: how much the layer fades into the sky (default 0.4 for the farthest layer down to 0.1 for the nearest).
+export interface HorizonLayer { kind: 'peaks' | 'hills' | 'bardas' | 'trees'; colors: number[]; height: number; width?: number; cover?: number; haze?: number }
 // water: top-down bands from the banks toward mid-river (water[0] is also the side view's surface); deep: side view's bottom.
 // riverH: top-down water height. bank/edge: top-down ground and shore strip; the side view uses bank for its ground, edge for stones, soil below.
 // shoreX: side-view bank width. decor: top-down props; props: side-view props standing on the bank; drift: floats on the top-down river.
@@ -196,55 +197,6 @@ export function bakeBank(look: PlaceLook, w: number, h: number, waterSide: 'top'
 const put = (b: Bitmap, x: number, y: number, c: number) => {
   if (x >= 0 && y >= 0 && x < b.w && y < b.h) b.data.set([c >> 16, (c >> 8) & 0xff, c & 0xff, 255], (y * b.w + x) * 4)
 }
-const SKY_STEPS = 8
-
-// Side-view sky (stepped gradient) with the skyline layers; the bottom row is the waterline.
-export function bakeHorizon(look: PlaceLook, w: number, h: number, seed: number): Bitmap {
-  const b = blank(w, h)
-  for (let y = 0; y < h; y++) {
-    const c = mix(look.sky[0], look.sky[1], Math.floor((y / h) * SKY_STEPS) / (SKY_STEPS - 1))
-    for (let x = 0; x < w; x++) put(b, x, y, c)
-  }
-  const rand = lcg(seed)
-  for (const L of look.horizon) {
-    const p1 = rand() * 6, p2 = rand() * 6, H = L.height
-    const column = (x: number, top: number, color: (y: number) => number) => { for (let y = Math.max(0, top); y < h; y++) put(b, x, y, color(y)) }
-    if (L.kind === 'trees') {
-      const wd = L.width ?? 7, cover = L.cover ?? 1
-      // Crowns overlap into a canopy; each has a rounded (wide) or pointed (narrow) top.
-      for (let x = Math.floor(rand() * 3) - wd, i = 0; x < w; x += Math.max(2, Math.round(wd * 0.7)) + Math.floor(rand() * 2), i++) {
-        if (cover < 1 && (Math.sin(x * 0.012 + p1) + 1) / 2 > cover) continue
-        const th = Math.round(H * (0.65 + 0.35 * rand()))
-        const c = L.colors[i % L.colors.length], hi = L.colors[(i + 1) % L.colors.length]
-        for (let cx = 0; cx < wd; cx++) {
-          const u = (cx + 0.5) / wd * 2 - 1
-          const top = h - th + Math.round(th * 0.3 * (1 - Math.sqrt(1 - u * u)))
-          column(x + cx, top, y => (y === top ? mix(c, BLACK, 0.35) : u < -0.2 && y < top + th * 0.4 ? hi : c))
-        }
-      }
-      continue
-    }
-    for (let x = 0; x < w; x++) {
-      let hx: number
-      if (L.kind === 'peaks') hx = Math.round(H * (0.55 + 0.25 * Math.sin(x * 0.0225 + p1) + 0.2 * Math.abs(Math.sin(x * 0.055 + p2))))
-      else if (L.kind === 'hills') hx = Math.round(H * (0.6 + 0.4 * Math.sin(x * 0.015 + p1)))
-      else hx = Math.round(H * (0.8 + 0.2 * Math.sin(x * 0.015 + p1))) - ((x + Math.floor(p2 * 20)) % 94 < 10 ? Math.round(H * 0.35) : 0)
-      const top = h - hx
-      if (L.kind === 'peaks') {
-        const [rock, snow] = L.colors, cap = Math.max(0, Math.round(hx - H * (0.62 + 0.06 * Math.sin(x * 0.7 + p2) + 0.05 * Math.sin(x * 0.19))))
-        const shade = Math.cos(x * 0.0225 + p1) * 0.25 + Math.sign(Math.sin(x * 0.055 + p2)) * Math.cos(x * 0.055 + p2) * 0.2 < 0
-        const face = shade ? mix(rock, BLACK, 0.18) : rock // the far side of each ridge sits in shade
-        column(x, top, y => (y === top ? mix(rock, BLACK, 0.4) : y < top + cap ? (shade ? mix(snow, rock, 0.25) : snow) : face))
-      } else if (L.kind === 'hills') {
-        column(x, top, y => (y === top ? mix(L.colors[0], BLACK, 0.3) : L.colors[0]))
-      } else {
-        column(x, top, y => (y === top ? mix(L.colors[0], BLACK, 0.35) : L.colors[Math.floor((h - 1 - y) / 4) % L.colors.length]))
-      }
-    }
-  }
-  return b
-}
-
 export const BANK_SURFACE = 24 // side bank: rows above the walkable ground, room for props
 const SLOPE = 20 // px over which the side bank drops into the water
 const DOCK_LEN = 110

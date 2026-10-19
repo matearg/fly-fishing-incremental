@@ -2,7 +2,9 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SPECIES, WADERS } from './game/data'
 import { hashString } from './game/util/rand'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS, iconBitmap, type Icon } from './art/icons'
-import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
+import { BANK_SURFACE, bakeBank, bakeSideBank, placeLook } from './art/places'
+import { bakeHorizon } from './art/scenery/skyline'
+import { bakeSideWater } from './art/scenery/water'
 import { blank, blit, FINE, mix, paint, stylize, upscale, type Bitmap, type TextStyle } from './art/pixels'
 import { refine } from './art/refine'
 import { SMALL, textMask } from './art/font'
@@ -63,21 +65,24 @@ function topDown(id: (typeof LOCATIONS)[number]['id']): Bitmap {
   return fine
 }
 
-function sideView(id: (typeof LOCATIONS)[number]['id']): Bitmap {
-  const look = placeLook(id)
-  const b = blank(W, H)
-  blit(b, bakeHorizon(look, W, HORIZON_H, hashString(id)), 0, 0)
-  for (let y = HORIZON_H; y < H; y++) fillRect(b, 0, y, W, 1, mix(look.water[0], look.deep, (y - HORIZON_H) / (H - HORIZON_H)))
-  for (let x = 0; x < W; x += 9) fillRect(b, x + (x % 4), HORIZON_H, 3, 1, look.ripple)
+// Same bakes as FishingScene.buildPlace, timed (Review Focus 4: under 150 ms per place).
+function sideView(loc: (typeof LOCATIONS)[number]): Bitmap {
+  const look = placeLook(loc.id), seed = hashString(loc.id), t0 = performance.now()
+  const horizon = bakeHorizon(look, W, HORIZON_H, seed)
+  const clear = ((loc.maxDepth + 0.5) / (loc.maxDepth + 1)) * (H - HORIZON_H) + 8
+  const water = bakeSideWater(look, horizon, W, H - HORIZON_H, clear, seed)
   const surface = HORIZON_H - BANK_ABOVE_WATER
-  blit(b, bakeSideBank(look, H - surface + BANK_SURFACE, hashString(id)), 0, surface - BANK_SURFACE)
-  return upscale(b, FINE)
+  const bank = upscale(bakeSideBank(look, H - surface + BANK_SURFACE, seed), FINE)
+  console.log(`bake ${loc.id}: ${(performance.now() - t0).toFixed(0)} ms`)
+  const b = blank(W * FINE, H * FINE)
+  blit(b, horizon, 0, 0); blit(b, water, 0, HORIZON_H * FINE); blit(b, bank, 0, (surface - BANK_SURFACE) * FINE)
+  return b
 }
 
 const places = section('Places — title (top-down) and fishing scene (side view)')
 for (const loc of LOCATIONS) {
   show(places, topDown(loc.id), `${loc.name} · title`, SCALE / FINE)
-  show(places, sideView(loc.id), `${loc.name} · fishing`, SCALE / FINE)
+  show(places, sideView(loc), `${loc.name} · fishing`, SCALE / FINE)
 }
 
 const POSES: Pose[] = ['idle', 'back', 'cast', 'reel']
@@ -92,7 +97,7 @@ for (const waders of Object.keys(WADERS_LOOKS)) for (const p of ['idle', 'reel']
 // Each place's fishing view with the two figures on the bank (on the dock at the Great Lake), one pose per place.
 const onBank = section('Figures on each bank')
 LOCATIONS.forEach((loc, i) => {
-  const look = placeLook(loc.id), b = sideView(loc.id), pose = POSES[i % POSES.length]
+  const look = placeLook(loc.id), b = sideView(loc), pose = POSES[i % POSES.length]
   // Player at the water's edge (end of the flat ground, or near the end of the dock), helper a step behind.
   const player = look.dock ? look.shoreX + 70 : look.shoreX - 34, feet = HORIZON_H - BANK_ABOVE_WATER
   blit(b, figureBitmaps('helper')[pose], (player - 24 - BODY_X) * FINE, (feet - FEET_Y) * FINE)

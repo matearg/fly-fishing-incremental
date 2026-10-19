@@ -62,8 +62,8 @@ export interface TextStyle { top: number; bottom: number; outline: number; outli
 
 const SHADOW_OFFSET = 2
 const SHADOW_ALPHA = 89 // ≈35%
-export const mix = (a: number, b: number, t: number) =>
-  [16, 8, 0].reduce((c, sh) => c | (Math.round(((a >> sh) & 0xff) + (((b >> sh) & 0xff) - ((a >> sh) & 0xff)) * t) << sh), 0)
+const lerpByte = (a: number, b: number, sh: number, t: number) => Math.round(((a >> sh) & 0xff) + (((b >> sh) & 0xff) - ((a >> sh) & 0xff)) * t) << sh
+export const mix = (a: number, b: number, t: number) => lerpByte(a, b, 16, t) | lerpByte(a, b, 8, t) | lerpByte(a, b, 0, t)
 
 // Ink gets a 4-step vertical gradient, then a square outline ring, then an optional drop shadow.
 export function stylize(mask: Mask, style: TextStyle): Bitmap {

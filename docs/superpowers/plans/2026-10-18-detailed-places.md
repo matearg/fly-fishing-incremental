@@ -14,7 +14,7 @@
 
 - **Task 1** done (`e0af3ce`). 800×900 also shows bars: `viewSize` is unchanged, so this matches the old build.
 - **Task 2** done (`7a90f95`), review stop A approved. Decision: basket and license-shop catch icons show at native fine size (1:1, twice the old size), because at DPR 1 the half scale blurred them (Review Focus 5).
-- **Task 3** in progress.
+- **Task 3** done, at review stop B. Bakes measured in the browser: 56–141 ms per place (horizon + water + the still-chunky bank), first bake slowest. `mix` lost its `reduce` and ridge profiles are sampled per column to get there. `depthY` is now a module function of `(depth, maxDepth)` so `buildPlace` can compute `clear`. The horizon and water are baked once per place, not on every travel. Rounded tree crowns use the mockup's tiered profile, so lenga stands read a little like conifers.
 - **Tasks 4–6** not started.
 
 ## Global Constraints
@@ -161,21 +161,21 @@ What to draw (the mockup is the reference):
 - **trees:** individual crowns as in the mockup's `crown()`: lit left, shaded right, leafy noise edge. `width` and `cover` keep today's meaning, and narrow trees are pointed (poplars).
 - **Water:** a `ramp` from `look.water` to `look.deep` with depth. Mirror the bottom 24 world rows of `reflect`, wobbling, mixed in at 60% and fading. Add surface glint dashes, light shafts fading with depth, sparse specks, weeds rising from the bed (when `h - clear > 6`), and bed gravel and stones tinted by `look.deep`.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - noise: `same inputs give the same value`; `values stay in [0,1]` over 1000 samples; `ramp returns only palette colours and exact endpoints`.
   - raster: `fineBlank is FINE× the world size`; `fill covers exactly the fine pixels of a world rect` (fill (1,1)-(2,2) sets exactly fine pixels 2..3 × 2..3).
   - skyline: for every place, `bakeHorizon(look, 480, 110, s)` is 960×220 and fully opaque. Its top-left pixel is `look.sky[0]`, it is identical for the same seed, and it differs for another seed.
   - water: for every place, `bakeSideWater(look, horizon, 480, 160, 148, 1)` is 960×320 and fully opaque, and the bottom row's luma is below the top's. `bedTop never rises above clear`: for x 0..479, `bedTop(x, 160, 148, 1)` is ≥ 148 and ≤ 158.
-- [ ] **Step 2:** Run `npx vitest run src/art/scenery`. Expected: FAIL.
-- [ ] **Step 3:** Implement `noise.ts` and `raster.ts`.
-- [ ] **Step 4:** Implement `skyline.ts` and `water.ts`, then tune each place's `horizon` (`haze`, heights) in `places.ts` so all five read well.
-- [ ] **Step 5:** Run `npx vitest run src/art`. Expected: PASS.
-- [ ] **Step 6: Wire it into the scene.**
+- [x] **Step 2:** Run `npx vitest run src/art/scenery`. Expected: FAIL.
+- [x] **Step 3:** Implement `noise.ts` and `raster.ts`.
+- [x] **Step 4:** Implement `skyline.ts` and `water.ts`, then tune each place's `horizon` (`haze`, heights) in `places.ts` so all five read well.
+- [x] **Step 5:** Run `npx vitest run src/art`. Expected: PASS.
+- [x] **Step 6: Wire it into the scene.**
   - In `FishingScene.buildPlace`, the horizon and water are `fineImage`s of `bakeHorizon(look, VIEW_W, WATER_Y, seed)` and `bakeSideWater(look, horizonBmp, VIEW_W, VIEW_H - WATER_Y, clear, seed)`, with `clear = this.depthY(maxDepth, …) - WATER_Y + 8`.
   - The bank stays as is: `fineImage` of `upscale(bakeSideBank(...), FINE)`.
   - In `preview.ts`, `sideView` uses the same calls.
-- [ ] **Step 7:** Run `npm test && npm run build`. Expected: PASS. **Browser check:** Review Focus 3 at Mountain Lake and Great Lake, plus the five skylines.
-- [ ] **Step 8: Commit:** `git commit -m "draw detailed skylines and water"`
+- [x] **Step 7:** Run `npm test && npm run build`. Expected: PASS. **Browser check:** Review Focus 3 at Mountain Lake and Great Lake, plus the five skylines.
+- [x] **Step 8: Commit:** `git commit -m "draw detailed skylines and water"`
 - [ ] **Step 9: Review stop B.** Show the five skylines and waters to the user (mountains rounder than the mockup). Wait for approval.
 
 ---

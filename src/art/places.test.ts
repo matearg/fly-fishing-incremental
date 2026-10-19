@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { LOCATIONS } from '../game/data'
-import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './places'
+import { BANK_SURFACE, bakeBank, bakeSideBank, placeLook } from './places'
 import { paint, type Bitmap } from './pixels'
 
 const alpha = (b: Bitmap, x: number, y: number) => b.data[(y * b.w + x) * 4 + 3]
@@ -54,13 +54,6 @@ describe('bakeBank', () => {
 })
 
 describe('side view', () => {
-  it('bakeHorizon fills the requested size with sky at the top', () => {
-    for (const loc of LOCATIONS) {
-      const b = bakeHorizon(placeLook(loc.id), 480, 80, 1)
-      expect([b.w, b.h]).toEqual([480, 80])
-      expect(alpha(b, 0, 0), loc.id).toBe(255)
-    }
-  })
   it('bakeSideBank is shoreX wide (wider with a dock) and solid at the surface', () => {
     for (const loc of LOCATIONS) {
       const look = placeLook(loc.id)
