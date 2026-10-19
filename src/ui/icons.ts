@@ -1,6 +1,6 @@
 import { SPECIES } from '../game/data'
 import { iconBitmap, type Icon } from '../art/icons'
-import type { Bitmap } from '../art/pixels'
+import { FINE, type Bitmap } from '../art/pixels'
 import { fishSideBitmaps } from '../art/sprites/fish'
 import { JUNK_ART, junkBitmap } from '../art/sprites/junk'
 
@@ -23,6 +23,6 @@ export const icon = (set: string, id: string, i: Icon, scale = 2) => img(`${set}
 
 // An id from an old save with no art renders without an image instead of throwing.
 export function catchImg(kind: 'fish' | 'junk', defId: string): string {
-  if (kind === 'fish') return SPECIES.some(s => s.id === defId) ? img(`fish:${defId}`, () => fishSideBitmaps(defId)[0], 1) : ''
-  return defId in JUNK_ART ? img(`junk:${defId}`, () => junkBitmap(defId), 1) : ''
+  if (kind === 'fish') return SPECIES.some(s => s.id === defId) ? img(`fish:${defId}`, () => fishSideBitmaps(defId)[0], 1 / FINE) : ''
+  return defId in JUNK_ART ? img(`junk:${defId}`, () => junkBitmap(defId), 1 / FINE) : ''
 }

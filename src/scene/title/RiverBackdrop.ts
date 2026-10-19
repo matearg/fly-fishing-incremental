@@ -5,7 +5,8 @@ import { hashString, lcg } from '../../game/util/rand'
 import { fishBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { bakeBank, placeLook } from '../../art/places'
 import { FINE, paint } from '../../art/pixels'
-import { addBitmap } from '../textures'
+import { refine } from '../../art/refine'
+import { addBitmap, fineImage } from '../textures'
 import { VIEW_H, VIEW_W } from '../view'
 
 const WRAP = 30 // off-screen margin so sprites leave fully before wrapping
@@ -42,16 +43,16 @@ export class RiverBackdrop {
       addBitmap(scene, frames[0], a); addBitmap(scene, frames[1], b)
       for (let k = 0; k < TIER_SCHOOL[sp.tier]; k++) {
         const against = rand() < 0.2
-        const img = scene.add.image(0, 0, frames[0]).setFlipX(against)
+        const img = fineImage(scene, 0, 0, frames[0]).setFlipX(against)
         this.fish.push({ img, frames, x0: rand() * VIEW_W, y: top + 12 + rand() * (look.riverH - 24), speed: (10 + rand() * 14) * (against ? -1 : 1), phase: rand() * 6 })
         this.objs.push(img)
       }
     }
 
     const drift = `drift:${location}`
-    addBitmap(scene, drift, paint(look.drift.grid, look.drift.palette))
+    addBitmap(scene, drift, refine(paint(look.drift.grid, look.drift.palette)))
     for (let i = 0; i < look.drift.perBank; i++) {
-      const img = scene.add.image(0, top + 10 + rand() * (look.riverH - 20), drift)
+      const img = fineImage(scene, 0, top + 10 + rand() * (look.riverH - 20), drift)
       this.drift.push({ img, x0: rand() * VIEW_W, speed: 4 + rand() * 3 })
       this.objs.push(img)
     }

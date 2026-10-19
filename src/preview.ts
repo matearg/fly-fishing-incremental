@@ -3,7 +3,8 @@ import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SPECIES, 
 import { hashString } from './game/util/rand'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS, iconBitmap, type Icon } from './art/icons'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
-import { blank, blit, mix, paint, stylize, type Bitmap, type TextStyle } from './art/pixels'
+import { blank, blit, FINE, mix, paint, stylize, upscale, type Bitmap, type TextStyle } from './art/pixels'
+import { refine } from './art/refine'
 import { SMALL, textMask } from './art/font'
 import { BAR_SEGMENT, NOTES, SPEAKER, soundIconMask } from './art/soundIcons'
 import { SoundPlayer } from './audio/player'
@@ -54,11 +55,12 @@ function topDown(id: (typeof LOCATIONS)[number]['id']): Bitmap {
     const h = Math.ceil(half / n), off = Math.floor((half / n) * i)
     fillRect(b, 0, top + off, W, h, c); fillRect(b, 0, bottom - off - h, W, h, c)
   })
-  const drift = paint(look.drift.grid, look.drift.palette)
-  for (let i = 0; i < look.drift.perBank; i++) blit(b, drift, Math.floor(rand() * W), top + 10 + Math.floor(rand() * (look.riverH - 20)))
   blit(b, bakeBank(look, W, top, 'bottom', 11), 0, 0)
   blit(b, bakeBank(look, W, H - bottom, 'top', 23), 0, bottom)
-  return b
+  // shortcut: chunky place art upscaled until Tasks 3–5 bake it fine.
+  const fine = upscale(b, FINE), drift = refine(paint(look.drift.grid, look.drift.palette))
+  for (let i = 0; i < look.drift.perBank; i++) blit(fine, drift, Math.floor(rand() * W) * FINE, (top + 10 + Math.floor(rand() * (look.riverH - 20))) * FINE)
+  return fine
 }
 
 function sideView(id: (typeof LOCATIONS)[number]['id']): Bitmap {
@@ -69,23 +71,23 @@ function sideView(id: (typeof LOCATIONS)[number]['id']): Bitmap {
   for (let x = 0; x < W; x += 9) fillRect(b, x + (x % 4), HORIZON_H, 3, 1, look.ripple)
   const surface = HORIZON_H - BANK_ABOVE_WATER
   blit(b, bakeSideBank(look, H - surface + BANK_SURFACE, hashString(id)), 0, surface - BANK_SURFACE)
-  return b
+  return upscale(b, FINE)
 }
 
 const places = section('Places — title (top-down) and fishing scene (side view)')
 for (const loc of LOCATIONS) {
-  show(places, topDown(loc.id), `${loc.name} · title`)
-  show(places, sideView(loc.id), `${loc.name} · fishing`)
+  show(places, topDown(loc.id), `${loc.name} · title`, SCALE / FINE)
+  show(places, sideView(loc.id), `${loc.name} · fishing`, SCALE / FINE)
 }
 
 const POSES: Pose[] = ['idle', 'back', 'cast', 'reel']
 const KINDS: FigureKind[] = ['angler', 'helper']
 const sprites = section('Figures — angler and helper, idle / back / cast / reel (4×)')
-for (const k of KINDS) for (const p of POSES) show(sprites, figureBitmaps(k)[p], `${k} · ${p}`, 4)
+for (const k of KINDS) for (const p of POSES) show(sprites, figureBitmaps(k)[p], `${k} · ${p}`, 4 / FINE)
 
 const gear = section('Gear — angler with each rod, then each pair of waders, idle / reel (4×)')
-for (const rod of Object.keys(ROD_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { rod })[p], `${rod} · ${p}`, 4)
-for (const waders of Object.keys(WADERS_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { waders })[p], `${waders} · ${p}`, 4)
+for (const rod of Object.keys(ROD_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { rod })[p], `${rod} · ${p}`, 4 / FINE)
+for (const waders of Object.keys(WADERS_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { waders })[p], `${waders} · ${p}`, 4 / FINE)
 
 // Each place's fishing view with the two figures on the bank (on the dock at the Great Lake), one pose per place.
 const onBank = section('Figures on each bank')
@@ -93,9 +95,9 @@ LOCATIONS.forEach((loc, i) => {
   const look = placeLook(loc.id), b = sideView(loc.id), pose = POSES[i % POSES.length]
   // Player at the water's edge (end of the flat ground, or near the end of the dock), helper a step behind.
   const player = look.dock ? look.shoreX + 70 : look.shoreX - 34, feet = HORIZON_H - BANK_ABOVE_WATER
-  blit(b, figureBitmaps('helper')[pose], player - 24 - BODY_X, feet - FEET_Y)
-  blit(b, figureBitmaps('angler')[pose], player - BODY_X, feet - FEET_Y)
-  show(onBank, b, `${loc.name} · ${pose}`)
+  blit(b, figureBitmaps('helper')[pose], (player - 24 - BODY_X) * FINE, (feet - FEET_Y) * FINE)
+  blit(b, figureBitmaps('angler')[pose], (player - BODY_X) * FINE, (feet - FEET_Y) * FINE)
+  show(onBank, b, `${loc.name} · ${pose}`, SCALE / FINE)
 })
 
 // Fish: side view (both tail frames) and the title's top-down view, grouped by place, on that place's water.
@@ -107,7 +109,7 @@ for (const loc of LOCATIONS) {
     const card = blank(a.w * 2 + top.w + 8, Math.max(a.h, top.h) + 4)
     fillRect(card, 0, 0, card.w, card.h, water)
     blit(card, a, 2, 2); blit(card, b, a.w + 4, 2); blit(card, top, a.w * 2 + 6, 2)
-    show(row, card, `${sp.name} (${sp.tier})`, 4)
+    show(row, card, `${sp.name} (${sp.tier})`, 4 / FINE)
   }
 }
 
@@ -117,7 +119,7 @@ for (const p of PATTERNS) {
   const b = lineFlyBitmap(p.id), card = blank(b.w + 4, b.h + 4)
   fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
   blit(card, b, 2, 2)
-  show(lineFlies, card, p.name, 4)
+  show(lineFlies, card, p.name, 4 / FINE)
 }
 
 const junk = section('Junk (4×)')
@@ -125,7 +127,7 @@ for (const j of JUNK) {
   const b = junkBitmap(j.id), card = blank(b.w + 4, b.h + 4)
   fillRect(card, 0, 0, card.w, card.h, placeLook('river').water[1])
   blit(card, b, 2, 2)
-  show(junk, card, j.name, 4)
+  show(junk, card, j.name, 4 / FINE)
 }
 
 const powerups = section('Power-ups — titles (wave frozen at t=0 and t=300 ms) and insects (4×)')
@@ -141,7 +143,7 @@ for (const [k, b] of insectBitmaps().entries()) {
   const card = blank(b.w + 4, b.h + 4)
   fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
   blit(card, b, 2, 2)
-  show(powerups, card, k ? 'wings down' : 'wings up', 4)
+  show(powerups, card, k ? 'wings down' : 'wings up', 4 / FINE)
 }
 
 // Panel icons on the journal paper, at 3×.

@@ -14,7 +14,7 @@ import { approach, approachTarget, CAST_MS, castLine, castPose, ease, insectPos,
 import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from '../../art/banner'
 import { insectBitmaps } from '../../art/sprites/insects'
 import { LINE_FLY_EYE, lineFlyBitmap } from '../../art/sprites/flies'
-import { addBitmap, addText, TEXT_WHITE, TEXT_YELLOW } from '../textures'
+import { addBitmap, addText, fineImage, TEXT_WHITE, TEXT_YELLOW } from '../textures'
 import { anglerCues, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
 import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
 import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
@@ -79,11 +79,11 @@ export class FishingScene extends Phaser.Scene {
     this.helperText = this.add.image(6, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(0).setDepth(Z.hud).setScrollFactor(0)
     const helperBmps = figureBitmaps('helper')
     for (const pose of Object.keys(helperBmps) as Pose[]) addBitmap(this, `fig:helper:${pose}`, helperBmps[pose])
-    this.helper = this.add.image(0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.helper)
-    this.player = this.add.image(0, 0, this.playerFig('plainRod', 'plainWaders', 'idle')).setOrigin(0).setDepth(Z.figures)
-    this.flies = [Z.line + 0.5, Z.helper + 0.2].map(z => this.add.image(0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(z).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
+    this.helper = fineImage(this, 0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.helper)
+    this.player = fineImage(this, 0, 0, this.playerFig('plainRod', 'plainWaders', 'idle')).setOrigin(0).setDepth(Z.figures)
+    this.flies = [Z.line + 0.5, Z.helper + 0.2].map(z => fineImage(this, 0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(z).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
     for (const j of JUNK) addBitmap(this, `junk:${j.id}`, junkBitmap(j.id))
-    this.junk = this.add.image(0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
+    this.junk = fineImage(this, 0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
     addBitmap(this, 'menu-button', iconBitmap(SCENE_ICONS.menuButton))
     this.menuButton = this.add.image(VIEW_W - 4, 4, 'menu-button').setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => { if (!this.settling) this.hooks.onMenu() })
     // A click on the menu button is not a cast.
@@ -101,7 +101,7 @@ export class FishingScene extends Phaser.Scene {
     }
     this.banners = { chum: banner('chum', CHUM_TEXT, CHUM_STYLE), hatch: banner('hatch', HATCH_TEXT, HATCH_STYLE) }
     insectBitmaps().forEach((b, k) => addBitmap(this, `insect:${k}`, b))
-    this.insects = Array.from({ length: INSECTS }, () => this.add.image(0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
+    this.insects = Array.from({ length: INSECTS }, () => fineImage(this, 0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
     this.cameras.main.setOrigin(0).setZoom(FINE).fadeIn(300)
     this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
@@ -156,8 +156,8 @@ export class FishingScene extends Phaser.Scene {
       const [a, b] = fishSideBitmaps(id)
       addBitmap(this, frames[0], a); addBitmap(this, frames[1], b)
     }
-    const { width: w, height: h } = this.textures.get(frames[0]).getSourceImage()
-    const img = this.add.image(0, 0, frames[0]).setOrigin(0).setDepth(Z.fish).setFlipX(speed < 0)
+    const src = this.textures.get(frames[0]).getSourceImage(), w = src.width / FINE, h = src.height / FINE
+    const img = fineImage(this, 0, 0, frames[0]).setOrigin(0).setDepth(Z.fish).setFlipX(speed < 0)
     const sw = { img, id, frames, x0, y: centerY - h / 2, speed, phase, w }
     this.fish.push(sw)
     return sw

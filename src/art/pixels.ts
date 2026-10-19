@@ -42,6 +42,16 @@ export function blit(dst: Bitmap, src: Bitmap, dx: number, dy: number): void {
   }
 }
 
+// Nearest-neighbour: each pixel becomes a k×k block.
+export function upscale(b: Bitmap, k: number): Bitmap {
+  const out = blank(b.w * k, b.h * k)
+  for (let y = 0; y < out.h; y++) for (let x = 0; x < out.w; x++) {
+    const s = (((y / k) | 0) * b.w + ((x / k) | 0)) * 4
+    out.data.set(b.data.subarray(s, s + 4), (y * out.w + x) * 4)
+  }
+  return out
+}
+
 export function scaleMask(m: Mask, k: number): Mask {
   const out: Mask = { w: m.w * k, h: m.h * k, on: new Uint8Array(m.w * k * m.h * k) }
   for (let y = 0; y < out.h; y++) for (let x = 0; x < out.w; x++) out.on[y * out.w + x] = m.on[((y / k) | 0) * m.w + ((x / k) | 0)]
