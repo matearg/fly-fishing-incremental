@@ -4,6 +4,12 @@ import { newGame } from '../state'
 import { LICENSE_UPGRADES, SEASON, SPECIES } from '../data'
 
 describe('New Season', () => {
+  it('a new season starts with plain gear only', () => {
+    const s = newGame(); s.seasonEarnings = SEASON.minEarnings
+    s.rods.push('carbonSpey'); s.rod = 'carbonSpey'; s.waders.push('guideProWaders'); s.wearing = 'guideProWaders'
+    const t = startNewSeason(s)
+    expect([t.rods, t.rod, t.waders, t.wearing]).toEqual([['plainRod'], 'plainRod', ['plainWaders'], 'plainWaders'])
+  })
   it('licenses = floor(sqrt(earnings / divisor))', () => {
     const s = newGame()
     s.seasonEarnings = SEASON.licenseDivisor * 9
@@ -64,5 +70,14 @@ describe('license shop', () => {
     expect(s.licenses).toBe(100 - leg.licenseCost!)
     expect(s.licenseSpecies).toContain(leg.id)
     expect(buyLicenseSpecies(s, leg.id)).toBe(false)
+  })
+})
+
+describe('New Season and catch & release', () => {
+  it('a new season starts unpaused with no bonus', () => {
+    const s = newGame()
+    s.buyer = true; s.buyerPaused = true; s.releaseBonus = 0.4; s.release = true
+    const n = startNewSeason(s)
+    expect([n.buyerPaused, n.releaseBonus, n.release]).toEqual([false, 0, false])
   })
 })

@@ -19,6 +19,10 @@ export function flyStats(state: GameState, recipe: Recipe): FlyStats {
   return st
 }
 
+export function isDry(f: { patternId: string }): boolean {
+  return PATTERNS.find(p => p.id === f.patternId)?.cls === 'dry'
+}
+
 export function basicRecipe(): Recipe {
   return { patternId: PATTERNS[0].id, materialIds: [] }
 }

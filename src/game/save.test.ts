@@ -6,9 +6,28 @@ import { basicRecipe, flyStats, tieFly } from './fishing/flies'
 import { rollCatch } from './fishing/catch'
 import { castPlayer, reelPlayer, tick } from './fishing/sim'
 import { sellAll } from './progress/economy'
-import { TIMING } from './data'
+import { HATCH, RELEASE, TIMING } from './data'
 
 describe('save', () => {
+  it('power-up timers: bad values fall back to defaults, running ones resume', () => {
+    const s = newGame(); s.chumMs = 30_000
+    expect(parseSave(serialize(s))!.chumMs).toBe(30_000)
+    const raw = JSON.parse(serialize(newGame())); raw.hatchMs = -5; raw.nextHatchMs = 'x'; delete raw.chumMs
+    const t = parseSave(JSON.stringify(raw))!
+    expect([t.chumMs, t.hatchMs, t.nextHatchMs]).toEqual([0, 0, HATCH.firstMs])
+  })
+  it('drops unknown gear and falls back to plain', () => {
+    const s = newGame()
+    Object.assign(s, { rods: ['plainRod', 'willowRod', 'goneRod'], rod: 'goneRod', waders: ['canvasWaders'], wearing: 'neopreneWaders' })
+    const t = parseSave(serialize(s))!
+    expect(t.rods).toEqual(['plainRod', 'willowRod']); expect(t.rod).toBe('plainRod')
+    expect(t.waders).toEqual(['plainWaders', 'canvasWaders']); expect(t.wearing).toBe('plainWaders')
+  })
+  it('an old save without gear fields gets plain gear', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.rods; delete raw.rod; delete raw.waders; delete raw.wearing
+    const t = parseSave(JSON.stringify(raw))!
+    expect(t.rod).toBe('plainRod'); expect(t.wearing).toBe('plainWaders')
+  })
   it('round-trips a mid-game state', () => {
     const s = newGame()
     s.money = 1e6
@@ -114,5 +133,20 @@ describe('save with a pending catch', () => {
     expect(l.anglers[0]).toMatchObject({ phase: 'idle', pending: null })
     expect(() => tick(l, 100, Math.random)).not.toThrow()
     expect(l.basket).toHaveLength(0)
+  })
+})
+
+describe('catch & release fields', () => {
+  it('old saves get the new fields; the bonus is clamped', () => {
+    const old = JSON.parse(serialize(newGame()))
+    delete old.release; delete old.releaseBonus; delete old.buyerPaused
+    const s = parseSave(JSON.stringify(old))!
+    expect([s.release, s.releaseBonus, s.buyerPaused]).toEqual([false, 0, false])
+    const withBonus = (b: unknown) => parseSave(JSON.stringify({ ...old, releaseBonus: b }))!.releaseBonus
+    expect(withBonus(NaN)).toBe(0)
+    expect(withBonus(-1)).toBe(0)
+    expect(withBonus(50)).toBe(RELEASE.cap)
+    expect(withBonus('0.5')).toBe(0)
+    expect(withBonus(0.4)).toBe(0.4)
   })
 })

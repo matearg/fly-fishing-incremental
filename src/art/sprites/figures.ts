@@ -2,8 +2,6 @@ import { paint, type Bitmap, type Grid } from '../pixels'
 
 export type Pose = 'idle' | 'back' | 'cast' | 'reel'
 export type FigureKind = 'angler' | 'helper'
-// Poses are shared; a style recolours them (seam for future cosmetics).
-export interface FigureStyle { palette: Record<string, number> }
 
 // Side view facing right (the water): felt hat, shirt, belt, waders, boots. Arm and rod are added per pose.
 // o outline, h hat, H band, s skin, e eye, c shirt, C shirt shade, b belt, p waders, P waders shade, w boots
@@ -46,7 +44,7 @@ export const BODY_Y = PAD_T
 const W = PAD_L + 28 // body plus room for the rod
 const SHOULDER: [number, number] = [9, 11]
 
-// k cork grip, r rod. Each rod is a polyline from the hand; its last point is the tip. In BODY coordinates.
+// k cork grip, r rod, R thread wraps. Each rod is a polyline from the hand; its last point is the tip. In BODY coordinates.
 const POSES: Record<Pose, { hand: [number, number]; rod: [number, number][] }> = {
   idle: { hand: [12, 15], rod: [[13, 15], [25, 3]] },
   back: { hand: [13, 8], rod: [[13, 7], [12, 4], [8, -3], [1, -7]] }, // raised by the shoulder, rod up and back over the hat
@@ -70,7 +68,7 @@ function poseGrid(pose: Pose): Grid {
   for (const dy of [0, 1]) line(rows, [shoulder[0], shoulder[1] + dy], [hand[0] - 1, hand[1] + dy], () => 'C') // sleeve
   for (const [dx, dy] of [[0, 0], [-1, 0], [0, 1], [-1, 1]]) rows[hand[1] + dy][hand[0] + dx] = 's'
   let n = 0
-  for (let i = 1; i < rod.length; i++) n = line(rows, rod[i - 1], rod[i], k => (k < 3 ? 'k' : 'r'), i === 1 ? 0 : n - 1)
+  for (let i = 1; i < rod.length; i++) n = line(rows, rod[i - 1], rod[i], k => (k < 3 ? 'k' : k % 4 === 0 ? 'R' : 'r'), i === 1 ? 0 : n - 1)
   return rows.map(r => r.join(''))
 }
 
@@ -80,13 +78,32 @@ export const FIGURE_POSES = Object.fromEntries(POSE_NAMES.map(p => [p, poseGrid(
 export const ROD_TIP = Object.fromEntries(POSE_NAMES.map(p => [p, pad(POSES[p].rod[POSES[p].rod.length - 1])])) as Record<Pose, [number, number]>
 export const FEET_Y = PAD_T + BODY.length - 1
 
-const BASE = { o: 0x10161c, h: 0x8a6a3e, H: 0x3a2a18, s: 0xe8c8a0, e: 0x10161c, b: 0x3a2a18, p: 0x5a6a4a, P: 0x46543a, w: 0x3a3026, k: 0xd8b880, r: 0x2a1a0e }
-export const FIGURE_STYLES: Record<FigureKind, Record<string, FigureStyle>> = {
-  angler: { default: { palette: { ...BASE, c: 0xd9534f, C: 0xa83a36 } } },
-  helper: { default: { palette: { ...BASE, c: 0x4f8fe0, C: 0x3a6ab0, h: 0x6a7a5a } } },
+const BASE = { o: 0x10161c, h: 0x8a6a3e, H: 0x3a2a18, s: 0xe8c8a0, e: 0x10161c, b: 0x3a2a18, w: 0x3a3026 }
+const KINDS: Record<FigureKind, Record<string, number>> = {
+  angler: { ...BASE, c: 0xd9534f, C: 0xa83a36 },
+  helper: { ...BASE, c: 0x4f8fe0, C: 0x3a6ab0, h: 0x6a7a5a },
+}
+// Gear looks by data.ts id. The plain rod's wraps are its own blank colour, so it draws as an unwrapped rod.
+export const ROD_LOOKS: Record<string, { r: number; k: number; R: number }> = {
+  plainRod: { r: 0x2a1a0e, k: 0xd8b880, R: 0x2a1a0e },
+  willowRod: { r: 0x9a7a4a, k: 0xd8b880, R: 0x4a6a2a },
+  bambooCane: { r: 0xc8a050, k: 0xe8d0a0, R: 0x7a2a1a },
+  fiberglassRod: { r: 0x3a8a5a, k: 0xd8b880, R: 0xe8e0c0 },
+  graphiteRod: { r: 0x2a3a5a, k: 0xc8a870, R: 0xc8c8d8 },
+  carbonSpey: { r: 0x5a1a4a, k: 0xe8d8a0, R: 0xe0b040 },
+}
+export const WADERS_LOOKS: Record<string, { p: number; P: number; w?: number }> = {
+  plainWaders: { p: 0x5a6a4a, P: 0x46543a },
+  rubberWaders: { p: 0x6a5a2a, P: 0x524418 },
+  canvasWaders: { p: 0x8a6a40, P: 0x6a5030 },
+  neopreneWaders: { p: 0x2a4a6a, P: 0x1a3450 },
+  breathableWaders: { p: 0x6a7a8a, P: 0x4a5a6a },
+  guideProWaders: { p: 0x3a3a3a, P: 0x262626, w: 0x8a3a20 },
 }
 
-export function figureBitmaps(kind: FigureKind, style = 'default'): Record<Pose, Bitmap> {
-  const { palette } = FIGURE_STYLES[kind][style] ?? FIGURE_STYLES[kind].default
+// Unknown gear ids (e.g. from a newer save) draw plain.
+export function figureBitmaps(kind: FigureKind, gear: { rod?: string; waders?: string } = {}): Record<Pose, Bitmap> {
+  const rod = ROD_LOOKS[gear.rod ?? ''] ?? ROD_LOOKS.plainRod, waders = WADERS_LOOKS[gear.waders ?? ''] ?? WADERS_LOOKS.plainWaders
+  const palette = { ...KINDS[kind], ...rod, ...waders }
   return Object.fromEntries(POSE_NAMES.map(p => [p, paint(FIGURE_POSES[p], palette)])) as Record<Pose, Bitmap>
 }

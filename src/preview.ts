@@ -1,7 +1,7 @@
 // Dev-only art review page: draws baked bitmaps at 2× so the user can approve them.
-import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './game/data'
+import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SPECIES, WADERS } from './game/data'
 import { hashString } from './game/util/rand'
-import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS, iconBitmap, type Icon } from './art/icons'
+import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS, iconBitmap, type Icon } from './art/icons'
 import { BANK_SURFACE, bakeBank, bakeHorizon, bakeSideBank, placeLook } from './art/places'
 import { blank, blit, mix, paint, stylize, type Bitmap, type TextStyle } from './art/pixels'
 import { SMALL, textMask } from './art/font'
@@ -10,10 +10,13 @@ import { SoundPlayer } from './audio/player'
 import { SFX, TITLE_AMBIENCE, type SoundId } from './audio/sounds'
 import { TUNES, type TuneId } from './audio/music'
 import { TEXT_GREY, TEXT_WHITE, TEXT_YELLOW } from './scene/textures'
-import { BODY_X, FEET_Y, figureBitmaps, type FigureKind, type Pose } from './art/sprites/figures'
+import { BODY_X, FEET_Y, figureBitmaps, ROD_LOOKS, WADERS_LOOKS, type FigureKind, type Pose } from './art/sprites/figures'
 import { lineFlyBitmap } from './art/sprites/flies'
 import { fishBitmaps, fishSideBitmaps } from './art/sprites/fish'
 import { junkBitmap } from './art/sprites/junk'
+import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from './art/banner'
+import { insectBitmaps } from './art/sprites/insects'
+import { letterWave } from './scene/fishing/choreo'
 
 const W = 480, H = 270, SCALE = 2
 const HORIZON_H = 110 // waterline of the side view
@@ -80,6 +83,10 @@ const KINDS: FigureKind[] = ['angler', 'helper']
 const sprites = section('Figures — angler and helper, idle / back / cast / reel (4×)')
 for (const k of KINDS) for (const p of POSES) show(sprites, figureBitmaps(k)[p], `${k} · ${p}`, 4)
 
+const gear = section('Gear — angler with each rod, then each pair of waders, idle / reel (4×)')
+for (const rod of Object.keys(ROD_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { rod })[p], `${rod} · ${p}`, 4)
+for (const waders of Object.keys(WADERS_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { waders })[p], `${waders} · ${p}`, 4)
+
 // Each place's fishing view with the two figures on the bank (on the dock at the Great Lake), one pose per place.
 const onBank = section('Figures on each bank')
 LOCATIONS.forEach((loc, i) => {
@@ -121,6 +128,22 @@ for (const j of JUNK) {
   show(junk, card, j.name, 4)
 }
 
+const powerups = section('Power-ups — titles (wave frozen at t=0 and t=300 ms) and insects (4×)')
+for (const [text, style] of [[CHUM_TEXT, CHUM_STYLE], [HATCH_TEXT, HATCH_STYLE]] as const) for (const t of [0, 300]) {
+  const ls = bannerLetters(text, style), lh = ls.find(l => l)!.h, gap = 8
+  const card = blank(ls.reduce((w, l) => w + (l ? l.w : gap), 0) + 8, lh + 12)
+  fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
+  let x = 4
+  ls.forEach((l, i) => { if (l) blit(card, l, x, 6 + letterWave(i, t)); x += l ? l.w : gap })
+  show(powerups, card, `${text} t=${t}`)
+}
+for (const [k, b] of insectBitmaps().entries()) {
+  const card = blank(b.w + 4, b.h + 4)
+  fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
+  blit(card, b, 2, 2)
+  show(powerups, card, k ? 'wings down' : 'wings up', 4)
+}
+
 // Panel icons on the journal paper, at 3×.
 const icons = section('Panel icons (on paper, 3×)')
 const onPaper = (i: Icon, caption: string) => {
@@ -131,6 +154,8 @@ for (const p of PATTERNS) onPaper(FLY_ICONS[p.id], p.name)
 for (const m of MATERIALS) onPaper(MATERIAL_ICONS[m.id], m.name)
 for (const l of LOCATIONS) onPaper(PLACE_ICONS[l.id], l.name)
 for (const [k, i] of Object.entries(HELPER_ICONS)) onPaper(i, `helper · ${k}`)
+for (const r of RODS) onPaper(ROD_ICONS[r.id], r.name)
+for (const w of WADERS) onPaper(WADERS_ICONS[w.id], w.name)
 for (const u of LICENSE_UPGRADES) onPaper(LICENSE_ICONS[u.id], u.name)
 for (const [k, i] of Object.entries(UI_ICONS)) onPaper(i, `ui · ${k}`)
 

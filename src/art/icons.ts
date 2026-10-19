@@ -1,6 +1,7 @@
 import type { LicenseUpgradeId, LocationId } from '../game/data'
 import type { HelperKind } from '../game/progress/helpers'
 import { placeLook } from './places'
+import { ROD_LOOKS, WADERS_LOOKS } from './sprites/figures'
 import { paint, type Bitmap, type Grid } from './pixels'
 
 // Panel icons: small pixel grids that read on the journal paper (#e8d8b0). Flies face right (eye on the right).
@@ -423,6 +424,27 @@ export const HELPER_ICONS: Record<HelperKind, Icon> = {
     ],
     palette: { o: O, f: 0x8aa8b8, F: 0xc8d8e0, l: 0xb08850, L: 0x8a6a3a },
   },
+  release: { // a fish diving back into the water
+    grid: [
+      '..oo............',
+      '..oao...........',
+      '...oaoooo.......',
+      'oooaaaaaaoo.....',
+      'oaaaabaaaaao....',
+      '.oooobbbaaaao...',
+      '.....oBbbbaaao..',
+      '......oBBbbbao..',
+      '.......oBBbbeao.',
+      '........oBBBbbo.',
+      '.........oBBBo..',
+      '..W..W....oBo.W.',
+      '.WWWWWWWWWoWoWW.',
+      '..wwwwwwwwwwwww.',
+      '...wwwwwwwwwww..',
+      '................',
+    ],
+    palette: { o: O, a: 0x4a6a3a, b: 0x8aa860, B: 0xd8d0a0, e: 0x101010, w: 0x3a7ab0, W: 0x8ac0e0 },
+  },
 }
 
 const GOLD = { y: 0xd8a830, Y: 0xf8e080, d: 0xa07018 }
@@ -594,5 +616,45 @@ export const SCENE_ICONS = {
     palette: { o: 0x2a0a3d, b: 0xff8a3a, e: 0x10222b },
   },
 } satisfies Record<string, Icon>
+
+// Gear: one rod and one pair of waders, recoloured with each item's look on the angler.
+const ROD: Grid = [
+  '..............o.',
+  '.............oro',
+  '............oro.',
+  '...........oRo..',
+  '..........oro...',
+  '.........oro....',
+  '........oRo.....',
+  '.......oro......',
+  '......oro.......',
+  '.....oko........',
+  '....oko.........',
+  '...okoommo......',
+  '...oo.ommo......',
+  '......oooo......',
+  _,
+  _,
+]
+const WADERS: Grid = [
+  _,
+  '....o......o....',
+  '....o......o....',
+  '...oooooooooo...',
+  '...oPpppppppo...',
+  '...oPpppppppo...',
+  '...oPpppppppo...',
+  '...oPpppppppo...',
+  '...oPpppppppo...',
+  '...oPppooPppo...',
+  '...oPppooPppo...',
+  '...oPppooPppo...',
+  '...oPppooPppo...',
+  '..owwwwoowwwwo..',
+  '..oooooooooooo..',
+  _,
+]
+export const ROD_ICONS: Record<string, Icon> = Object.fromEntries(Object.entries(ROD_LOOKS).map(([id, look]) => [id, { grid: ROD, palette: { o: O, m: HOOK, ...look } }]))
+export const WADERS_ICONS: Record<string, Icon> = Object.fromEntries(Object.entries(WADERS_LOOKS).map(([id, look]) => [id, { grid: WADERS, palette: { o: O, w: 0x3a3026, ...look } }]))
 
 export const iconBitmap = (icon: Icon): Bitmap => paint(icon.grid, icon.palette)

@@ -34,7 +34,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - **Add icons** to the shop, helpers, places, season and basket panels.
 - **Owned unlocks should clearly look owned**, not just like a disabled button.
 - Bench cooldown progress bar: confirmed. No bar for the hired anglers (user dropped it).
-- Brainstorm 2026-10-18 added: whole panel and basket in a "field journal" pixel style (Silkscreen + Pixelify Sans from Google Fonts, approved by the user as the one outside asset), a unique icon per item with flies drawn like the real patterns, and a basket stacked by kind that opens to list catches. Details in the spec.
+- Brainstorm 2026-10-18 added: whole panel and basket in a "field journal" pixel style (Silkscreen + Pixelify Sans from Google Fonts, approved by the user as the one outside asset; the body font became Jersey 10 on 2026-10-18, see the shop upgrades roadmap), a unique icon per item with flies drawn like the real patterns, and a basket stacked by kind that opens to list catches. Details in the spec.
 
 ### Piece 4 (as built, plus the user's changes at the final review)
 - The trash drop target and drag-and-drop are gone. Each row of an open stack has a trash-can button instead of ✕.

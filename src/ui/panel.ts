@@ -1,12 +1,14 @@
-import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, SEASON, SPECIES, type LicenseUpgradeId, type LocationId } from '../game/data'
-import { setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern } from '../game/progress/economy'
+import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SEASON, SPECIES, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
+import { price, saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern, wadersDiscount } from '../game/progress/economy'
+import { buyRod, buyWaders, equipRod, wearWaders } from '../game/progress/gear'
+import { chumPrice, chumReach, throwChum } from '../game/progress/powerups'
 import { flyStats, tieFly } from '../game/fishing/flies'
 import { benchCooldownMs, benchFull } from '../game/fishing/sim'
 import { formatNumber as fmt } from '../game/util/format'
-import { buyHelper, helperCost, type HelperKind } from '../game/progress/helpers'
+import { buyHelper, helperCost, toggleBuyerPause, type HelperKind } from '../game/progress/helpers'
 import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason, licenseUpgradeCost, startNewSeason } from '../game/progress/prestige'
 import type { CatchItem, GameState } from '../game/state'
-import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, UI_ICONS } from '../art/icons'
+import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS } from '../art/icons'
 import { catchImg, icon } from './icons'
 import { keepOpen, stackBasket, STACK_LIST_MAX, type Stack } from './basket'
 import { panelCue } from '../audio/cues'
@@ -14,14 +16,26 @@ import type { SoundId } from '../audio/sounds'
 
 type Act = (fn: (s: GameState) => unknown) => unknown
 
-const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer' }
+const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer', release: 'Catch & Release' }
+const HELPER_DESC: Record<HelperKind, string> = {
+  angler: 'Fishes on its own with flies from the box',
+  bench: 'Ties flies from your recipe; more benches tie faster',
+  bulkTrash: 'Adds Trash all to an open stack',
+  sorter: 'Throws junk away before it reaches the basket',
+  buyer: 'Sells the basket every 5 s; can be paused',
+  release: 'Trashed fish add to your next Sell all, up to +100%',
+}
+const patternDesc = (p: (typeof PATTERNS)[number]) => `${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}`
+const materialDesc = (m: (typeof MATERIALS)[number]) => [m.depthBonus && `depth +${m.depthBonus}`, m.wearBonus && `wear +${m.wearBonus}`, m.oddsBonus && `odds +${pct(m.oddsBonus)}`, m.sizeBonus && `size +${pct(m.sizeBonus)}`].filter(Boolean).join(', ') + ` · tie $${fmt(m.tieCost)}`
+const rodDesc = (r: (typeof RODS)[number]) => r.tiers.length ? `+${pct(r.bonus)} on ${r.tiers.join(' and ')} fish` : 'No bonus'
+const wadersDesc = (w: (typeof WADERS)[number]) => w.discount ? `${pct(w.discount)} off the shop` : 'No discount'
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
 const money = (n: number) => `${n < 0 ? '-' : ''}$${fmt(Math.abs(n))}`
 const pct = (x: number) => `${Math.round(x * 100)}%`
 // Icon + text label for a flex button, so <small> and the price lay out beside the icon.
 const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</span>`
-// Owned things are inert rows with a stamp, never a disabled button.
-const owned = (ico: string, label: string, stamp = 'OWNED') => `<div class="owned">${ico}<span>${label}</span><span class="stamp">${stamp}</span></div>`
+// Owned things are inert rows with a stamp, never a disabled button; they keep the description they had for sale.
+const owned = (ico: string, label: string, stamp = 'OWNED', desc?: string) => `<div class="owned">${ico}<span>${label}${desc ? ` <small>${desc}</small>` : ''}</span><span class="stamp">${stamp}</span></div>`
 const ticket = (n: number) => `${n}${icon('ui', 'license', UI_ICONS.license, 1)}`
 
 function btn(action: string, id: string, label: string, opts: { disabled?: boolean; pressed?: boolean; expanded?: boolean; label?: string; cls?: string } = {}): string {
@@ -71,7 +85,9 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     <aside class="side">
       <div class="money" data-sec="money"></div>
       <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Fly</h2><div data-sec="fly"></div><div data-sec="recipe"></div></section>
+      <section><h2>${icon('ui', 'basket', UI_ICONS.basket, 1)}Power-ups</h2><div data-sec="powerups"></div></section>
       <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Shop</h2><div data-sec="shop"></div></section>
+      <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Gear</h2><div data-sec="gear"></div></section>
       <section><h2>${icon('helper', 'angler', HELPER_ICONS.angler, 1)}Helpers</h2><div data-sec="helpers"></div></section>
       <section><h2>${icon('place', 'creek', PLACE_ICONS.creek, 1)}Places</h2><div data-sec="places"></div></section>
       <section><h2>${icon('ui', 'season', UI_ICONS.season, 1)}New Season</h2><div data-sec="season"></div></section>
@@ -100,24 +116,39 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         + btn('tie', '', `Tie fly ($${fmt(st.tieCost)})`, { disabled: s.money < st.tieCost, cls: 'wide' })
         + (s.bench > 0 ? benchBar(s) : '')
     },
+    powerups: s => {
+      const cost = chumPrice(s), reach = chumReach(s)
+      // The reason goes under the description: the price slot doesn't wrap.
+      const why = s.chumMs > 0 || reach ? '' : '<small>No rare fish within reach of your fly</small>'
+      const right = s.chumMs > 0 ? `${Math.ceil(s.chumMs / 1000)} s left` : `$${fmt(cost)}`
+      return btn('throwChum', '', `${lbl(icon('ui', 'basket', UI_ICONS.basket), `Chum bucket <small>Rare and legendary fish bite more for 60 s</small>${why}`)}<b>${right}</b>`, { disabled: s.chumMs > 0 || !reach || s.money < cost })
+        + (s.hatchMs > 0 ? `<p>Hatch! Dry flies bite faster: ${Math.ceil(s.hatchMs / 1000)} s</p>` : '')
+    },
     shop: s => {
-      const pats = PATTERNS.map(p => s.unlockedPatterns.includes(p.id) ? owned(icon('fly', p.id, FLY_ICONS[p.id]), p.name) : btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}</small>`)}<b>$${fmt(p.unlockCost)}</b>`, { disabled: s.money < p.unlockCost }))
-      const mats = MATERIALS.map(m => {
-        if (s.unlockedMaterials.includes(m.id)) return owned(icon('mat', m.id, MATERIAL_ICONS[m.id]), m.name)
-        const fx = [m.depthBonus && `depth +${m.depthBonus}`, m.wearBonus && `wear +${m.wearBonus}`, m.oddsBonus && `odds +${pct(m.oddsBonus)}`, m.sizeBonus && `size +${pct(m.sizeBonus)}`].filter(Boolean).join(', ')
-        return btn('unlockMaterial', m.id, `${lbl(icon('mat', m.id, MATERIAL_ICONS[m.id]), `${m.name} <small>${fx} · tie $${fmt(m.tieCost)}</small>`)}<b>$${fmt(m.unlockCost)}</b>`, { disabled: s.money < m.unlockCost })
-      })
+      const pats = PATTERNS.map(p => s.unlockedPatterns.includes(p.id) ? owned(icon('fly', p.id, FLY_ICONS[p.id]), p.name, undefined, patternDesc(p)) : btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${patternDesc(p)}</small>`)}<b>$${fmt(price(s, p.unlockCost))}</b>`, { disabled: s.money < price(s, p.unlockCost) }))
+      const mats = MATERIALS.map(m => s.unlockedMaterials.includes(m.id) ? owned(icon('mat', m.id, MATERIAL_ICONS[m.id]), m.name, undefined, materialDesc(m)) : btn('unlockMaterial', m.id, `${lbl(icon('mat', m.id, MATERIAL_ICONS[m.id]), `${m.name} <small>${materialDesc(m)}</small>`)}<b>$${fmt(price(s, m.unlockCost))}</b>`, { disabled: s.money < price(s, m.unlockCost) }))
       return [...pats, ...mats].join('')
+    },
+    gear: s => {
+      // Owned gear toggles which one is in use; the rest is for sale.
+      const item = (def: { id: string; name: string; cost: number }, ico: string, desc: string, own: boolean, active: boolean, use: string, buy: string, inUse: string) => {
+        const text = lbl(ico, `${def.name} <small>${desc}</small>`), cost = price(s, def.cost)
+        return own ? btn(use, def.id, `${text}<b>${active ? inUse : 'OWNED'}</b>`, { pressed: active })
+          : btn(buy, def.id, `${text}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
+      }
+      return '<p class="label">Rods</p>' + RODS.map(r => item(r, icon('rod', r.id, ROD_ICONS[r.id]), rodDesc(r), s.rods.includes(r.id), s.rod === r.id, 'equipRod', 'buyRod', 'FISHING')).join('')
+        + '<p class="label">Waders</p>' + WADERS.map(w => item(w, icon('waders', w.id, WADERS_ICONS[w.id]), wadersDesc(w), s.waders.includes(w.id), s.wearing === w.id, 'wearWaders', 'buyWaders', 'WEARING')).join('')
+        + `<p class="stats">Discount now: ${pct(wadersDiscount(s))}</p>`
     },
     helpers: s => (Object.keys(HELPER_LABELS) as HelperKind[]).map(k => {
       const cost = helperCost(s, k)
       const count = k === 'angler' ? ` (${s.anglers.length - 1})` : k === 'bench' ? ` (${s.bench})` : ''
-      return cost === null ? owned(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k]) : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k] + count)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
+      return cost === null ? owned(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k], undefined, HELPER_DESC[k]) : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), `${HELPER_LABELS[k]}${count} <small>${HELPER_DESC[k]}</small>`)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
     }).join(''),
     places: s => {
       const next = LOCATIONS.find(l => !s.unlockedLocations.includes(l.id))
       return `<div class="row">${s.unlockedLocations.map(id => btn('travel', id, lbl(icon('place', id, PLACE_ICONS[id], 1), LOCATIONS.find(l => l.id === id)!.name), { pressed: s.location === id })).join('')}</div>`
-        + (next ? btn('unlockLocation', next.id, `${lbl(icon('place', next.id, PLACE_ICONS[next.id]), `Unlock ${next.name}`)}<b>$${fmt(next.unlockCost)}</b>`, { disabled: s.money < next.unlockCost, cls: 'wide' }) : '')
+        + (next ? btn('unlockLocation', next.id, `${lbl(icon('place', next.id, PLACE_ICONS[next.id]), `Unlock ${next.name}`)}<b>$${fmt(price(s, next.unlockCost))}</b>`, { disabled: s.money < price(s, next.unlockCost), cls: 'wide' }) : '')
     },
     season: s => {
       const can = canStartSeason(s)
@@ -131,11 +162,12 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         return cost === null ? owned(icon('license', u.id, LICENSE_ICONS[u.id]), u.name, `MAX ${lvl}`) : btn('licenseUpgrade', u.id, `${lbl(icon('license', u.id, LICENSE_ICONS[u.id]), `${u.name} (${lvl})`)}<b>${ticket(cost)}</b>`, { disabled: s.licenses < cost })
       }).join('')
       + SPECIES.filter(sp => sp.licenseCost).map(sp => s.licenseSpecies.includes(sp.id)
-        ? owned(catchImg('fish', sp.id), sp.name, 'IN THE WATER')
+        ? owned(catchImg('fish', sp.id), sp.name, 'IN THE WATER', `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)
         : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
     basketHead: s => {
-      const total = s.basket.reduce((a, c) => a + c.value, 0)
-      return btn('sell', '', `Sell all (${s.basket.length}) <b>${money(total)}</b>`, { disabled: !s.basket.length })
+      const bonus = s.releaseBonus > 0 ? ` +${pct(s.releaseBonus)}` : ''
+      return btn('sell', '', `Sell all (${s.basket.length}) <b>${money(saleValue(s, true))}</b>${bonus}`, { disabled: !s.basket.length })
+        + (s.buyer ? btn('pauseBuyer', '', lbl(icon('helper', 'buyer', HELPER_ICONS.buyer, 1), 'Pause buyer'), { pressed: s.buyerPaused, label: 'Pause fish buyer' }) : '')
     },
     // A closed tile can't be thrown away whole, so one slip never loses a stack.
     basket: () => stacks.map(st => `<li>${btn('toggleStack', st.key, `${catchImg(st.kind, st.defId)}${catchName(st.items[0])} <span class="ct">×${st.count} · ${money(st.total)}</span>`, { expanded: st.key === openStack })}</li>`).join(''),
@@ -173,16 +205,22 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
   function run(a: string, id: string): unknown {
     switch (a) {
       case 'tie': return act(s => tieFly(s))
+      case 'throwChum': return act(s => throwChum(s))
       case 'recipePattern': return act(s => setRecipe(s, { ...s.recipe, patternId: id }))
       case 'recipeMaterial': return act(s => setRecipe(s, { ...s.recipe, materialIds: s.recipe.materialIds.includes(id) ? s.recipe.materialIds.filter(m => m !== id) : [...s.recipe.materialIds, id] }))
       case 'unlockPattern': return act(s => unlockPattern(s, id))
       case 'unlockMaterial': return act(s => unlockMaterial(s, id))
       case 'hire': return act(s => buyHelper(s, id as HelperKind))
+      case 'buyRod': return act(s => buyRod(s, id))
+      case 'equipRod': return act(s => equipRod(s, id))
+      case 'buyWaders': return act(s => buyWaders(s, id))
+      case 'wearWaders': return act(s => wearWaders(s, id))
       case 'unlockLocation': return act(s => unlockLocation(s, id as LocationId))
       case 'travel': return act(s => travel(s, id as LocationId))
       case 'licenseUpgrade': return act(s => buyLicenseUpgrade(s, id as LicenseUpgradeId))
       case 'licenseSpecies': return act(s => buyLicenseSpecies(s, id))
-      case 'sell': return act(s => sellAll(s))
+      case 'sell': return act(s => sellAll(s, true))
+      case 'pauseBuyer': return act(s => toggleBuyerPause(s))
       case 'trash': return act(s => trash(s, Number(id)))
       case 'trashStack': { const st = stacks.find(x => x.key === id); return st && act(s => trashStack(s, st.kind, st.defId)) }
       case 'toggleStack': openStack = openStack === id ? null : id; return render()

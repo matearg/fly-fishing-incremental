@@ -27,11 +27,17 @@ export function anglerCues(prev: CueFrame | null, cur: CueFrame | null): SoundId
   return out
 }
 
-const PURCHASES = new Set(['hire', 'unlockPattern', 'unlockMaterial', 'unlockLocation', 'licenseUpgrade', 'licenseSpecies'])
+const PURCHASES = new Set(['hire', 'unlockPattern', 'unlockMaterial', 'unlockLocation', 'licenseUpgrade', 'licenseSpecies', 'buyRod', 'buyWaders'])
 
 // `result` is what the action returned: whether a purchase went through, or the money a sale made.
 export function panelCue(action: string, result: unknown): SoundId {
   if (PURCHASES.has(action)) return result ? 'buy' : 'nope'
   if (action === 'sell') return result ? 'sell' : 'select'
+  if (action === 'throwChum') return result ? 'chum' : 'nope'
   return 'select'
+}
+
+// Frame to frame, like anglerCues: a hatch sounds once, as it starts.
+export function hatchCue(prevHatchMs: number, curHatchMs: number): SoundId[] {
+  return prevHatchMs <= 0 && curHatchMs > 0 ? ['hatch'] : []
 }

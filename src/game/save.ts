@@ -1,4 +1,4 @@
-import { JUNK, LOCATIONS, MATERIALS, PATTERNS, SPECIES } from './data'
+import { JUNK, LOCATIONS, MATERIALS, PATTERNS, RELEASE, RODS, SPECIES, WADERS } from './data'
 import { basicRecipe } from './fishing/flies'
 import { newGame, SAVE_VERSION, type Fly, type GameState, type Recipe } from './state'
 
@@ -22,8 +22,16 @@ function sanitize(raw: GameState): GameState {
   s.unlockedPatterns = s.unlockedPatterns.filter(id => has(PATTERNS, id))
   if (!s.unlockedPatterns.includes(PATTERNS[0].id)) s.unlockedPatterns.unshift(PATTERNS[0].id)
   s.unlockedMaterials = s.unlockedMaterials.filter(id => has(MATERIALS, id))
+  s.rods = s.rods.filter(id => has(RODS, id))
+  if (!s.rods.includes(RODS[0].id)) s.rods.unshift(RODS[0].id)
+  if (!s.rods.includes(s.rod)) s.rod = RODS[0].id
+  s.waders = s.waders.filter(id => has(WADERS, id))
+  if (!s.waders.includes(WADERS[0].id)) s.waders.unshift(WADERS[0].id)
+  if (!s.waders.includes(s.wearing)) s.wearing = WADERS[0].id
   s.licenseSpecies = s.licenseSpecies.filter(id => has(SPECIES, id))
   if (!validRecipe(s.recipe)) s.recipe = basicRecipe()
+  s.releaseBonus = Number.isFinite(s.releaseBonus) ? Math.min(RELEASE.cap, Math.max(0, s.releaseBonus)) : 0
+  for (const k of ['chumMs', 'hatchMs', 'nextHatchMs'] as const) if (!(Number.isFinite(s[k]) && s[k] >= 0)) s[k] = d[k]
   s.flyBox = s.flyBox.filter((f: Fly) => validRecipe(f))
   for (const a of s.anglers) {
     if (a.fly && !validRecipe(a.fly)) { a.fly = null; a.phase = 'idle'; a.pending = null }

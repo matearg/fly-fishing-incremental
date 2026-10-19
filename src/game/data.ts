@@ -9,6 +9,8 @@ export interface PatternDef { id: string; name: string; cls: 'dry' | 'nymph' | '
 export interface MaterialDef { id: string; name: string; depthBonus: number; wearBonus: number; oddsBonus: number; sizeBonus: number; tieCost: number; unlockCost: number }
 // licenseCost set ⇒ absent from the water until bought with licenses
 export interface SpeciesDef { id: string; name: string; location: LocationId; depth: number; tier: Tier; weight: number; baseValue: number; licenseCost?: number }
+export interface RodDef { id: string; name: string; tiers: Tier[]; bonus: number; cost: number }
+export interface WadersDef { id: string; name: string; discount: number; cost: number }
 export interface JunkDef { id: string; name: string; value: number; weight: number }
 export type LicenseUpgradeId = 'startPattern' | 'extraWear' | 'valueMult' | 'helperDiscount' | 'startLocation'
 // max level = costs.length
@@ -18,7 +20,7 @@ export const LOCATIONS: LocationDef[] = [
   { id: 'creek', name: 'Creek', unlockCost: 0, maxDepth: 1, junkWeight: 1 },
   { id: 'river', name: 'River', unlockCost: 1000, maxDepth: 2, junkWeight: 0.8 },
   { id: 'bigRiver', name: 'Big River', unlockCost: 12000, maxDepth: 2, junkWeight: 0.6 },
-  { id: 'mountainLake', name: 'Mountain Lake', unlockCost: 200000, maxDepth: 3, junkWeight: 0.5 },
+  { id: 'mountainLake', name: 'Mountain Lake', unlockCost: 150000, maxDepth: 3, junkWeight: 0.5 },
   { id: 'greatLake', name: 'Great Lake', unlockCost: 2500000, maxDepth: 3, junkWeight: 0.4 },
 ]
 
@@ -82,14 +84,38 @@ export const LICENSE_UPGRADES: LicenseUpgradeDef[] = [
   { id: 'startLocation', name: 'Start one place further', costs: [3, 10, 30, 80], perLevel: 1 },
 ]
 
+// gear: index 0 is the free starter every season begins with
+export const RODS: RodDef[] = [
+  { id: 'plainRod', name: 'Plain Rod', tiers: [], bonus: 0, cost: 0 },
+  { id: 'willowRod', name: 'Willow Rod', tiers: ['common', 'uncommon'], bonus: 0.25, cost: 500 },
+  { id: 'bambooCane', name: 'Bamboo Cane', tiers: ['common'], bonus: 0.4, cost: 3_000 },
+  { id: 'fiberglassRod', name: 'Fiberglass', tiers: ['uncommon'], bonus: 0.45, cost: 15_000 },
+  { id: 'graphiteRod', name: 'Graphite', tiers: ['rare'], bonus: 0.4, cost: 60_000 },
+  { id: 'carbonSpey', name: 'Carbon Spey', tiers: ['legendary'], bonus: 0.4, cost: 500_000 },
+]
+export const WADERS: WadersDef[] = [
+  { id: 'plainWaders', name: 'Plain Waders', discount: 0, cost: 0 },
+  { id: 'rubberWaders', name: 'Rubber Waders', discount: 0.02, cost: 300 },
+  { id: 'canvasWaders', name: 'Canvas Waders', discount: 0.04, cost: 4_000 },
+  { id: 'neopreneWaders', name: 'Neoprene Waders', discount: 0.06, cost: 40_000 },
+  { id: 'breathableWaders', name: 'Breathable Waders', discount: 0.08, cost: 400_000 },
+  { id: 'guideProWaders', name: 'Guide Pro Waders', discount: 0.1, cost: 3_000_000 },
+]
 export const TIMING = { biteMinMs: 1_500, biteMaxMs: 4_000, reelMs: 800, benchTieMs: 10_000, buyerIntervalMs: 5_000, maxTickMs: 250 }
+// Power-ups, player only. chum: rare-or-better weights ×mult for ms; cost per place (goes through price()).
+export const CHUM = { ms: 60_000, mult: 10, cost: { creek: 78, river: 540, bigRiver: 4_600, mountainLake: 46_000, greatLake: 120_000 } as Record<LocationId, number> }
+// hatch: lasts ms; first one after firstMs of play, then gapMin–gapMax after each ends; dry-fly waits biteMinMs–waitMaxMs
+export const HATCH = { ms: 45_000, firstMs: 240_000, gapMinMs: 180_000, gapMaxMs: 360_000, waitMaxMs: 2_000 }
 export const HELPERS = {
   angler: { baseCost: 40, growth: 1.4 },
   bench: { baseCost: 30, growth: 1.6 },
   bulkTrash: { cost: 300 },
-  sorter: { cost: 450 },
+  sorter: { cost: 1000 },
   buyer: { cost: 800 },
+  release: { cost: 1500 },
 }
+// a trashed fish adds pctPerUnit per multiple of its place's cheapest base value; the bonus stops at cap
+export const RELEASE = { pctPerUnit: 0.02, cap: 1 }
 // fish size multiplier = 1 + rand * (spread + sizeBonus)
 export const SIZE = { spread: 1 }
 export const SEASON = { minEarnings: 5e7, licenseDivisor: 5e5 }
