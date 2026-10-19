@@ -3,10 +3,10 @@
   --paper: #e8d8b0; --ink: #3a2a18; --bevel-light: #f4e8c8; --bevel-dark: #c8b488;
   --card: #f4ead0; --card-hover: #fbf4e2; --rule: #b09a70; --rust: #8a3a20; --owned: #6a5a40;
   --stamp: #2a6a3a; --stamp-border: #1a4a2a; --money: #2a6a3a; --danger: #8a3434;
-  --head: 'Silkscreen', monospace; --body: 'Pixelify Sans', monospace;
+  --head: 'Silkscreen', monospace; --body: 'Jersey 10', monospace;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.3 var(--body); }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 20px/1.1 var(--body); } /* Jersey 10 draws small: 20px reads like the old 15px */
 body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr) auto; height: 100vh; }
 #game { grid-column: 1; grid-row: 1; min-height: 0; overflow: hidden; }
 #game canvas, .ico { image-rendering: pixelated; }
@@ -22,7 +22,7 @@ body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template
 section { margin-top: 14px; }
 h2 { display: flex; align-items: center; gap: 6px; font: 14px/1 var(--head); color: var(--rust); margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px dashed var(--rule); }
 p { margin: 4px 0; }
-.label, .stats { color: var(--owned); font-size: 13px; }
+.label, .stats { color: var(--owned); font-size: 17px; }
 .row { display: flex; flex-wrap: wrap; gap: 6px; }
 button { font: inherit; color: var(--ink); background: var(--card); border: 2px solid var(--ink); border-radius: 0; box-shadow: 3px 3px 0 var(--rule); padding: 4px 8px; margin: 3px 0; cursor: pointer; text-align: left; display: inline-flex; align-items: center; gap: 6px; }
 button:hover:not(:disabled) { background: var(--card-hover); }
@@ -32,7 +32,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 button[aria-pressed="true"], button[aria-pressed="true"]:hover, button[aria-expanded="true"] { background: var(--ink); color: var(--paper); box-shadow: none; }
 button.wide, .side section > div > button:not(.row button) { display: flex; width: 100%; }
 button.danger, button.danger:hover:not(:disabled) { background: var(--danger); color: #fff; }
-button small, .owned small { color: var(--owned); display: block; font-size: 12px; }
+button small, .owned small { color: var(--owned); display: block; font-size: 16px; }
 button[aria-pressed="true"] small { color: var(--bevel-dark); }
 button b { font: 13px/1 var(--head); color: var(--rust); margin-left: auto; white-space: nowrap; }
 button.danger b, button[aria-pressed="true"] b { color: inherit; }
