@@ -23,5 +23,12 @@ New bonuses, power-ups, helpers and shop items, agreed with the user on 2026-10-
   - After piece 2: the user raised season 1's limit to 60 sim-min (2026-10-18). Season 1 is 52.0 sim-min (max purchase gap 1.9 min, worst income jump 8.5×); gear prices unchanged from the spec. The bot buys every rod and pair cheapest-first and fishes with `bestRod`. Across seeds 1–8 season 1 runs 49.5–52.0 min with gear and 47.0–49.7 without, so buying gear costs the bot about 3 min. That holds at any gear price from 0.3× to 2×, because the cheap early pairs and rods delay the first helpers. Owning all gear free from the start would finish in about 42 min, and switching rods is worth about 2 min of that.
 - **Rules for the panel (piece 1):** the panel shows sale totals through `saleValue(state, withBonus)` in `economy.ts`, never its own bonus math.
 
+## Deferred minors (from piece 2's review)
+
+- The late waders (Breathable $400K, Guide Pro $3M) are bought near the end of a season and barely pay back.
+- A save whose `rods` or `waders` is not an array loads as a fresh game, as the other array fields already do.
+- `FishingScene.ts` still imports the unused `type FigureKind`.
+- The Gear section heading reuses the Shop's fly icon.
+
 ## How to resume
-Start from the first piece not marked done: read its spec (or brainstorm it if there is none), then plan, then build. Update this table as pieces land.
+Paused on 2026-10-18 after piece 2: the user moved to scene graphics work on a separate branch from `develop`. Next up is piece 3. Start from the first piece not marked done: read its spec (or brainstorm it if there is none), then plan, then build. Update this table as pieces land.
