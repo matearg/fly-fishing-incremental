@@ -1,10 +1,13 @@
 import Phaser from 'phaser'
-import { JUNK, LOCATIONS, TIMING, type LocationId } from '../../game/data'
+import { JUNK, LOCATIONS, SPECIES, TIMING, TROPHY, type LocationId } from '../../game/data'
 import { placeSpecies } from '../../game/fishing/catch'
 import { flyStats } from '../../game/fishing/flies'
 import { hashString, lcg } from '../../game/util/rand'
 import type { Angler, GameState, Pending } from '../../game/state'
-import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, ROD_TIP, type Pose } from '../../art/sprites/figures'
+import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, guideBitmap, ROD_TIP, type Pose } from '../../art/sprites/figures'
+import { PLAQUE_STYLE, plaqueBitmap } from '../../art/sprites/plaque'
+import { newPlaqueQueue, notePlaques, plaqueFrame, type PlaqueQueue } from './plaque'
+import { figureSpots } from './spots'
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
 import { placeLook, type PlaceLook } from '../../art/places'
@@ -37,7 +40,7 @@ export interface SceneHooks { getState: () => GameState; onWaterClick: () => voi
 // stray: a hooked fish from another place, removed once it lands
 interface Swimmer { img: Phaser.GameObjects.Image; id: string; frames: [string, string]; x0: number; y: number; speed: number; phase: number; w: number; stray?: boolean }
 interface Chosen { sw: Swimmer; pending: Pending; from: [number, number] | null; right: boolean; lastPhase: Angler['phase'] }
-interface Place { id: LocationId; look: PlaceLook; maxDepth: number; waterLeft: number; playerX: number; helperX: number; playerFlyX: number; helperFlyX: number }
+interface Place { id: LocationId; look: PlaceLook; maxDepth: number; waterLeft: number; playerX: number; helperX: number; guideX: number; playerFlyX: number; helperFlyX: number }
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k
 
@@ -51,6 +54,9 @@ export class FishingScene extends Phaser.Scene {
   private menuButton!: Phaser.GameObjects.Image
   private player!: Phaser.GameObjects.Image
   private helper!: Phaser.GameObjects.Image
+  private guide!: Phaser.GameObjects.Image
+  private plaque!: { board: Phaser.GameObjects.Image; name: Phaser.GameObjects.Image; bonus: Phaser.GameObjects.Image }
+  private plaques: PlaqueQueue | null = null // null right after a wake or a state swap: trophies already mounted never pop up
   // The tied fly at the end of each visible line: player, helper.
   private flies!: [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
   private junk!: Phaser.GameObjects.Image
@@ -85,6 +91,15 @@ export class FishingScene extends Phaser.Scene {
     const helperBmps = figureBitmaps('helper')
     for (const pose of Object.keys(helperBmps) as Pose[]) addBitmap(this, `fig:helper:${pose}`, helperBmps[pose])
     this.helper = fineImage(this, 0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.helper)
+    // Over the helper so its net shows, but under the helper's line.
+    addBitmap(this, 'fig:guide', guideBitmap())
+    this.guide = fineImage(this, 0, 0, 'fig:guide').setOrigin(0).setDepth(Z.helper + 0.05).setVisible(false)
+    const hud = (img: Phaser.GameObjects.Image) => img.setOrigin(0.5, 0).setDepth(Z.hud).setScrollFactor(0).setVisible(false)
+    this.plaque = {
+      board: hud(fineImage(this, 0, 0, 'fig:guide')),
+      name: hud(this.add.image(0, 0, addText(this, ' ', PLAQUE_STYLE))),
+      bonus: hud(this.add.image(0, 0, addText(this, `+${Math.round(TROPHY.pctEach * 100)}% SALES`, PLAQUE_STYLE))),
+    }
     this.player = fineImage(this, 0, 0, this.playerFig('plainRod', 'plainWaders', 'idle')).setOrigin(0).setDepth(Z.figures)
     this.flies = [Z.line + 0.5, Z.helper + 0.2].map(z => fineImage(this, 0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(z).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
     for (const j of JUNK) addBitmap(this, `junk:${j.id}`, junkBitmap(j.id))
@@ -108,7 +123,7 @@ export class FishingScene extends Phaser.Scene {
     insectBitmaps().forEach((b, k) => addBitmap(this, `insect:${k}`, b))
     this.insects = Array.from({ length: INSECTS }, () => fineImage(this, 0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
     this.cameras.main.setOrigin(0).setZoom(FINE).fadeIn(300)
-    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.cameras.main.fadeIn(300) })
+    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.plaques = null; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
     this.input.keyboard?.on('keydown-SPACE', () => { if (!this.settling && !document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
@@ -133,10 +148,10 @@ export class FishingScene extends Phaser.Scene {
     const rand = lcg(hashString(id) + 7)
     this.rippleDots = Array.from({ length: 34 }, () => ({ x0: rand() * VIEW_W, y: WATER_Y + Math.floor(rand() * 8), len: 2 + Math.floor(rand() * 5), speed: 6 + rand() * 10 }))
     // The player stands at the water's edge (or out on the dock), the helper a step behind.
-    const playerX = look.dock ? look.shoreX + 70 : look.shoreX - 34
+    const { playerX, helperX, guideX } = figureSpots(look)
     const tipX = playerX - BODY_X + ROD_TIP.idle[0]
     return {
-      id, look, maxDepth, waterLeft: look.shoreX - 10, playerX, helperX: playerX - 24,
+      id, look, maxDepth, waterLeft: look.shoreX - 10, playerX, helperX, guideX,
       playerFlyX: Math.min(VIEW_W - 40, tipX + 140), helperFlyX: tipX + 110, // far enough that its line clears the bank face at depth
     }
   }
@@ -282,10 +297,11 @@ export class FishingScene extends Phaser.Scene {
     const p = s.anglers[0], h = s.anglers[1]
     const ptr = trackCatch(this.tracks[0], p), htr = trackCatch(this.tracks[1], h)
     // An adopted save, Continue or New Season swaps the state: comparing across it would play phantom splashes.
-    if (s !== this.cueState) { this.cues = [null, null]; this.prevHatchMs = null; this.cueState = s }
+    if (s !== this.cueState) { this.cues = [null, null]; this.prevHatchMs = null; this.plaques = null; this.cueState = s }
     if (this.prevHatchMs !== null) for (const id of hatchCue(this.prevHatchMs, s.hatchMs)) this.hooks.play(id)
     this.prevHatchMs = s.hatchMs
     this.drawPowerups(s, time, place, w)
+    this.drawPlaque(s, time, w)
     const frames = [cueFrame(p, ptr), cueFrame(h, htr)] as const
     for (const id of anglerCues(this.cues[0], frames[0])) this.hooks.play(id)
     for (const id of anglerCues(this.cues[1], frames[1])) this.hooks.play(id, HELPER_GAIN)
@@ -303,6 +319,8 @@ export class FishingScene extends Phaser.Scene {
       const backTip: Pt = [hx + ROD_TIP.back[0], figY + ROD_TIP.back[1]]
       this.drawLine(this.helperLine, this.linePos(s, h, htr, tip, backTip, place.helperFlyX, place, t + 1.7), this.flies[1], h.fly?.patternId)
     } else this.flies[1].setVisible(false)
+
+    this.guide.setVisible(s.guide).setPosition(place.guideX - BODY_X, figY)
 
     const pose = this.pose(p, ptr)
     const px = place.playerX - BODY_X
@@ -344,6 +362,25 @@ export class FishingScene extends Phaser.Scene {
       img.setVisible(s.hatchMs > 0)
       if (s.hatchMs > 0) img.setPosition(...insectPos(i, time, area)).setTexture(`insect:${Math.floor(time / 83 + i) % 2}`) // ≈12 Hz wings
     })
+  }
+
+  // The Taxidermist's pop-up: the newest trophy's plaque, centred under the power-up titles.
+  private drawPlaque(s: GameState, time: number, w: number): void {
+    this.plaques ??= newPlaqueQueue(s.trophies)
+    notePlaques(this.plaques, s.trophies)
+    const f = plaqueFrame(this.plaques, time), { board, name, bonus } = this.plaque
+    for (const img of [board, name, bonus]) img.setVisible(!!f)
+    if (!f) return
+    if (f.started) {
+      if (!this.textures.exists(`plaque:${f.id}`)) addBitmap(this, `plaque:${f.id}`, plaqueBitmap(f.id))
+      board.setTexture(`plaque:${f.id}`)
+      name.setTexture(addText(this, SPECIES.find(d => d.id === f.id)!.name.toUpperCase(), PLAQUE_STYLE))
+      this.hooks.play('trophy')
+    }
+    const y = 28 + 20 * [s.chumMs, s.hatchMs].filter(ms => ms > 0).length + f.dy, x = Math.round(w / 2)
+    board.setPosition(x, Math.round(y)).setAlpha(f.alpha)
+    name.setPosition(x, Math.round(y) + board.displayHeight + 2).setAlpha(f.alpha)
+    bonus.setPosition(x, name.y + name.height + 2).setAlpha(f.alpha)
   }
 
   // The same-species swimmer nearest the fly, preferring ones inside the camera's view so the catch never swims in from off-screen.
