@@ -445,8 +445,48 @@ export const HELPER_ICONS: Record<HelperKind, Icon> = {
     ],
     palette: { o: O, a: 0x4a6a3a, b: 0x8aa860, B: 0xd8d0a0, e: 0x101010, w: 0x3a7ab0, W: 0x8ac0e0 },
   },
-  taxidermist: { grid: ['oo', 'oo'], palette: { o: O } }, // placeholder until the review stop
-  guide: { grid: ['oo', 'oo'], palette: { o: O } }, // placeholder until the review stop
+  taxidermist: { // a fish mounted on a shield
+    grid: [
+      '................',
+      '..oooooooooooo..',
+      '.owwwwwwwwwwwwo.',
+      '.owbwwwwwwwwbwo.',
+      '.owwwwwwwwwwwwo.',
+      '.owowwwoooowwwo.',
+      '.owoowoffffowwo.',
+      '.owwoofffffeowo.',
+      '.owoowoffffowwo.',
+      '.owowwwoooowwwo.',
+      '.owwwwwwwwwwwwo.',
+      '..owwwwwwwwwwo..',
+      '...owwwwwwwwo...',
+      '....owwwwwwo....',
+      '.....oowwoo.....',
+      '.......oo.......',
+    ],
+    palette: { o: O, w: 0x9a6a3a, b: 0xe0c060, f: 0x6a9a5a, e: 0x101010 },
+  },
+  guide: { // a straw hat over a landing net
+    grid: [
+      '................',
+      '.....oooooo.....',
+      '....ohhhhhho....',
+      '....oHHHHHHo....',
+      '..oohhhhhhhhoo..',
+      '.ohhhhhhhhhhhho.',
+      '.oooooooooooooo.',
+      '........n.......',
+      '.........n......',
+      '..........n.....',
+      '.........orrro..',
+      '........or.m.ro.',
+      '........ormmmro.',
+      '.........ormro..',
+      '..........omo...',
+      '...........o....',
+    ],
+    palette: { o: O, h: 0xd8c898, H: 0x7a3a20, n: 0x6a4a2a, r: 0x5a5e64, m: 0xd8d8c8 },
+  },
 }
 
 const GOLD = { y: 0xd8a830, Y: 0xf8e080, d: 0xa07018 }

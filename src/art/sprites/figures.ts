@@ -125,3 +125,23 @@ function fineLine(b: Bitmap, [x0, y0]: [number, number], [x1, y1]: [number, numb
   }
   return start + n + 1
 }
+
+// The Guide: a straw hat, a tan vest and a landing net held low in front instead of a rod. One pose, never animated.
+// n net handle, r hoop, m mesh. In BODY coordinates, the hoop's top-left.
+const NET: Grid = [
+  '.rrrrr.',
+  'r.m.m.r',
+  'rm.m.mr',
+  '.rm.mr.',
+  '..m.m..',
+  '...m...',
+]
+const NET_AT: [number, number] = [15, 18]
+const GUIDE = { ...BASE, c: 0xb08a4a, C: 0x8a6a34, h: 0xd8c898, H: 0x7a3a20, n: 0x6a4a2a, r: 0x5a5e64, m: 0xd8d8c8 }
+
+export function guideBitmap(): Bitmap {
+  const rows = poseGrid('idle', false).map(r => [...r]), hand = pad(POSES.idle.hand), at = pad(NET_AT)
+  line(rows, [hand[0] + 1, hand[1] + 1], [at[0] + 1, at[1] + 1], () => 'n')
+  NET.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.') rows[at[1] + y][at[0] + x] = ch }))
+  return refine(paint(rows.map(r => r.join('')), { ...GUIDE, ...WADERS_LOOKS.plainWaders }), BASE.o)
+}
