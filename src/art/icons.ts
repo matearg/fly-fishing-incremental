@@ -445,6 +445,8 @@ export const HELPER_ICONS: Record<HelperKind, Icon> = {
     ],
     palette: { o: O, a: 0x4a6a3a, b: 0x8aa860, B: 0xd8d0a0, e: 0x101010, w: 0x3a7ab0, W: 0x8ac0e0 },
   },
+  taxidermist: { grid: ['oo', 'oo'], palette: { o: O } }, // placeholder until the review stop
+  guide: { grid: ['oo', 'oo'], palette: { o: O } }, // placeholder until the review stop
 }
 
 const GOLD = { y: 0xd8a830, Y: 0xf8e080, d: 0xa07018 }

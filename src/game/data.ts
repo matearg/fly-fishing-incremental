@@ -113,7 +113,11 @@ export const HELPERS = {
   sorter: { cost: 1000 },
   buyer: { cost: 800 },
   release: { cost: 1500 },
+  taxidermist: { cost: 25_000 },
+  guide: { cost: 8_000 },
 }
+// each trophy (first legendary of a species, mounted by the Taxidermist) adds pctEach to every fish sold
+export const TROPHY = { pctEach: 0.1 }
 // a trashed fish adds pctPerUnit per multiple of its place's cheapest base value; the bonus stops at cap
 export const RELEASE = { pctPerUnit: 0.02, cap: 1 }
 // fish size multiplier = 1 + rand * (spread + sizeBonus)

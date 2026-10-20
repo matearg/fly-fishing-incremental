@@ -1,4 +1,4 @@
-import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SEASON, SPECIES, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
+import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SEASON, SPECIES, TROPHY, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
 import { price, saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern, wadersDiscount } from '../game/progress/economy'
 import { buyRod, buyWaders, equipRod, wearWaders } from '../game/progress/gear'
 import { chumPrice, chumReach, throwChum } from '../game/progress/powerups'
@@ -16,7 +16,8 @@ import type { SoundId } from '../audio/sounds'
 
 type Act = (fn: (s: GameState) => unknown) => unknown
 
-const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer', release: 'Catch & Release' }
+const pct = (x: number) => `${Math.round(x * 100)}%`
+const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer', release: 'Catch & Release', taxidermist: 'Taxidermist', guide: 'Guide' }
 const HELPER_DESC: Record<HelperKind, string> = {
   angler: 'Fishes on its own with flies from the box',
   bench: 'Ties flies from your recipe; more benches tie faster',
@@ -24,6 +25,8 @@ const HELPER_DESC: Record<HelperKind, string> = {
   sorter: 'Throws junk away before it reaches the basket',
   buyer: 'Sells the basket every 5 s; can be paused',
   release: 'Trashed fish add to your next Sell all, up to +100%',
+  taxidermist: `Mounts your first legendary of each species: +${pct(TROPHY.pctEach)} on every fish sold`,
+  guide: 'Your hired anglers find rarer fish',
 }
 const patternDesc = (p: (typeof PATTERNS)[number]) => `${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}`
 const materialDesc = (m: (typeof MATERIALS)[number]) => [m.depthBonus && `depth +${m.depthBonus}`, m.wearBonus && `wear +${m.wearBonus}`, m.oddsBonus && `odds +${pct(m.oddsBonus)}`, m.sizeBonus && `size +${pct(m.sizeBonus)}`].filter(Boolean).join(', ') + ` · tie $${fmt(m.tieCost)}`
@@ -31,7 +34,6 @@ const rodDesc = (r: (typeof RODS)[number]) => r.tiers.length ? `+${pct(r.bonus)}
 const wadersDesc = (w: (typeof WADERS)[number]) => w.discount ? `${pct(w.discount)} off the shop` : 'No discount'
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
 const money = (n: number) => `${n < 0 ? '-' : ''}$${fmt(Math.abs(n))}`
-const pct = (x: number) => `${Math.round(x * 100)}%`
 // Icon + text label for a flex button, so <small> and the price lay out beside the icon.
 const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</span>`
 // Owned things are inert rows with a stamp, never a disabled button; they keep the description they had for sale.

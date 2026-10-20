@@ -6,7 +6,7 @@ import { basicRecipe, flyStats, tieFly } from './fishing/flies'
 import { rollCatch } from './fishing/catch'
 import { castPlayer, reelPlayer, tick } from './fishing/sim'
 import { sellAll } from './progress/economy'
-import { HATCH, RELEASE, TIMING } from './data'
+import { HATCH, RELEASE, SPECIES, TIMING } from './data'
 
 describe('save', () => {
   it('power-up timers: bad values fall back to defaults, running ones resume', () => {
@@ -148,5 +148,14 @@ describe('catch & release fields', () => {
     expect(withBonus(50)).toBe(RELEASE.cap)
     expect(withBonus('0.5')).toBe(0)
     expect(withBonus(0.4)).toBe(0.4)
+  })
+  it('keeps only known legendary trophies, once each', () => {
+    const s = newGame(); s.trophies = ['muskie', 'muskie', 'nope', SPECIES.find(d => d.tier === 'rare')!.id, 'arcticChar']
+    expect(parseSave(serialize(s))!.trophies).toEqual(['muskie', 'arcticChar'])
+  })
+  it('an old save without the new helper fields loads with defaults', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.taxidermist; delete raw.guide; delete raw.trophies
+    const s = parseSave(JSON.stringify(raw))!
+    expect([s.taxidermist, s.guide, s.trophies]).toEqual([false, false, []])
   })
 })

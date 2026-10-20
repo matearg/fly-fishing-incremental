@@ -277,4 +277,11 @@ describe('benchFull', () => {
     s.flyBox = [{ patternId: 'basicDry', materialIds: [], wearLeft: 3 }]
     expect(benchFull(s)).toBe(true)
   })
+  it("a hired angler's legendary is mounted and still goes to the basket", () => {
+    const s = newGame(); s.taxidermist = true
+    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1, fly: { patternId: 'basicDry', materialIds: [], wearLeft: 3 }, pending: { kind: 'fish', defId: 'muskie', value: 2500, size: 1, location: s.location } })
+    tick(s, 10, seqRand(0.5))
+    expect(s.trophies).toEqual(['muskie'])
+    expect(s.basket.map(c => c.defId)).toEqual(['muskie'])
+  })
 })

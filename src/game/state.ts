@@ -20,6 +20,7 @@ export interface GameState {
   rods: string[]; rod: string; waders: string[]; wearing: string // owned rods, equipped rod, owned waders, worn waders
   licenses: number; licenseLevels: Record<LicenseUpgradeId, number>; licenseSpecies: string[]
   chumMs: number; hatchMs: number; nextHatchMs: number // power-ups: time left (0 = off), and the countdown to the next hatch
+  taxidermist: boolean; guide: boolean; trophies: string[] // trophies: mounted species ids, in mount order
 }
 export type Carry = Pick<GameState, 'licenses' | 'licenseLevels' | 'licenseSpecies'>
 
@@ -41,5 +42,6 @@ export function newGame(carry?: Carry): GameState {
     rods: [RODS[0].id], rod: RODS[0].id, waders: [WADERS[0].id], wearing: WADERS[0].id,
     licenses: carry?.licenses ?? 0, licenseLevels: { ...licenseLevels }, licenseSpecies: [...(carry?.licenseSpecies ?? [])],
     chumMs: 0, hatchMs: 0, nextHatchMs: HATCH.firstMs,
+    taxidermist: false, guide: false, trophies: [],
   }
 }

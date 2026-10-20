@@ -2,6 +2,7 @@ import { rollCatch } from './catch'
 import { BENCH_SPEEDUP, HATCH, RODS, TIMING } from '../data'
 import { sellAll } from '../progress/economy'
 import { equippedRod } from '../progress/gear'
+import { mountTrophy } from '../progress/trophies'
 import { basicRecipe, isDry, tieFly } from './flies'
 import type { Angler, GameState } from '../state'
 
@@ -25,6 +26,7 @@ function land(state: GameState, a: Angler, rand: () => number): void {
   const { location: _, ...c } = a.pending ?? { ...rollCatch(state, a.fly!, rand, rodOf(state, a)), location: state.location }
   a.pending = null
   if (!(state.sorter && c.kind === 'junk')) state.basket.push({ id: state.nextCatchId++, ...c })
+  if (c.kind === 'fish') mountTrophy(state, c.defId)
   if (--a.fly!.wearLeft <= 0) a.fly = null
   a.phase = 'idle'
 }
