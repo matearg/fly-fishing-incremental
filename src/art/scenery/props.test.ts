@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { PropKind } from '../places'
 import { FINE, type Bitmap } from '../pixels'
-import { PROP_SIZE, sideProp } from './props'
+import { PROP_SIZE, sideProp, topProp } from './props'
 
 const opaque = (b: Bitmap, py: number) => Array.from({ length: b.w }, (_, px) => b.data[(py * b.w + px) * 4 + 3]).some(a => a > 0)
 
@@ -14,5 +14,14 @@ describe('sideProp', () => {
     expect(b.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(true)
     expect(opaque(b, b.h - 1)).toBe(true)
     expect(sideProp(p, 3).data.every((v, i) => v === b.data[i])).toBe(true)
+  })
+})
+
+describe('topProp', () => {
+  for (const kind of Object.keys(PROP_SIZE) as PropKind[]) it(`${kind} paints within its side width, square`, () => {
+    const b = topProp({ kind, colors: [0x2f6a3a, 0xb04a2a], count: 1 }, 3), side = PROP_SIZE[kind][0] * FINE
+    expect(b.w).toBeLessThanOrEqual(side)
+    expect(b.h).toBeLessThanOrEqual(side)
+    expect(b.data.some((v, i) => i % 4 === 3 && v === 255)).toBe(true)
   })
 })

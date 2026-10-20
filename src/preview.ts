@@ -2,11 +2,12 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SPECIES, WADERS } from './game/data'
 import { hashString } from './game/util/rand'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS, iconBitmap, type Icon } from './art/icons'
-import { bakeBank, placeLook } from './art/places'
+import { placeLook } from './art/places'
+import { bakeBank, bakeRiver } from './art/scenery/river'
 import { BANK_SURFACE, bakeSideBank } from './art/scenery/bank'
 import { bakeHorizon } from './art/scenery/skyline'
 import { bakeSideWater } from './art/scenery/water'
-import { blank, blit, FINE, mix, paint, stylize, upscale, type Bitmap, type TextStyle } from './art/pixels'
+import { blank, blit, FINE, paint, stylize, type Bitmap, type TextStyle } from './art/pixels'
 import { refine } from './art/refine'
 import { SMALL, textMask } from './art/font'
 import { BAR_SEGMENT, NOTES, SPEAKER, soundIconMask } from './art/soundIcons'
@@ -49,21 +50,17 @@ const fillRect = (b: Bitmap, x0: number, y0: number, w: number, h: number, c: nu
   for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) b.data.set([c >> 16, (c >> 8) & 0xff, c & 0xff, 255], (y * b.w + x) * 4)
 }
 
+// Same bakes as RiverBackdrop.
 function topDown(id: (typeof LOCATIONS)[number]['id']): Bitmap {
   const look = placeLook(id), rand = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(hashString(id) % 2147483646 + 1)
-  const b = blank(W, H)
   const top = Math.round((H - look.riverH) / 2), bottom = top + look.riverH
-  const n = look.water.length, half = look.riverH / 2
-  look.water.forEach((c, i) => {
-    const h = Math.ceil(half / n), off = Math.floor((half / n) * i)
-    fillRect(b, 0, top + off, W, h, c); fillRect(b, 0, bottom - off - h, W, h, c)
-  })
+  const b = blank(W * FINE, H * FINE)
   blit(b, bakeBank(look, W, top, 'bottom', 11), 0, 0)
-  blit(b, bakeBank(look, W, H - bottom, 'top', 23), 0, bottom)
-  // shortcut: chunky place art upscaled until Tasks 3–5 bake it fine.
-  const fine = upscale(b, FINE), drift = refine(paint(look.drift.grid, look.drift.palette))
-  for (let i = 0; i < look.drift.perBank; i++) blit(fine, drift, Math.floor(rand() * W) * FINE, (top + 10 + Math.floor(rand() * (look.riverH - 20))) * FINE)
-  return fine
+  blit(b, bakeRiver(look, W, look.riverH, hashString(id)), 0, top * FINE)
+  blit(b, bakeBank(look, W, H - bottom, 'top', 23), 0, bottom * FINE)
+  const drift = refine(paint(look.drift.grid, look.drift.palette))
+  for (let i = 0; i < look.drift.perBank; i++) blit(b, drift, Math.floor(rand() * W) * FINE, (top + 10 + Math.floor(rand() * (look.riverH - 20))) * FINE)
+  return b
 }
 
 // Same bakes as FishingScene.buildPlace, timed (Review Focus 4: under 150 ms per place).

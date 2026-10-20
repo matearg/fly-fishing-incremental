@@ -135,3 +135,83 @@ const DRAW: Record<PropKind, Draw> = {
     })
   },
 }
+
+// --- seen from above (title backdrop) ---
+
+// World size of each kind seen from above; never wider than its side view.
+const TOP_SIZE: Record<PropKind, [number, number]> = {
+  lenga: [16, 16], poplar: [9, 9], willow: [14, 14], log: [20, 6], rock: [6, 5], coiron: [6, 6], lupine: [3, 3],
+}
+const SHADOW_ALPHA = 70 // translucent, so blit only lays it on empty pixels
+
+export function topProp(p: Prop, seed: number): Bitmap {
+  const [w, h] = TOP_SIZE[p.kind], b = fineBlank(w, h)
+  TOP[p.kind](b, w, h, p.colors, seed)
+  return b
+}
+
+type TopDraw = (b: Bitmap, w: number, h: number, colors: number[], seed: number) => void
+
+// Paints `shape`, plus its shadow cast toward the lower right.
+function withShadow(b: Bitmap, w: number, h: number, inside: (x: number, y: number) => boolean, paintAt: (x: number, y: number) => number, off = 1): void {
+  fill(b, 0, 0, w, h, (_px, _py, x, y) => (inside(x, y) ? paintAt(x, y) : null))
+  for (let py = 0; py < b.h; py++) for (let px = 0; px < b.w; px++) {
+    const x = (px + 0.5) / FINE, y = (py + 0.5) / FINE, i = (py * b.w + px) * 4
+    if (!b.data[i + 3] && inside(x - off, y - off)) b.data.set([0, 0, 0, SHADOW_ALPHA], i)
+  }
+}
+
+// A round crown: leafy noise edge, lit from the upper left; willows streak out from the middle.
+function crownTop(b: Bitmap, d: number, colors: number[], seed: number, strands: boolean): void {
+  const c = d / 2 - 0.6, r0 = c - 0.2, leaf = leafRamp(colors[0]), accent = colors[1]
+  const inside = (x: number, y: number) => Math.hypot((x - c) / r0, (y - c) / r0) <= 1 - 0.22 * noise2(x * 1.1, y * 1.1, seed)
+  withShadow(b, d, d, inside, (x, y) => {
+    const nx = (x - c) / r0, ny = (y - c) / r0
+    let l = -(nx + ny) * 0.45 + (noise2(x * 1.6, y * 1.6, seed + 1) - 0.5) * 0.8
+    if (strands) l += Math.sin(Math.atan2(ny, nx) * 9 + seed) * 0.25
+    if (accent !== undefined && noise2(x * 0.5, y * 0.5, seed + 2) > 0.66 && noise2(x * 1.8, y * 1.8, seed + 3) > 0.4) return l > 0 ? shade(accent, 0.15) : accent
+    return l > 0.45 ? leaf[4] : l > 0.1 ? leaf[3] : l > -0.3 ? leaf[2] : l > -0.6 ? leaf[1] : leaf[0]
+  }, 1.2)
+}
+
+const TOP: Record<PropKind, TopDraw> = {
+  lenga: (b, w, _h, colors, seed) => crownTop(b, w, colors, seed, false),
+  poplar: (b, w, _h, [green, accent], seed) => crownTop(b, w, [mix(green, 0xc8d040, 0.25), ...(accent === undefined ? [] : [accent])], seed, false),
+  willow: (b, w, _h, colors, seed) => crownTop(b, w, colors, seed, true),
+  // A log lying across the bank: lit along its top, rings on its right end, a little moss.
+  log(b, w, h, [bark], seed) {
+    const R = h / 2 - 0.7, cy = h / 2 - 0.4, x1 = w - 2.2
+    const tone = [shade(bark, 0.25), bark, shade(bark, -0.25), shade(bark, -0.55)]
+    withShadow(b, w, h, (x, y) => Math.abs(y - cy) <= R && x > 0.5 && x < x1 + 1.4, (x, y) => {
+      const v = (y - cy) / R, ex = (x - x1) / 1.4
+      if (x > x1 - 1.4 && ex * ex + v * v <= 1) return Math.hypot(ex, v) > 0.8 ? tone[3] : Math.floor(Math.hypot(ex, v) * 4) % 2 ? 0xb08050 : 0xd0a468
+      if (x > x1) return tone[3]
+      if (v < -0.3 && noise2(x * 0.9, y * 0.9, seed + 1) > 0.6) return 0x6a9a4a
+      const l = -v * 0.8 + (noise2(x * 0.3, y * 2, seed) - 0.5) * 0.7
+      return Math.abs(v) > 0.8 ? tone[3] : l > 0.3 ? tone[0] : l > -0.2 ? tone[1] : tone[2]
+    })
+  },
+  rock(b, w, h, [stone], seed) {
+    const cx = w / 2 - 0.5, cy = h / 2 - 0.5, rx = cx - 0.2, ry = cy - 0.2
+    const tone = [shade(stone, 0.35), stone, shade(stone, -0.25), shade(stone, -0.55)]
+    withShadow(b, w, h, (x, y) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1, (x, y) => {
+      const nx = (x - cx) / rx, ny = (y - cy) / ry, r = nx * nx + ny * ny
+      if (nx + ny < -0.6 && noise2(x * 2, y * 2, seed) > 0.6) return 0x6a9a4a
+      const l = -(nx + ny) * 0.55
+      return r > 0.75 ? tone[3] : l > 0.25 ? tone[0] : l > -0.15 ? tone[1] : tone[2]
+    }, 0.6)
+  },
+  // A tuft of blades fanning out in every direction, paler at the tips.
+  coiron(b, w, _h, [blade, tip], seed) {
+    const c = w / 2, rand = lcg(seed)
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2 + rand() * 0.4, len = c * (0.6 + 0.4 * rand())
+      for (let v = 0; v < len; v += EDGE) dot(b, c + Math.cos(a) * v, c + Math.sin(a) * v, v > len - 1 ? tip ?? shade(blade, 0.3) : i % 3 ? blade : shade(blade, -0.2))
+    }
+  },
+  // A lupine spike from above: a small round head of flowers.
+  lupine(b, w, _h, [flower, light]) {
+    const c = w / 2
+    fill(b, 0, 0, w, w, (px, py, x, y) => (Math.hypot(x - c, y - c) > c ? null : (px + py) % 2 ? flower : light ?? shade(flower, 0.3)))
+  },
+}

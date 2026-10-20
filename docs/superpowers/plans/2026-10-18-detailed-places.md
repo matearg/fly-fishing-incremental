@@ -15,8 +15,9 @@
 - **Task 1** done (`e0af3ce`). 800×900 also shows bars: `viewSize` is unchanged, so this matches the old build.
 - **Task 2** done (`7a90f95`), review stop A approved. Decision: basket and license-shop catch icons show at native fine size (1:1, twice the old size), because at DPR 1 the half scale blurred them (Review Focus 5).
 - **Task 3** done (`3a6510c`), review stop B approved. Bakes measured in the browser: 56–141 ms per place (horizon + water + the still-chunky bank), first bake slowest. `mix` lost its `reduce` and ridge profiles are sampled per column to get there. `depthY` is now a module function of `(depth, maxDepth)` so `buildPlace` can compute `clear`. The horizon and water are baked once per place, not on every travel. Rounded tree crowns use the mockup's tiered profile, so lenga stands read a little like conifers.
-- **Task 4** done, at review stop C. Bakes in the browser: 57–148 ms per place (horizon + water + fine bank); the very first, cold bake is the 148. Review Focus 2 checked at the four sizes: no seams, bars as before. The poplar prop kind exists but no place's side view uses it yet (Task 5's top-down decor may). Mountain Lake's lenga takes its autumn red in patches. At the user's request the bank lost its rectangular block shape: `faceX` gives it a rounded shoulder, an uneven face (small overhangs allowed) and a concave underwater toe that flares out onto the bed, so the bitmap can be wider than `shoreX` at the bottom.
-- **Tasks 5–6** not started.
+- **Task 4** done (`9ab1244`, `909b4e8`), review stop C approved. Bakes in the browser: 57–148 ms per place (horizon + water + fine bank); the very first, cold bake is the 148. Review Focus 2 checked at the four sizes: no seams, bars as before. The poplar prop kind exists but no place's side view uses it yet (Task 5's top-down decor may). Mountain Lake's lenga takes its autumn red in patches. At the user's request the bank lost its rectangular block shape: `faceX` gives it a rounded shoulder, an uneven face (small overhangs allowed) and a concave underwater toe that flares out onto the bed, so the bitmap can be wider than `shoreX` at the bottom.
+- **Task 5** done, at review stop D. Top-down props have their own smaller sizes (`TOP_SIZE` in `props.ts`, never wider than the side view) and cast a translucent shadow to the lower right. Each place's `decor` is now `Prop[]` with per-bank counts close to the old grids'; Great Lake's dock is drawn by `bakeBank` from `look.dock`, running from the far edge to the water. River cobbles from above are staggered and hash-jittered so no grid shows. The river, banks and figures bake once per place.
+- **Task 6** not started.
 
 ## Global Constraints
 
@@ -228,7 +229,7 @@ What to draw:
   - Figures stand on the ground at every place, and on the dock at Great Lake.
   - Trees don't hide the player, the helper or the cast loop.
 - [x] **Step 7: Commit:** `git commit -m "draw per-place ground, bank cuts and props"`
-- [ ] **Step 8: Review stop C.** Show the five side views with figures to the user. Wait for approval.
+- [x] **Step 8: Review stop C.** Show the five side views with figures to the user. Wait for approval.
 
 ---
 
@@ -252,17 +253,17 @@ What to draw:
 - **Banks:** the place's `ground` seen from above, with the same materials as Task 4, lit from the upper left. There is a detailed shoreline on the water side (wet darker band, stones), worn dirt patches, and `decor` props via `topProp`. Great Lake keeps a top-down plank dock on its bank.
 - **Glints:** `RiverBackdrop`'s ripple dashes become glints, `1/FINE` tall, twinkling with alpha `0.5 + 0.5·sin(t·2 + i)`.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - `topProp`: for every kind, non-empty and within size.
   - river: for every place, `bakeRiver(look, 480, look.riverH, 1)` is `960 × riverH*FINE` and fully opaque, and the mid-river row's luma differs from the shore row's.
   - bank: `bakeBank(look, 480, 60, 'bottom', 1)` is 960×120, with the row touching the water fully opaque (replaces `edge strip touches the water side`).
   - places: `every decor kind paints` (for `decor` and `drift`).
-- [ ] **Step 2:** Run `npx vitest run src/art`. Expected: FAIL.
-- [ ] **Step 3:** Implement `topProp`, `river.ts` and the `places.ts` changes.
-- [ ] **Step 4:** Run `npx vitest run src/art`. Expected: PASS.
-- [ ] **Step 5: Wire it in.** In `RiverBackdrop`, the banded `Graphics` water is replaced by a `fineImage` of `bakeRiver`, the banks use `fineImage` of the new `bakeBank`, and glints twinkle. `preview.ts` `topDown` uses the same.
-- [ ] **Step 6:** Run `npm test && npm run build`. Expected: PASS. **Browser check:** the title for all five places (switch the place in a save), and that the menu and logo are still readable over the backdrop.
-- [ ] **Step 7: Commit:** `git commit -m "draw detailed title rivers and banks"`
+- [x] **Step 2:** Run `npx vitest run src/art`. Expected: FAIL.
+- [x] **Step 3:** Implement `topProp`, `river.ts` and the `places.ts` changes.
+- [x] **Step 4:** Run `npx vitest run src/art`. Expected: PASS.
+- [x] **Step 5: Wire it in.** In `RiverBackdrop`, the banded `Graphics` water is replaced by a `fineImage` of `bakeRiver`, the banks use `fineImage` of the new `bakeBank`, and glints twinkle. `preview.ts` `topDown` uses the same.
+- [x] **Step 6:** Run `npm test && npm run build`. Expected: PASS. **Browser check:** the title for all five places (switch the place in a save), and that the menu and logo are still readable over the backdrop.
+- [x] **Step 7: Commit:** `git commit -m "draw detailed title rivers and banks"`
 - [ ] **Step 8: Review stop D.** Show the five title backdrops to the user. Wait for approval.
 
 ---
