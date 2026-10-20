@@ -60,7 +60,7 @@ const RIVER: PlaceLook = {
   ],
   shoreX: 70, dock: false, ground: 'cobbles',
   decor: [rock(14), coiron(8), { kind: 'poplar', colors: [0x3f7a2e], count: 4 }],
-  props: [coiron(3), rock(2)],
+  props: [{ kind: 'poplar', colors: [0x3f7a2e], count: 2 }, coiron(3), rock(2)],
   drift: POPLAR_LEAF,
 }
 
@@ -76,7 +76,7 @@ const BIG_RIVER: PlaceLook = {
   ],
   shoreX: 80, dock: false, ground: 'mud',
   decor: [coiron(12, [0x5a6a2a, 0x7a8a3a]), log(3), { kind: 'willow', colors: [0x5a8a3a], count: 4 }],
-  props: [{ kind: 'willow', colors: [0x5a8a3a], count: 2 }, log(1)],
+  props: [{ kind: 'poplar', colors: [0x3f7a2e], count: 1 }, { kind: 'willow', colors: [0x5a8a3a], count: 2 }, log(1)],
   drift: TWIG,
 }
 

@@ -88,7 +88,7 @@ export function bakeSideBank(look: PlaceLook, h: number, waterY: number, seed: n
   props.forEach((p, k) => {
     const [pw, ph] = PROP_SIZE[p.kind]
     for (let i = 0; i < p.count; i++) {
-      const x = 2 + Math.floor(rand() * Math.max(1, flat - pw - 4))
+      const x = 2 + Math.floor(((i + rand()) / p.count) * Math.max(1, flat - pw - 4)) // one slot each, so copies don't stack
       blit(b, sideProp(p, seed + k * 131 + i * 17), x * FINE, (S - ph) * FINE + 1)
     }
   })

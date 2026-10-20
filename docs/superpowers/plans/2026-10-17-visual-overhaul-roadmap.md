@@ -79,7 +79,8 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - **Bank (user's change at stop C):** no rectangular block. `faceX` gives a rounded shoulder, an uneven face with small overhangs, and a concave underwater toe that flares onto the bed, so the side bank is wider than `shoreX` at the bottom and hides a bit more of the lower-left water. Ground per place: steppe, cobbles, mud, turf, beach (+ dock).
 - **Title:** gradient river with faint bed stones and shore foam, top-down grounds with a wet stony shoreline, props seen from above with soft shadows, twinkling glints.
 - **Bake time** (horizon + water + bank, browser): 54–148 ms per place, the first cold bake slowest, against the 150 ms budget. Each place's textures bake once per session. No headroom left: new scenery detail needs a re-measure (`/preview.html` logs it).
-- **Leftovers:** the `poplar` side prop exists but no place's fishing bank uses it. Not checked: every rod and waders combination at every place, and Mountain Lake's lenga next to the cast loop (it draws behind figures and line, but makes that corner busier).
+- **Poplars (added after stop D):** two on River's fishing bank, one on Big River's. Copies of a prop now each get their own slot along the bank, so they no longer stack.
+- **Leftovers:** not checked: every rod and waders combination at every place, and Mountain Lake's lenga next to the cast loop (it draws behind figures and line, but makes that corner busier).
 
 ## How to resume
 Pieces 1–7 are done and on `develop`; PR #7 ships pieces 5–7 to `master`. Piece 8 (detailed places) is done on `feat/scene-graphics`, ready to merge into `develop`. Open leftovers: piece 8's list above, piece 5's deferred minors and piece 6's not-checked-live list. A new piece starts with a brainstorm, then a spec and plan as before.
