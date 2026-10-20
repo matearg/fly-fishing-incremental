@@ -16,8 +16,8 @@
 - **Task 2** done (`7a90f95`), review stop A approved. Decision: basket and license-shop catch icons show at native fine size (1:1, twice the old size), because at DPR 1 the half scale blurred them (Review Focus 5).
 - **Task 3** done (`3a6510c`), review stop B approved. Bakes measured in the browser: 56–141 ms per place (horizon + water + the still-chunky bank), first bake slowest. `mix` lost its `reduce` and ridge profiles are sampled per column to get there. `depthY` is now a module function of `(depth, maxDepth)` so `buildPlace` can compute `clear`. The horizon and water are baked once per place, not on every travel. Rounded tree crowns use the mockup's tiered profile, so lenga stands read a little like conifers.
 - **Task 4** done (`9ab1244`, `909b4e8`), review stop C approved. Bakes in the browser: 57–148 ms per place (horizon + water + fine bank); the very first, cold bake is the 148. Review Focus 2 checked at the four sizes: no seams, bars as before. The poplar prop kind exists but no place's side view uses it yet (Task 5's top-down decor may). Mountain Lake's lenga takes its autumn red in patches. At the user's request the bank lost its rectangular block shape: `faceX` gives it a rounded shoulder, an uneven face (small overhangs allowed) and a concave underwater toe that flares out onto the bed, so the bitmap can be wider than `shoreX` at the bottom.
-- **Task 5** done, at review stop D. Top-down props have their own smaller sizes (`TOP_SIZE` in `props.ts`, never wider than the side view) and cast a translucent shadow to the lower right. Each place's `decor` is now `Prop[]` with per-bank counts close to the old grids'; Great Lake's dock is drawn by `bakeBank` from `look.dock`, running from the far edge to the water. River cobbles from above are staggered and hash-jittered so no grid shows. The river, banks and figures bake once per place.
-- **Task 6** not started.
+- **Task 5** done (`a7794fb`), review stop D approved. Top-down props have their own smaller sizes (`TOP_SIZE` in `props.ts`, never wider than the side view) and cast a translucent shadow to the lower right. Each place's `decor` is now `Prop[]` with per-bank counts close to the old grids'; Great Lake's dock is drawn by `bakeBank` from `look.dock`, running from the far edge to the water. River cobbles from above are staggered and hash-jittered so no grid shows. The river and banks bake once per place.
+- **Task 6** done: `CLAUDE.md` and the visual-overhaul roadmap updated. Piece 8 is complete.
 
 ## Global Constraints
 
@@ -264,7 +264,7 @@ What to draw:
 - [x] **Step 5: Wire it in.** In `RiverBackdrop`, the banded `Graphics` water is replaced by a `fineImage` of `bakeRiver`, the banks use `fineImage` of the new `bakeBank`, and glints twinkle. `preview.ts` `topDown` uses the same.
 - [x] **Step 6:** Run `npm test && npm run build`. Expected: PASS. **Browser check:** the title for all five places (switch the place in a save), and that the menu and logo are still readable over the backdrop.
 - [x] **Step 7: Commit:** `git commit -m "draw detailed title rivers and banks"`
-- [ ] **Step 8: Review stop D.** Show the five title backdrops to the user. Wait for approval.
+- [x] **Step 8: Review stop D.** Show the five title backdrops to the user. Wait for approval.
 
 ---
 
@@ -274,12 +274,12 @@ What to draw:
 - Modify: `CLAUDE.md` (the `src/art/` paragraph)
 - Modify: `docs/superpowers/plans/2026-10-17-visual-overhaul-roadmap.md`
 
-- [ ] **Step 1: Update `CLAUDE.md`'s art paragraph.**
+- [x] **Step 1: Update `CLAUDE.md`'s art paragraph.**
   - Art is baked at `FINE`× and shown at `1/FINE` with the camera zoomed ×`FINE`. Chunky text stays at scale 1.
   - Sprites go through `refine`.
   - Scenery is procedural in `src/art/scenery/` (noise, raster, skyline, water, bank, props, river).
   - Anchors are in grid units.
   - The canvas is 480×270 world units.
-- [ ] **Step 2: Update the roadmap.** Mark piece 8 done, with an "as built" section: decisions from the review stops, anything deferred, and leftovers from Review Focus.
-- [ ] **Step 3: Verify.** Run `npm test && npm run build`. Expected: all pass, and `pacing.test.ts` is unchanged and green.
-- [ ] **Step 4: Commit:** `git commit -m "docs: close piece 8 on the roadmap"`
+- [x] **Step 2: Update the roadmap.** Mark piece 8 done, with an "as built" section: decisions from the review stops, anything deferred, and leftovers from Review Focus.
+- [x] **Step 3: Verify.** Run `npm test && npm run build`. Expected: all pass, and `pacing.test.ts` is unchanged and green.
+- [x] **Step 4: Commit:** `git commit -m "docs: close piece 8 on the roadmap"`
