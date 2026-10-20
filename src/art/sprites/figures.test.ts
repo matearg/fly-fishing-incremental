@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { BODY_X, FEET_Y, FIGURE_POSES, figureBitmaps, ROD_LOOKS, ROD_TIP, WADERS_LOOKS, type FigureKind, type Pose } from './figures'
+import { BODY_X, BODY_Y, FEET_Y, FIGURE_POSES, figureBitmaps, ROD_LOOKS, ROD_TIP, WADERS_LOOKS, type FigureKind, type Pose } from './figures'
 import { RODS, WADERS } from '../../game/data'
+import { FINE } from '../pixels'
 
 const POSES: Pose[] = ['idle', 'back', 'cast', 'reel']
 const KINDS: FigureKind[] = ['angler', 'helper']
@@ -16,15 +17,25 @@ describe('figures', () => {
   })
   it('the rod tip is inside the sprite on an opaque pixel', () => {
     for (const k of KINDS) for (const p of POSES) {
-      const b = figureBitmaps(k)[p], [x, y] = ROD_TIP[p]
+      const b = figureBitmaps(k)[p], [x, y] = ROD_TIP[p].map(v => v * FINE)
       expect(x >= 0 && y >= 0 && x < b.w && y < b.h, `${k} ${p}`).toBe(true)
       expect(alpha(b, x, y), `${k} ${p}`).toBe(255)
     }
   })
   it('the feet stand on the sprite bottom row', () => {
     const b = figureBitmaps('angler').idle
-    expect(FEET_Y).toBe(b.h - 1)
-    expect([...Array(b.w).keys()].some(x => alpha(b, x, FEET_Y) === 255)).toBe(true)
+    expect(FEET_Y * FINE + FINE - 1).toBe(b.h - 1)
+    expect([...Array(b.w).keys()].some(x => alpha(b, x, b.h - 1) === 255)).toBe(true)
+  })
+  it('the rod is one fine pixel thick', () => {
+    const b = figureBitmaps('angler').idle, [x0, y0] = ROD_TIP.idle, [x1, y1] = [BODY_X + 13, BODY_Y + 15] // idle rod butt
+    const x = Math.round((x0 + x1) / 2) * FINE, y = Math.round((y0 + y1) / 2) * FINE
+    expect(alpha(b, x, y)).toBe(255)
+    expect(alpha(b, x + 1, y)).toBe(0)
+  })
+  it('a wrapped rod keeps its wraps', () => {
+    const b = figureBitmaps('angler', { rod: 'carbonSpey' }).idle, R = ROD_LOOKS.carbonSpey.R
+    expect([...Array(b.w * b.h).keys()].some(i => ((b.data[i * 4] << 16) | (b.data[i * 4 + 1] << 8) | b.data[i * 4 + 2]) === R && b.data[i * 4 + 3])).toBe(true)
   })
   it('the back-cast rod tip is behind the head', () => {
     expect(ROD_TIP.back[0]).toBeLessThan(BODY_X + 6)

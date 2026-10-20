@@ -1,5 +1,6 @@
 import { SPECIES, type Tier } from '../../game/data'
 import { paint, type Bitmap, type Grid } from '../pixels'
+import { refine } from '../refine'
 
 // Top-down fish facing right: tail fan, oval body with a darker back stripe, two eyes.
 // Frame 0/1 swing the tail to either side for the wiggle.
@@ -204,11 +205,11 @@ export function fishColors(id: string, style = 'default'): FishColors {
 export function fishBitmaps(speciesId: string, style = 'default'): [Bitmap, Bitmap] {
   const pal = { ...fishColors(speciesId, style), o: OUTLINE, e: EYE }
   const [a, b] = fishTopGrids(speciesId)
-  return [paint(a, pal), paint(b, pal)]
+  return [refine(paint(a, pal), OUTLINE), refine(paint(b, pal), OUTLINE)]
 }
 
 export function fishSideBitmaps(speciesId: string, style = 'default'): [Bitmap, Bitmap] {
   const pal = { ...fishColors(speciesId, style), o: OUTLINE, e: EYE }
   const [a, b] = fishSideGrids(speciesId)
-  return [paint(a, pal), paint(b, pal)]
+  return [refine(paint(a, pal), OUTLINE), refine(paint(b, pal), OUTLINE)]
 }

@@ -1,42 +1,25 @@
 import type { LocationId } from '../game/data'
-import { lcg } from '../game/util/rand'
-import { blank, blit, mix, paint, type Bitmap, type Grid } from './pixels'
+import type { Grid } from './pixels'
 
 export interface Decor { grid: Grid; palette: Record<string, number>; perBank: number }
 // Side-view skyline layer, drawn far to near standing on the waterline.
-// trees: width = crown px (default 7), cover = share of the skyline with groves (default 1)
-export interface HorizonLayer { kind: 'peaks' | 'hills' | 'bardas' | 'trees'; colors: number[]; height: number; width?: number; cover?: number }
+// trees: width = crown px (default 7), cover = share of the skyline with groves (default 1).
+// haze: how much the layer fades into the sky (default 0.4 for the farthest layer down to 0.1 for the nearest).
+export interface HorizonLayer { kind: 'peaks' | 'hills' | 'bardas' | 'trees'; colors: number[]; height: number; width?: number; cover?: number; haze?: number }
 // water: top-down bands from the banks toward mid-river (water[0] is also the side view's surface); deep: side view's bottom.
 // riverH: top-down water height. bank/edge: top-down ground and shore strip; the side view uses bank for its ground, edge for stones, soil below.
-// shoreX: side-view bank width. decor: top-down props; props: side-view props standing on the bank; drift: floats on the top-down river.
+// shoreX: side-view bank width. ground: what the bank's surface is made of.
+// decor: props on the title's banks, seen from above (count per bank); props: side-view props standing on the bank;
+// drift: floats on the top-down river. The dock shows on both views.
 export interface PlaceLook {
   water: number[]; deep: number; ripple: number; bank: number; edge: number; soil: number; riverH: number
-  sky: [number, number]; horizon: HorizonLayer[]; shoreX: number; dock: boolean
-  decor: Decor[]; props: Decor[]; drift: Decor
+  sky: [number, number]; horizon: HorizonLayer[]; shoreX: number; dock: boolean; ground: Ground
+  decor: Prop[]; props: Prop[]; drift: Decor
 }
-
-const BLACK = 0x000000
-
-// --- top-down decor ---
-const tuft = (y: number, Y: number, perBank: number): Decor => ({ grid: ['.y.y.', 'y.Y.y', '.yYy.'], palette: { y, Y }, perBank })
-const COIRON = tuft(0xb8983e, 0xe0c060, 40)
-const LUPINE: Decor = { grid: ['.p.', 'pPp', '.p.'], palette: { p: 0x7a3aa8, P: 0xc070d8 }, perBank: 14 }
-const PINK_LUPINE: Decor = { grid: ['.p.', 'pPp', '.p.'], palette: { p: 0xb04a8a, P: 0xe890c0 }, perBank: 10 }
-const COBBLE = (perBank: number): Decor => ({ grid: ['.oo.', 'oggo', '.oo.'], palette: { o: 0x5f6468, g: 0xa8a49a }, perBank })
-const crown = (d: number, g: number, l: number, perBank: number): Decor => ({
-  grid: ['..ddd..', '.dgggd.', 'dgglggd', 'dglgggd', 'dgggggd', '.dgggd.', '..ddd..'], palette: { d, g, l }, perBank,
-})
-const POPLAR_TOP = crown(0x23461c, 0x3f7a2e, 0x5a9a3a, 4)
-const WILLOW_TOP = crown(0x3a5a24, 0x5a8a3a, 0x8aba5a, 4)
-const LENGA_TOP = crown(0x173a20, 0x2f6a3a, 0xb04a2a, 18)
-const LOG: Decor = { grid: ['.oooooooooo.', 'obbbbbbbbbbo', 'obkbbbbkbbbo', '.oooooooooo.'], palette: { o: 0x3a2614, b: 0x7a5230, k: 0x5a3a1e }, perBank: 3 }
-const PUDDLE: Decor = { grid: ['.mm.', 'mmmm', '.mm.'], palette: { m: 0x52432a }, perBank: 8 }
-const ROCK: Decor = { grid: ['..oooo..', '.oggggo.', 'ogglgggo', 'oggggggo', '.oooooo.'], palette: { o: 0x4a4f55, g: 0x8a9097, l: 0xb8bec4 }, perBank: 6 }
-const DOCK: Decor = {
-  grid: ['oooooooooo', 'pppppppppp', 'oooooooooo', 'pppppppppp', 'oooooooooo', 'pppppppppp', 'oooooooooo', 'pppppppppp', 'oooooooooo', 'pppppppppp', 'oooooooooo'],
-  palette: { o: 0x6b4422, p: 0x9a6a3a },
-  perBank: 1,
-}
+export type Ground = 'steppe' | 'cobbles' | 'mud' | 'turf' | 'beach'
+export type PropKind = 'lenga' | 'poplar' | 'willow' | 'log' | 'rock' | 'coiron' | 'lupine'
+// colors[0] is the main colour (foliage, bark, stone, blades, flowers); colors[1] an optional accent.
+export interface Prop { kind: PropKind; colors: number[]; count: number }
 
 // --- drift on the top-down river ---
 const FOAM: Decor = { grid: ['w.ww', '.ww.'], palette: { w: 0xe8f4f8 }, perBank: 6 }
@@ -44,46 +27,12 @@ const POPLAR_LEAF: Decor = { grid: ['.y', 'yY', 'y.'], palette: { y: 0xd8b830, Y
 const TWIG: Decor = { grid: ['oo....', '.oooo.', '....oo'], palette: { o: 0x5a3a1e }, perBank: 4 }
 const LENGA_LEAF: Decor = { grid: ['.r', 'rR', 'r.'], palette: { r: 0xa8402a, R: 0xd8603a }, perBank: 7 }
 
-// --- side-view props (each fits under BANK_SURFACE rows) ---
-const COIRON_S: Decor = { grid: ['..Y..', '.yYy.', 'y.Y.y', 'yyYyy', '.yyy.'], palette: { y: 0xb8983e, Y: 0xe0c060 }, perBank: 8 }
-const lupineS = (p: number, P: number, perBank: number): Decor => ({
-  grid: ['.p.', 'pPp', '.p.', 'pPp', '.p.', 'pPp', '.g.', '.g.', 'gg.'], palette: { p, P, g: 0x3c6e25 }, perBank,
-})
-const ROCK_S: Decor = { grid: ['..oooo...', '.ogglgo..', 'oggglggo.', 'ogggggggo', 'ooooooooo'], palette: { o: 0x3a3f45, g: 0x8a9097, l: 0xb8bec4 }, perBank: 2 }
-const LENGA_S: Decor = {
-  grid: [
-    '....ddd....',
-    '..ddgggdd..',
-    '.dgggrgggd.',
-    'dggrgggggdd',
-    'dgggggrgggd',
-    '.ddgggggdd.',
-    '..dgrggd...',
-    '...ddddd...',
-    '.....t.....',
-    '.....t.....',
-    '....tt.....',
-  ],
-  palette: { d: 0x173a20, g: 0x2f6a3a, r: 0xb04a2a, t: 0x4a3a24 },
-  perBank: 2,
-}
-const WILLOW_S: Decor = {
-  grid: [
-    '....ddddd....',
-    '..ddlllllldd.',
-    '.dlllllllllld',
-    'dllldllldllld',
-    'dlld.ldl.dlld',
-    'dld..ldl..dld',
-    'dl...ltl...dl',
-    'd....ltl....d',
-    '.....ttt.....',
-    '.....ttt.....',
-  ],
-  palette: { d: 0x3a5a24, l: 0x7aaa4a, t: 0x4a3a24 },
-  perBank: 2,
-}
-const LOG_S: Decor = { grid: ['.oooooooooooo.', 'obbkbbbbbkbbbo', 'obbbbbkbbbbbbo', '.oooooooooooo.'], palette: { o: 0x3a2614, b: 0x8a6240, k: 0x5a3a1e }, perBank: 1 }
+// --- props: side view on the fishing bank, top-down on the title's banks ---
+const coiron = (count: number, colors = [0xb8983e, 0xe0c060]): Prop => ({ kind: 'coiron', colors, count })
+const lupine = (p: number, P: number, count: number): Prop => ({ kind: 'lupine', colors: [p, P], count })
+const rock = (count: number): Prop => ({ kind: 'rock', colors: [0x8a9097], count })
+const log = (count: number): Prop => ({ kind: 'log', colors: [0x7a5230], count })
+const PURPLE: [number, number] = [0x7a3aa8, 0xc070d8], PINK: [number, number] = [0xb04a8a, 0xe890c0]
 
 const ANDES_FAR: HorizonLayer = { kind: 'peaks', colors: [0x8a9ab0, 0xf4f8fc], height: 44 }
 
@@ -93,9 +42,9 @@ const CREEK: PlaceLook = {
   bank: 0xb89a48, edge: 0x9a948a, soil: 0x7a5a34, riverH: 150,
   sky: [0x5aa0e0, 0xcfe6f4],
   horizon: [ANDES_FAR, { kind: 'hills', colors: [0xb8a060], height: 28 }],
-  shoreX: 76, dock: false,
-  decor: [COIRON, COBBLE(6), LUPINE, PINK_LUPINE],
-  props: [COIRON_S, lupineS(0x7a3aa8, 0xc070d8, 3), lupineS(0xb04a8a, 0xe890c0, 2)],
+  shoreX: 76, dock: false, ground: 'steppe',
+  decor: [coiron(40), rock(6), lupine(...PURPLE, 14), lupine(...PINK, 10)],
+  props: [coiron(8), lupine(...PURPLE, 3), lupine(...PINK, 2)],
   drift: FOAM,
 }
 
@@ -109,9 +58,9 @@ const RIVER: PlaceLook = {
     { kind: 'bardas', colors: [0xc89a5a, 0xb07a44, 0xd8b070, 0x9a6a3a], height: 40 },
     { kind: 'trees', colors: [0x2f5a24, 0x3f7a2e], height: 44, width: 4, cover: 0.25 },
   ],
-  shoreX: 70, dock: false,
-  decor: [COBBLE(26), tuft(0xb8983e, 0xe0c060, 8), POPLAR_TOP],
-  props: [{ ...COIRON_S, perBank: 3 }, ROCK_S],
+  shoreX: 70, dock: false, ground: 'cobbles',
+  decor: [rock(14), coiron(8), { kind: 'poplar', colors: [0x3f7a2e], count: 4 }],
+  props: [{ kind: 'poplar', colors: [0x3f7a2e], count: 2 }, coiron(3), rock(2)],
   drift: POPLAR_LEAF,
 }
 
@@ -125,9 +74,9 @@ const BIG_RIVER: PlaceLook = {
     { kind: 'trees', colors: [0x2f5a24, 0x3f7a2e], height: 44, width: 4, cover: 0.35 },
     { kind: 'trees', colors: [0x4a7a2e, 0x5a8a3a], height: 32, width: 11, cover: 0.3 },
   ],
-  shoreX: 80, dock: false,
-  decor: [PUDDLE, tuft(0x5a6a2a, 0x7a8a3a, 12), LOG, WILLOW_TOP],
-  props: [WILLOW_S, LOG_S],
+  shoreX: 80, dock: false, ground: 'mud',
+  decor: [coiron(12, [0x5a6a2a, 0x7a8a3a]), log(3), { kind: 'willow', colors: [0x5a8a3a], count: 4 }],
+  props: [{ kind: 'poplar', colors: [0x3f7a2e], count: 1 }, { kind: 'willow', colors: [0x5a8a3a], count: 2 }, log(1)],
   drift: TWIG,
 }
 
@@ -140,9 +89,9 @@ const MOUNTAIN_LAKE: PlaceLook = {
     { kind: 'peaks', colors: [0x5a6478, 0xffffff], height: 84 },
     { kind: 'trees', colors: [0x1f4a2a, 0x2f6a3a, 0x2a5a30, 0x1f4a2a, 0xa8402a, 0x2f6a3a, 0x2a5a30], height: 32 },
   ],
-  shoreX: 70, dock: false,
-  decor: [ROCK, LENGA_TOP],
-  props: [ROCK_S, LENGA_S],
+  shoreX: 70, dock: false, ground: 'turf',
+  decor: [rock(6), { kind: 'lenga', colors: [0x2f6a3a, 0xb04a2a], count: 18 }],
+  props: [{ kind: 'lenga', colors: [0x2f6a3a, 0xb04a2a], count: 1 }, log(1), rock(1)],
   drift: LENGA_LEAF,
 }
 
@@ -155,9 +104,9 @@ const GREAT_LAKE: PlaceLook = {
     { kind: 'peaks', colors: [0x4a5468, 0xffffff], height: 100 },
     { kind: 'trees', colors: [0x1f3a2a, 0x2a4a34], height: 28 },
   ],
-  shoreX: 46, dock: true,
-  decor: [COBBLE(30), DOCK],
-  props: [{ ...LENGA_S, palette: { ...LENGA_S.palette, r: 0x2f6a3a }, perBank: 1 }],
+  shoreX: 46, dock: true, ground: 'beach',
+  decor: [rock(10)],
+  props: [{ kind: 'lenga', colors: [0x2f6a3a], count: 1 }],
   drift: FOAM,
 }
 
@@ -168,123 +117,4 @@ export const PLACE_STYLES: Record<string, Record<LocationId, PlaceLook>> = {
 
 export function placeLook(id: LocationId, style = 'default'): PlaceLook {
   return (PLACE_STYLES[style] ?? PLACE_STYLES.default)[id]
-}
-
-const EDGE_MAX = 5
-
-// One top-down bank strip: ground, a wobbly shore edge on the water side, seeded decor away from the shore.
-export function bakeBank(look: PlaceLook, w: number, h: number, waterSide: 'top' | 'bottom', seed: number): Bitmap {
-  const b = blank(w, h)
-  const fill = (x: number, y: number, c: number) => b.data.set([c >> 16, (c >> 8) & 0xff, c & 0xff, 255], (y * w + x) * 4)
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) fill(x, y, look.bank)
-  for (let x = 0; x < w; x++) {
-    const e = Math.max(1, Math.min(EDGE_MAX, 2 + Math.round((Math.sin((x >> 1) * 0.42 + seed) + Math.sin((x >> 1) * 0.14)) * 1.5)))
-    for (let i = 0; i < e; i++) fill(x, waterSide === 'top' ? i : h - 1 - i, look.edge)
-  }
-  const rand = lcg(seed)
-  for (const d of look.decor) {
-    const art = paint(d.grid, d.palette)
-    const room = h - art.h - EDGE_MAX - 2
-    for (let i = 0; i < d.perBank; i++) {
-      const y = Math.floor(rand() * room)
-      blit(b, art, Math.floor(rand() * (w - art.w)), waterSide === 'top' ? h - art.h - y : y)
-    }
-  }
-  return b
-}
-
-const put = (b: Bitmap, x: number, y: number, c: number) => {
-  if (x >= 0 && y >= 0 && x < b.w && y < b.h) b.data.set([c >> 16, (c >> 8) & 0xff, c & 0xff, 255], (y * b.w + x) * 4)
-}
-const SKY_STEPS = 8
-
-// Side-view sky (stepped gradient) with the skyline layers; the bottom row is the waterline.
-export function bakeHorizon(look: PlaceLook, w: number, h: number, seed: number): Bitmap {
-  const b = blank(w, h)
-  for (let y = 0; y < h; y++) {
-    const c = mix(look.sky[0], look.sky[1], Math.floor((y / h) * SKY_STEPS) / (SKY_STEPS - 1))
-    for (let x = 0; x < w; x++) put(b, x, y, c)
-  }
-  const rand = lcg(seed)
-  for (const L of look.horizon) {
-    const p1 = rand() * 6, p2 = rand() * 6, H = L.height
-    const column = (x: number, top: number, color: (y: number) => number) => { for (let y = Math.max(0, top); y < h; y++) put(b, x, y, color(y)) }
-    if (L.kind === 'trees') {
-      const wd = L.width ?? 7, cover = L.cover ?? 1
-      // Crowns overlap into a canopy; each has a rounded (wide) or pointed (narrow) top.
-      for (let x = Math.floor(rand() * 3) - wd, i = 0; x < w; x += Math.max(2, Math.round(wd * 0.7)) + Math.floor(rand() * 2), i++) {
-        if (cover < 1 && (Math.sin(x * 0.012 + p1) + 1) / 2 > cover) continue
-        const th = Math.round(H * (0.65 + 0.35 * rand()))
-        const c = L.colors[i % L.colors.length], hi = L.colors[(i + 1) % L.colors.length]
-        for (let cx = 0; cx < wd; cx++) {
-          const u = (cx + 0.5) / wd * 2 - 1
-          const top = h - th + Math.round(th * 0.3 * (1 - Math.sqrt(1 - u * u)))
-          column(x + cx, top, y => (y === top ? mix(c, BLACK, 0.35) : u < -0.2 && y < top + th * 0.4 ? hi : c))
-        }
-      }
-      continue
-    }
-    for (let x = 0; x < w; x++) {
-      let hx: number
-      if (L.kind === 'peaks') hx = Math.round(H * (0.55 + 0.25 * Math.sin(x * 0.0225 + p1) + 0.2 * Math.abs(Math.sin(x * 0.055 + p2))))
-      else if (L.kind === 'hills') hx = Math.round(H * (0.6 + 0.4 * Math.sin(x * 0.015 + p1)))
-      else hx = Math.round(H * (0.8 + 0.2 * Math.sin(x * 0.015 + p1))) - ((x + Math.floor(p2 * 20)) % 94 < 10 ? Math.round(H * 0.35) : 0)
-      const top = h - hx
-      if (L.kind === 'peaks') {
-        const [rock, snow] = L.colors, cap = Math.max(0, Math.round(hx - H * (0.62 + 0.06 * Math.sin(x * 0.7 + p2) + 0.05 * Math.sin(x * 0.19))))
-        const shade = Math.cos(x * 0.0225 + p1) * 0.25 + Math.sign(Math.sin(x * 0.055 + p2)) * Math.cos(x * 0.055 + p2) * 0.2 < 0
-        const face = shade ? mix(rock, BLACK, 0.18) : rock // the far side of each ridge sits in shade
-        column(x, top, y => (y === top ? mix(rock, BLACK, 0.4) : y < top + cap ? (shade ? mix(snow, rock, 0.25) : snow) : face))
-      } else if (L.kind === 'hills') {
-        column(x, top, y => (y === top ? mix(L.colors[0], BLACK, 0.3) : L.colors[0]))
-      } else {
-        column(x, top, y => (y === top ? mix(L.colors[0], BLACK, 0.35) : L.colors[Math.floor((h - 1 - y) / 4) % L.colors.length]))
-      }
-    }
-  }
-  return b
-}
-
-export const BANK_SURFACE = 24 // side bank: rows above the walkable ground, room for props
-const SLOPE = 20 // px over which the side bank drops into the water
-const DOCK_LEN = 110
-
-// Side view of the left bank: props standing on the ground at row BANK_SURFACE, a cut of soil and stones below,
-// the face sloping into the water at the right. With a dock, a wooden deck at the same height reaches out over the water.
-export function bakeSideBank(look: PlaceLook, h: number, seed: number): Bitmap {
-  const w = look.shoreX + (look.dock ? DOCK_LEN : 0)
-  const b = blank(w, h)
-  const rand = lcg(seed)
-  const outline = mix(look.soil, BLACK, 0.6)
-  const flat = look.shoreX - SLOPE
-  const top = (x: number) => (x < flat ? BANK_SURFACE : BANK_SURFACE + (x - flat + 1) * 2)
-  for (let x = 0; x < look.shoreX; x++) {
-    const t = top(x), sloped = x >= flat
-    for (let y = t; y < h; y++) {
-      const d = y - t
-      const soil = mix(look.soil, BLACK, Math.min(3, Math.floor((d / h) * 6)) * 0.12) // stepped darkening downward
-      put(b, x, y, d === 0 || (sloped && d === 1) ? outline : d < 4 ? (sloped ? look.edge : look.bank) : soil)
-    }
-  }
-  // Stones in the cut, denser on the sloping face.
-  const stone = [look.edge, mix(look.edge, BLACK, 0.25)]
-  for (let i = 0; i < (look.shoreX * h) / 45; i++) {
-    const x = Math.floor(rand() * look.shoreX), y = top(x) + 4 + Math.floor(rand() * (h - top(x) - 4))
-    const face = x >= flat - 4 && y < top(x) + 12
-    if (!face && rand() < 0.5) continue
-    const c = stone[i % 2]
-    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [2, 0]]) if (y + dy >= top(x + dx) + 4 && x + dx < look.shoreX) put(b, x + dx, y + dy, c)
-  }
-  if (look.dock) {
-    const x0 = flat - 8, plank = 0x9a6a3a, dark = 0x4a2e16, seam = 0x6b4422
-    for (let x = x0; x < w; x++) for (let r = 0; r < 4; r++) put(b, x, BANK_SURFACE + r, r === 0 || r === 3 ? dark : (x - x0) % 8 === 7 ? seam : plank)
-    for (let x = x0 + 6; x < w - 1; x += 22) for (let y = BANK_SURFACE + 4; y < h; y++) {
-      put(b, x, y, dark); put(b, x + 1, y, seam); put(b, x + 2, y, dark)
-    }
-  }
-  for (const d of look.props) {
-    const art = paint(d.grid, d.palette)
-    for (let i = 0; i < d.perBank; i++) blit(b, art, 2 + Math.floor(rand() * Math.max(1, flat - art.w - 4)), BANK_SURFACE - art.h + 1)
-  }
-  return b
 }

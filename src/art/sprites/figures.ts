@@ -1,4 +1,5 @@
-import { paint, type Bitmap, type Grid } from '../pixels'
+import { FINE, paint, type Bitmap, type Grid } from '../pixels'
+import { refine } from '../refine'
 
 export type Pose = 'idle' | 'back' | 'cast' | 'reel'
 export type FigureKind = 'angler' | 'helper'
@@ -62,13 +63,13 @@ function line(rows: string[][], [x0, y0]: [number, number], [x1, y1]: [number, n
   return start + n + 1
 }
 
-function poseGrid(pose: Pose): Grid {
+function poseGrid(pose: Pose, withRod = true): Grid {
   const rows = [...Array<string>(PAD_T).fill(''), ...BODY].map(r => [...('.'.repeat(r ? PAD_L : 0) + r).padEnd(W, '.')])
   const hand = pad(POSES[pose].hand), rod = POSES[pose].rod.map(pad), shoulder = pad(SHOULDER)
   for (const dy of [0, 1]) line(rows, [shoulder[0], shoulder[1] + dy], [hand[0] - 1, hand[1] + dy], () => 'C') // sleeve
   for (const [dx, dy] of [[0, 0], [-1, 0], [0, 1], [-1, 1]]) rows[hand[1] + dy][hand[0] + dx] = 's'
   let n = 0
-  for (let i = 1; i < rod.length; i++) n = line(rows, rod[i - 1], rod[i], k => (k < 3 ? 'k' : k % 4 === 0 ? 'R' : 'r'), i === 1 ? 0 : n - 1)
+  if (withRod) for (let i = 1; i < rod.length; i++) n = line(rows, rod[i - 1], rod[i], k => (k < 3 ? 'k' : k % 4 === 0 ? 'R' : 'r'), i === 1 ? 0 : n - 1)
   return rows.map(r => r.join(''))
 }
 
@@ -105,5 +106,22 @@ export const WADERS_LOOKS: Record<string, { p: number; P: number; w?: number }> 
 export function figureBitmaps(kind: FigureKind, gear: { rod?: string; waders?: string } = {}): Record<Pose, Bitmap> {
   const rod = ROD_LOOKS[gear.rod ?? ''] ?? ROD_LOOKS.plainRod, waders = WADERS_LOOKS[gear.waders ?? ''] ?? WADERS_LOOKS.plainWaders
   const palette = { ...KINDS[kind], ...rod, ...waders }
-  return Object.fromEntries(POSE_NAMES.map(p => [p, paint(FIGURE_POSES[p], palette)])) as Record<Pose, Bitmap>
+  return Object.fromEntries(POSE_NAMES.map(p => {
+    const b = refine(paint(poseGrid(p, false), palette), BASE.o)
+    // The rod is drawn after refining so it stays one fine pixel wide: grip, then a wrap every 8 fine px.
+    const color = (j: number) => (j < 6 ? rod.k : j % 8 === 0 ? rod.R : rod.r)
+    const pts = POSES[p].rod.map(pad).map(([x, y]) => [x * FINE, y * FINE] as [number, number])
+    let n = 0
+    for (let i = 1; i < pts.length; i++) n = fineLine(b, pts[i - 1], pts[i], color, i === 1 ? 0 : n - 1)
+    return [p, b]
+  })) as Record<Pose, Bitmap>
+}
+
+function fineLine(b: Bitmap, [x0, y0]: [number, number], [x1, y1]: [number, number], color: (j: number) => number, start: number): number {
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))
+  for (let i = 0; i <= n; i++) {
+    const x = Math.round(x0 + ((x1 - x0) * i) / (n || 1)), y = Math.round(y0 + ((y1 - y0) * i) / (n || 1)), c = color(start + i), d = (y * b.w + x) * 4
+    b.data[d] = c >> 16; b.data[d + 1] = (c >> 8) & 0xff; b.data[d + 2] = c & 0xff; b.data[d + 3] = 255
+  }
+  return start + n + 1
 }

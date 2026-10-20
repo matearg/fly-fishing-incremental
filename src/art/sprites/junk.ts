@@ -1,4 +1,5 @@
 import { paint, type Bitmap, type Grid } from '../pixels'
+import { refine } from '../refine'
 
 // Side-view junk that drifts into the line. One entry per JUNK id in data.ts.
 const O = 0x10161c
@@ -35,5 +36,5 @@ export const JUNK_SNAG: Record<string, [number, number]> = { can: [1, 3], tangle
 
 export function junkBitmap(id: string): Bitmap {
   const { grid, palette } = JUNK_ART[id]
-  return paint(grid, palette)
+  return refine(paint(grid, palette), O)
 }

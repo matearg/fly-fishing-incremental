@@ -13,6 +13,7 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 | 5 | Cast animation, canvas fill without bars, fixed 3-row basket, pixel-font HUD, tied-fly sprite on the line | **Done**, merged to `develop` (`c2a5e77`), PR #7 to `master`. Spec and plan deleted once done; in git history up to `f6fa4ee` |
 | 6 | Sounds: synthesized fishing, menu, panel and purchase sounds, water ambience per place, volume/mute row in Settings | **Done**, merged to `develop` (`f6fa4ee`), PR #7 to `master`. Spec and plan deleted once done; in git history up to `f6fa4ee` |
 | 7 | Background music: a calm chiptune tune for the title and each place, never audibly looping, own volume row in Settings | **Done**, merged to `develop` (`f6fa4ee`), PR #7 to `master`. Spec and plan deleted once done; in git history up to `f6fa4ee` |
+| 8 | Detailed places: half-size pixels for the whole world (places, figures, fish, flies, junk, hatch insects; text and power-up titles stay chunky), realistic per-place ground, banks, skylines and water in the fishing scene and the title backdrop | **Done** on `feat/scene-graphics` (`e0af3ce`..`a7794fb`), all four review stops approved 2026-10-19. Spec `docs/superpowers/specs/2026-10-18-detailed-places-design.md`, plan `docs/superpowers/plans/2026-10-18-detailed-places.md` |
 
 ## Decisions already made (carry into pieces 3 and 4)
 
@@ -71,5 +72,15 @@ Overhaul of menus, animations and assets, split into four pieces agreed with the
 - **Player:** music has its own gain node beside the effects master; one phrase is queued about 1 s before the last ends (250 ms timer); tune changes crossfade over 1.5 s.
 - **Setting:** `flyfishing-music`, default 50%, row right below the sound row with the `NOTES` icon.
 
+### Piece 8 (as built)
+- **Resolution:** `FINE = 2`. World constants and sprite anchors are unchanged; everything in the world is baked at 2× and shown at half scale. Line and ripples are `1/FINE` thick.
+- **Sprites:** one `refine` filter for figures, fish, flies, junk and insects. Basket and license-shop catch icons show at native fine size (twice the old size), because half scale blurred them at DPR 1 (user's choice at stop A).
+- **Scenery:** procedural, in `src/art/scenery/`. Mountains are rounder than the mockup; rounded tree crowns use the mockup's tiered profile, so lenga stands read a little like conifers (approved). Bardas have occasional deep gully notches.
+- **Bank (user's change at stop C):** no rectangular block. `faceX` gives a rounded shoulder, an uneven face with small overhangs, and a concave underwater toe that flares onto the bed, so the side bank is wider than `shoreX` at the bottom and hides a bit more of the lower-left water. Ground per place: steppe, cobbles, mud, turf, beach (+ dock).
+- **Title:** gradient river with faint bed stones and shore foam, top-down grounds with a wet stony shoreline, props seen from above with soft shadows, twinkling glints.
+- **Bake time** (horizon + water + bank, browser): 54–148 ms per place, the first cold bake slowest, against the 150 ms budget. Each place's textures bake once per session. No headroom left: new scenery detail needs a re-measure (`/preview.html` logs it).
+- **Poplars (added after stop D):** two on River's fishing bank, one on Big River's. Copies of a prop now each get their own slot along the bank, so they no longer stack.
+- **Leftovers:** not checked: every rod and waders combination at every place, and Mountain Lake's lenga next to the cast loop (it draws behind figures and line, but makes that corner busier).
+
 ## How to resume
-All seven pieces are done and on `develop`; PR #7 ships pieces 5–7 to `master`. No further piece is planned. Open leftovers: piece 5's deferred minors, piece 6's not-checked-live list, and the pacing slack (season 1 at 49.98 of 50 sim-min). A new piece starts with a brainstorm, then a spec and plan as before.
+Pieces 1–7 are done and on `develop`; PR #7 ships pieces 5–7 to `master`. Piece 8 (detailed places) is done on `feat/scene-graphics`, ready to merge into `develop`. Open leftovers: piece 8's list above, piece 5's deferred minors and piece 6's not-checked-live list. A new piece starts with a brainstorm, then a spec and plan as before.

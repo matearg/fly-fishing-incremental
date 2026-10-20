@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { JUNK } from '../../game/data'
+import { FINE } from '../pixels'
 import { JUNK_ART, JUNK_SNAG, junkBitmap } from './junk'
 
 describe('junk art', () => {
@@ -11,7 +12,7 @@ describe('junk art', () => {
   })
   it('junkBitmap paints each item and the snag lands on it', () => {
     for (const j of JUNK) {
-      const b = junkBitmap(j.id), [x, y] = JUNK_SNAG[j.id]
+      const b = junkBitmap(j.id), [x, y] = JUNK_SNAG[j.id].map(v => v * FINE)
       expect(b.w * b.h, j.id).toBeGreaterThan(0)
       expect(b.data[(y * b.w + x) * 4 + 3], j.id).toBe(255)
     }

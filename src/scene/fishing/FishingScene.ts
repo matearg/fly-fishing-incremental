@@ -4,23 +4,28 @@ import { placeSpecies } from '../../game/fishing/catch'
 import { flyStats } from '../../game/fishing/flies'
 import { hashString, lcg } from '../../game/util/rand'
 import type { Angler, GameState, Pending } from '../../game/state'
-import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, ROD_TIP, type FigureKind, type Pose } from '../../art/sprites/figures'
+import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, ROD_TIP, type Pose } from '../../art/sprites/figures'
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
-import { BANK_SURFACE, bakeHorizon, bakeSideBank, placeLook, type PlaceLook } from '../../art/places'
+import { placeLook, type PlaceLook } from '../../art/places'
+import { BANK_SURFACE, bakeSideBank } from '../../art/scenery/bank'
+import { bakeHorizon } from '../../art/scenery/skyline'
+import { bakeSideWater } from '../../art/scenery/water'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
-import { blank, mix } from '../../art/pixels'
+import { FINE } from '../../art/pixels'
 import { approach, approachTarget, CAST_MS, castLine, castPose, ease, insectPos, letterWave, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
 import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from '../../art/banner'
 import { insectBitmaps } from '../../art/sprites/insects'
 import { LINE_FLY_EYE, lineFlyBitmap } from '../../art/sprites/flies'
-import { addBitmap, addText, TEXT_WHITE, TEXT_YELLOW } from '../textures'
+import { addBitmap, addText, fineImage, TEXT_WHITE, TEXT_YELLOW } from '../textures'
 import { anglerCues, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
 import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
 import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
 const GROUND_Y = WATER_Y - 8 // the row the anglers stand on
+// Middle of a depth band; the place's water splits into maxDepth + 1 bands.
+const depthY = (depth: number, maxDepth: number) => WATER_Y + ((depth + 0.5) / (maxDepth + 1)) * (VIEW_H - WATER_Y)
 const WRAP = 30 // off-screen margin so fish leave fully before wrapping
 // Draw order, back to front.
 // The helper stands a step behind the player: it, its line and its fly draw under the player.
@@ -79,11 +84,11 @@ export class FishingScene extends Phaser.Scene {
     this.helperText = this.add.image(6, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(0).setDepth(Z.hud).setScrollFactor(0)
     const helperBmps = figureBitmaps('helper')
     for (const pose of Object.keys(helperBmps) as Pose[]) addBitmap(this, `fig:helper:${pose}`, helperBmps[pose])
-    this.helper = this.add.image(0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.helper)
-    this.player = this.add.image(0, 0, this.playerFig('plainRod', 'plainWaders', 'idle')).setOrigin(0).setDepth(Z.figures)
-    this.flies = [Z.line + 0.5, Z.helper + 0.2].map(z => this.add.image(0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(z).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
+    this.helper = fineImage(this, 0, 0, 'fig:helper:idle').setOrigin(0).setDepth(Z.helper)
+    this.player = fineImage(this, 0, 0, this.playerFig('plainRod', 'plainWaders', 'idle')).setOrigin(0).setDepth(Z.figures)
+    this.flies = [Z.line + 0.5, Z.helper + 0.2].map(z => fineImage(this, 0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(z).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
     for (const j of JUNK) addBitmap(this, `junk:${j.id}`, junkBitmap(j.id))
-    this.junk = this.add.image(0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
+    this.junk = fineImage(this, 0, 0, `junk:${JUNK[0].id}`).setOrigin(0).setDepth(Z.junk).setVisible(false)
     addBitmap(this, 'menu-button', iconBitmap(SCENE_ICONS.menuButton))
     this.menuButton = this.add.image(VIEW_W - 4, 4, 'menu-button').setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => { if (!this.settling) this.hooks.onMenu() })
     // A click on the menu button is not a cast.
@@ -101,8 +106,8 @@ export class FishingScene extends Phaser.Scene {
     }
     this.banners = { chum: banner('chum', CHUM_TEXT, CHUM_STYLE), hatch: banner('hatch', HATCH_TEXT, HATCH_STYLE) }
     insectBitmaps().forEach((b, k) => addBitmap(this, `insect:${k}`, b))
-    this.insects = Array.from({ length: INSECTS }, () => this.add.image(0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
-    this.cameras.main.fadeIn(300)
+    this.insects = Array.from({ length: INSECTS }, () => fineImage(this, 0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
+    this.cameras.main.setOrigin(0).setZoom(FINE).fadeIn(300)
     this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
@@ -113,18 +118,17 @@ export class FishingScene extends Phaser.Scene {
   private buildPlace(id: LocationId): Place {
     for (const o of this.statics) o.destroy()
     const look = placeLook(id), maxDepth = LOCATIONS.find(l => l.id === id)!.maxDepth
-    addBitmap(this, `horizon:${id}`, bakeHorizon(look, VIEW_W, WATER_Y, hashString(id)))
-    const water = blank(VIEW_W, VIEW_H - WATER_Y)
-    for (let y = 0; y < water.h; y++) {
-      const c = mix(look.water[0], look.deep, y / (water.h - 1)) // darkens smoothly with depth, no bands
-      for (let x = 0; x < VIEW_W; x++) water.data.set([c >> 16, (c >> 8) & 0xff, c & 0xff, 255], (y * VIEW_W + x) * 4)
+    if (!this.textures.exists(`water:${id}`)) {
+      const horizon = bakeHorizon(look, VIEW_W, WATER_Y, hashString(id))
+      const clear = depthY(maxDepth, maxDepth) - WATER_Y + 8 // the bed stays below the deepest fish
+      addBitmap(this, `horizon:${id}`, horizon)
+      addBitmap(this, `water:${id}`, bakeSideWater(look, horizon, VIEW_W, VIEW_H - WATER_Y, clear, hashString(id)))
+      addBitmap(this, `sidebank:${id}`, bakeSideBank(look, VIEW_H - GROUND_Y + BANK_SURFACE, WATER_Y - GROUND_Y + BANK_SURFACE, hashString(id)))
     }
-    addBitmap(this, `water:${id}`, water)
-    addBitmap(this, `sidebank:${id}`, bakeSideBank(look, VIEW_H - GROUND_Y + BANK_SURFACE, hashString(id)))
     this.statics = [
-      this.add.image(0, 0, `horizon:${id}`).setOrigin(0).setDepth(Z.horizon),
-      this.add.image(0, WATER_Y, `water:${id}`).setOrigin(0).setDepth(Z.water),
-      this.add.image(0, GROUND_Y - BANK_SURFACE, `sidebank:${id}`).setOrigin(0).setDepth(Z.bank),
+      fineImage(this, 0, 0, `horizon:${id}`).setOrigin(0).setDepth(Z.horizon),
+      fineImage(this, 0, WATER_Y, `water:${id}`).setOrigin(0).setDepth(Z.water),
+      fineImage(this, 0, GROUND_Y - BANK_SURFACE, `sidebank:${id}`).setOrigin(0).setDepth(Z.bank),
     ]
     const rand = lcg(hashString(id) + 7)
     this.rippleDots = Array.from({ length: 34 }, () => ({ x0: rand() * VIEW_W, y: WATER_Y + Math.floor(rand() * 8), len: 2 + Math.floor(rand() * 5), speed: 6 + rand() * 10 }))
@@ -145,7 +149,7 @@ export class FishingScene extends Phaser.Scene {
     const band = (VIEW_H - WATER_Y) / (place.maxDepth + 1)
     for (const sp of placeSpecies(s.location, s.licenseSpecies)) for (let k = 0; k < TIER_SCHOOL[sp.tier]; k++) {
       const against = rand() < 0.3
-      this.addSwimmer(sp.id, rand() * VIEW_W, this.depthY(sp.depth, place) + (rand() - 0.5) * band * 0.5, (8 + rand() * 12) * (against ? -1 : 1), rand() * 6)
+      this.addSwimmer(sp.id, rand() * VIEW_W, depthY(sp.depth, place.maxDepth) + (rand() - 0.5) * band * 0.5, (8 + rand() * 12) * (against ? -1 : 1), rand() * 6)
     }
   }
 
@@ -156,15 +160,11 @@ export class FishingScene extends Phaser.Scene {
       const [a, b] = fishSideBitmaps(id)
       addBitmap(this, frames[0], a); addBitmap(this, frames[1], b)
     }
-    const { width: w, height: h } = this.textures.get(frames[0]).getSourceImage()
-    const img = this.add.image(0, 0, frames[0]).setOrigin(0).setDepth(Z.fish).setFlipX(speed < 0)
+    const src = this.textures.get(frames[0]).getSourceImage(), w = src.width / FINE, h = src.height / FINE
+    const img = fineImage(this, 0, 0, frames[0]).setOrigin(0).setDepth(Z.fish).setFlipX(speed < 0)
     const sw = { img, id, frames, x0, y: centerY - h / 2, speed, phase, w }
     this.fish.push(sw)
     return sw
-  }
-
-  private depthY(depth: number, place: Place): number {
-    return WATER_Y + ((depth + 0.5) / (place.maxDepth + 1)) * (VIEW_H - WATER_Y)
   }
 
   private wrapX(x: number, place: Place): number {
@@ -178,7 +178,7 @@ export class FishingScene extends Phaser.Scene {
 
   // Where the fly comes to rest after the cast and sink.
   private restPos(s: GameState, a: Angler, landX: number, place: Place): [number, number] {
-    return [landX, this.depthY(Math.min(flyStats(s, a.fly!).maxDepth, place.maxDepth), place)]
+    return [landX, depthY(Math.min(flyStats(s, a.fly!).maxDepth, place.maxDepth), place.maxDepth)]
   }
 
   // The line from the rod tip to the angler's fly (its last point), or null while no line is out.
@@ -190,16 +190,16 @@ export class FishingScene extends Phaser.Scene {
   // Where the angler's fly is, or null while no line is out.
   private flyPos(s: GameState, a: Angler, tr: Track, tip: Pt, backTip: Pt, landX: number, place: Place, t: number): Pt | null {
     if (a.phase === 'idle' || !a.fly) return null
-    const depthY = this.depthY(Math.min(flyStats(s, a.fly).maxDepth, place.maxDepth), place)
-    if (a.phase === 'bite') return [landX, depthY + Math.sin(t * 25) * 2] // the tug
+    const flyY = depthY(Math.min(flyStats(s, a.fly).maxDepth, place.maxDepth), place.maxDepth)
+    if (a.phase === 'bite') return [landX, flyY + Math.sin(t * 25) * 2] // the tug
     if (a.phase === 'reeling') {
       const k = 1 - a.timerMs / TIMING.reelMs
-      return [lerp(landX, Math.max(tip[0], place.waterLeft + 6), k), lerp(depthY, WATER_Y + 2, k)]
+      return [lerp(landX, Math.max(tip[0], place.waterLeft + 6), k), lerp(flyY, WATER_Y + 2, k)]
     }
     const since = tr.castMs - a.timerMs
     if (since < CAST_MS) return castLine(since, tip, [landX, WATER_Y], backTip)!.at(-1)!
-    if (since < CAST_MS + SINK_MS) return [landX, lerp(WATER_Y, depthY, (since - CAST_MS) / SINK_MS)]
-    return [landX, depthY + Math.sin(t * 3.3) * 1.5] // bobbing
+    if (since < CAST_MS + SINK_MS) return [landX, lerp(WATER_Y, flyY, (since - CAST_MS) / SINK_MS)]
+    return [landX, flyY + Math.sin(t * 3.3) * 1.5] // bobbing
   }
 
   private pose(a: Angler | undefined, tr: Track): Pose {
@@ -211,14 +211,14 @@ export class FishingScene extends Phaser.Scene {
   private drawLine(g: Phaser.GameObjects.Graphics, pts: Pt[] | null, fly: Phaser.GameObjects.Image, patternId: string | undefined): void {
     fly.setVisible(!!pts)
     if (!pts) return
-    g.lineStyle(1, 0xf0f0f0, 0.8)
+    g.lineStyle(1 / FINE, 0xf0f0f0, 0.8)
     const [tip, end] = [pts[0], pts[pts.length - 1]]
     if (pts.length > 2) for (let i = 1; i < pts.length; i++) g.lineBetween(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1])
     else if (end[1] <= WATER_Y) g.lineBetween(tip[0], tip[1], end[0], end[1])
     else {
       const cross = lerp(tip[0], end[0], (WATER_Y - tip[1]) / (end[1] - tip[1]))
       g.lineBetween(tip[0], tip[1], cross, WATER_Y)
-      g.lineStyle(1, 0xf0f0f0, 0.45).lineBetween(cross, WATER_Y, end[0], end[1])
+      g.lineStyle(1 / FINE, 0xf0f0f0, 0.45).lineBetween(cross, WATER_Y, end[0], end[1])
     }
     const id = patternId ?? 'basicDry', [ex, ey] = LINE_FLY_EYE[id] ?? LINE_FLY_EYE.basicDry
     fly.setTexture(this.lineFly(id)).setPosition(Math.round(end[0]) - ex, Math.round(end[1]) - ey)
@@ -259,8 +259,8 @@ export class FishingScene extends Phaser.Scene {
   update(time: number): void {
     this.settling = false
     // The HUD is pinned to the corners of whatever crop is showing.
-    const w = this.scale.width
-    this.cameras.main.setScroll(...viewScroll(w, this.scale.height, FISHING_KEEP, FISHING_ANCHOR))
+    const w = this.scale.width / FINE
+    this.cameras.main.setScroll(...viewScroll(w, this.scale.height / FINE, FISHING_KEEP, FISHING_ANCHOR))
     this.menuButton.x = w - 4
     this.placeText.x = w - 22
     const s = this.hooks.getState()
@@ -270,7 +270,7 @@ export class FishingScene extends Phaser.Scene {
     if (this.school !== schoolKey(s)) { this.school = schoolKey(s); this.buildSchool(s, place) }
 
     this.ripples.clear().fillStyle(place.look.ripple)
-    for (const r of this.rippleDots) this.ripples.fillRect(Math.floor(this.wrapX(r.x0 + t * r.speed, place)), r.y, r.len, 1)
+    for (const r of this.rippleDots) this.ripples.fillRect(Math.floor(this.wrapX(r.x0 + t * r.speed, place)), r.y, r.len, 1 / FINE)
 
     for (const f of this.fish) {
       if (f === this.chosen?.sw) continue

@@ -3,7 +3,7 @@ import { bakeLogo } from '../../art/logo'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import type { Session } from '../../session'
 import { BAR_SEGMENT, NOTES, SPEAKER, soundIconMask } from '../../art/soundIcons'
-import { stylize, type Grid } from '../../art/pixels'
+import { FINE, stylize, type Grid } from '../../art/pixels'
 import { setLevel, toggleMute, type SoundSettings } from '../../audio/settings'
 import type { SoundId } from '../../audio/sounds'
 import { CONFIRM_PROMPT, menuCue, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
@@ -51,6 +51,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setOrigin(0).setZoom(FINE)
     addBitmap(this, 'logo', bakeLogo())
     addBitmap(this, 'cursor', iconBitmap(SCENE_ICONS.cursor))
     this.buildRiver()
@@ -71,7 +72,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   update(time: number): void {
-    this.cameras.main.setScroll(...viewScroll(this.scale.width, this.scale.height, TITLE_KEEP, TITLE_ANCHOR))
+    this.cameras.main.setScroll(...viewScroll(this.scale.width / FINE, this.scale.height / FINE, TITLE_KEEP, TITLE_ANCHOR))
     this.river?.update(time)
     const base = this.menu.page === 'attract' ? LOGO_Y : LOGO_Y_MENU
     if (!this.tweens.isTweening(this.logo)) this.logo.y = base + Math.round(Math.sin(time / 500) * 2)
