@@ -1,5 +1,5 @@
 import { rollCatch } from './catch'
-import { BENCH_SPEEDUP, HATCH, RODS, TIMING } from '../data'
+import { BENCH_SPEEDUP, GUIDE, HATCH, RODS, TIMING } from '../data'
 import { sellAll } from '../progress/economy'
 import { equippedRod } from '../progress/gear'
 import { mountTrophy } from '../progress/trophies'
@@ -9,8 +9,11 @@ import type { Angler, GameState } from '../state'
 // Only the player fishes with the bought rods; helpers keep the plain one.
 const rodOf = (state: GameState, a: Angler) => a.auto ? RODS[0] : equippedRod(state)
 
+// The Guide only helps hired anglers.
+export const castOdds = (state: GameState, a: Angler) => a.auto && state.guide ? GUIDE.oddsBonus : 0
+
 function pick(state: GameState, a: Angler, rand: () => number): void {
-  a.pending = { ...rollCatch(state, a.fly!, rand, rodOf(state, a), !a.auto && state.chumMs > 0), location: state.location }
+  a.pending = { ...rollCatch(state, a.fly!, rand, rodOf(state, a), !a.auto && state.chumMs > 0, castOdds(state, a)), location: state.location }
 }
 
 function startWaiting(state: GameState, a: Angler, rand: () => number): void {

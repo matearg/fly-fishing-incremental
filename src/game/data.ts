@@ -118,6 +118,8 @@ export const HELPERS = {
 }
 // each trophy (first legendary of a species, mounted by the Taxidermist) adds pctEach to every fish sold
 export const TROPHY = { pctEach: 0.1 }
+// the Guide adds oddsBonus to every hired angler's cast, on top of the fly's own
+export const GUIDE = { oddsBonus: 0.3 }
 // a trashed fish adds pctPerUnit per multiple of its place's cheapest base value; the bonus stops at cap
 export const RELEASE = { pctPerUnit: 0.02, cap: 1 }
 // fish size multiplier = 1 + rand * (spread + sizeBonus)

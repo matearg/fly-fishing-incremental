@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { placeSpecies, rollCatch } from './catch'
 import { newGame, type Fly } from '../state'
-import { CHUM, LICENSE_UPGRADES, LOCATIONS, RODS, SPECIES, TIERS } from '../data'
+import { CHUM, GUIDE, LICENSE_UPGRADES, LOCATIONS, RODS, SPECIES, TIERS } from '../data'
 import { seqRand, lcg } from '../util/testutil'
 
 const fly = (patternId: string, materialIds: string[] = []): Fly => ({ patternId, materialIds, wearLeft: 1 })
@@ -101,5 +101,11 @@ describe('rollCatch', () => {
     expect(placeSpecies('mountainLake', []).map(s => s.id)).not.toContain('tigerTrout')
     expect(placeSpecies('mountainLake', ['tigerTrout']).map(s => s.id)).toContain('tigerTrout')
     expect(placeSpecies('mountainLake', ['tigerTrout']).every(s => s.location === 'mountainLake')).toBe(true)
+  })
+  it('extraOdds adds to the fly odds bonus, so legendaries come up more often', () => {
+    const s = newGame(); s.location = 'bigRiver'
+    const fly = { patternId: 'woollyBugger', materialIds: [], wearLeft: 5 }
+    const count = (extra: number) => { const r = lcg(7); let n = 0; for (let i = 0; i < 4000; i++) if (rollCatch(s, fly, r, RODS[0], false, extra).defId === 'muskie') n++; return n }
+    expect(count(GUIDE.oddsBonus)).toBeGreaterThan(count(0) * 1.3)
   })
 })

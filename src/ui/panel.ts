@@ -1,4 +1,4 @@
-import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SEASON, SPECIES, TROPHY, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
+import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, GUIDE, SEASON, SPECIES, TROPHY, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
 import { price, saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern, wadersDiscount } from '../game/progress/economy'
 import { buyRod, buyWaders, equipRod, wearWaders } from '../game/progress/gear'
 import { chumPrice, chumReach, throwChum } from '../game/progress/powerups'
@@ -26,7 +26,7 @@ const HELPER_DESC: Record<HelperKind, string> = {
   buyer: 'Sells the basket every 5 s; can be paused',
   release: 'Trashed fish add to your next Sell all, up to +100%',
   taxidermist: `Mounts your first legendary of each species: +${pct(TROPHY.pctEach)} on every fish sold`,
-  guide: 'Your hired anglers find rarer fish',
+  guide: `Your hired anglers find rarer fish: odds +${pct(GUIDE.oddsBonus)}`,
 }
 const patternDesc = (p: (typeof PATTERNS)[number]) => `${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}`
 const materialDesc = (m: (typeof MATERIALS)[number]) => [m.depthBonus && `depth +${m.depthBonus}`, m.wearBonus && `wear +${m.wearBonus}`, m.oddsBonus && `odds +${pct(m.oddsBonus)}`, m.sizeBonus && `size +${pct(m.sizeBonus)}`].filter(Boolean).join(', ') + ` · tie $${fmt(m.tieCost)}`
