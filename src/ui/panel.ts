@@ -6,6 +6,7 @@ import { flyStats, tieFly } from '../game/fishing/flies'
 import { benchCooldownMs, benchFull } from '../game/fishing/sim'
 import { formatNumber as fmt } from '../game/util/format'
 import { buyHelper, helperCost, toggleBuyerPause, type HelperKind } from '../game/progress/helpers'
+import { LEGENDARY_IDS, trophyMult } from '../game/progress/trophies'
 import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason, licenseUpgradeCost, startNewSeason } from '../game/progress/prestige'
 import type { CatchItem, GameState } from '../game/state'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS } from '../art/icons'
@@ -145,7 +146,8 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     helpers: s => (Object.keys(HELPER_LABELS) as HelperKind[]).map(k => {
       const cost = helperCost(s, k)
       const count = k === 'angler' ? ` (${s.anglers.length - 1})` : k === 'bench' ? ` (${s.bench})` : ''
-      return cost === null ? owned(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k], undefined, HELPER_DESC[k]) : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), `${HELPER_LABELS[k]}${count} <small>${HELPER_DESC[k]}</small>`)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
+      const desc = k === 'taxidermist' && s.taxidermist ? `${HELPER_DESC[k]} · Trophies: ${s.trophies.length} of ${LEGENDARY_IDS.length}` : HELPER_DESC[k]
+      return cost === null ? owned(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k], undefined, desc) : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), `${HELPER_LABELS[k]}${count} <small>${HELPER_DESC[k]}</small>`)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
     }).join(''),
     places: s => {
       const next = LOCATIONS.find(l => !s.unlockedLocations.includes(l.id))
@@ -167,7 +169,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         ? owned(catchImg('fish', sp.id), sp.name, 'IN THE WATER', `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)
         : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
     basketHead: s => {
-      const bonus = s.releaseBonus > 0 ? ` +${pct(s.releaseBonus)}` : ''
+      const bonus = (s.releaseBonus > 0 ? ` +${pct(s.releaseBonus)}` : '') + (s.trophies.length ? ` Trophies +${pct(trophyMult(s) - 1)}` : '')
       return btn('sell', '', `Sell all (${s.basket.length}) <b>${money(saleValue(s, true))}</b>${bonus}`, { disabled: !s.basket.length })
         + (s.buyer ? btn('pauseBuyer', '', lbl(icon('helper', 'buyer', HELPER_ICONS.buyer, 1), 'Pause buyer'), { pressed: s.buyerPaused, label: 'Pause fish buyer' }) : '')
     },
