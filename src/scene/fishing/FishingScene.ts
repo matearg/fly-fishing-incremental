@@ -6,7 +6,7 @@ import { hashString, lcg } from '../../game/util/rand'
 import type { Angler, GameState, Pending } from '../../game/state'
 import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, guideBitmap, ROD_TIP, type Pose } from '../../art/sprites/figures'
 import { PLAQUE_STYLE, plaqueBitmap } from '../../art/sprites/plaque'
-import { newPlaqueQueue, notePlaques, plaqueFrame, type PlaqueQueue } from './plaque'
+import { notePlaques, plaqueFrame, resumePlaques, type PlaqueQueue } from './plaque'
 import { figureSpots } from './spots'
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
@@ -56,7 +56,8 @@ export class FishingScene extends Phaser.Scene {
   private helper!: Phaser.GameObjects.Image
   private guide!: Phaser.GameObjects.Image
   private plaque!: { board: Phaser.GameObjects.Image; name: Phaser.GameObjects.Image; bonus: Phaser.GameObjects.Image }
-  private plaques: PlaqueQueue | null = null // null right after a wake or a state swap: trophies already mounted never pop up
+  private plaques: PlaqueQueue | null = null
+  private plaquesStale = true // set by a wake or a state swap: trophies already mounted never pop up, unseen ones replay
   // The tied fly at the end of each visible line: player, helper.
   private flies!: [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
   private junk!: Phaser.GameObjects.Image
@@ -123,7 +124,7 @@ export class FishingScene extends Phaser.Scene {
     insectBitmaps().forEach((b, k) => addBitmap(this, `insect:${k}`, b))
     this.insects = Array.from({ length: INSECTS }, () => fineImage(this, 0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
     this.cameras.main.setOrigin(0).setZoom(FINE).fadeIn(300)
-    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.plaques = null; this.cameras.main.fadeIn(300) })
+    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.plaquesStale = true; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
     this.input.keyboard?.on('keydown-SPACE', () => { if (!this.settling && !document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
@@ -297,7 +298,7 @@ export class FishingScene extends Phaser.Scene {
     const p = s.anglers[0], h = s.anglers[1]
     const ptr = trackCatch(this.tracks[0], p), htr = trackCatch(this.tracks[1], h)
     // An adopted save, Continue or New Season swaps the state: comparing across it would play phantom splashes.
-    if (s !== this.cueState) { this.cues = [null, null]; this.prevHatchMs = null; this.plaques = null; this.cueState = s }
+    if (s !== this.cueState) { this.cues = [null, null]; this.prevHatchMs = null; this.plaquesStale = true; this.cueState = s }
     if (this.prevHatchMs !== null) for (const id of hatchCue(this.prevHatchMs, s.hatchMs)) this.hooks.play(id)
     this.prevHatchMs = s.hatchMs
     this.drawPowerups(s, time, place, w)
@@ -366,9 +367,9 @@ export class FishingScene extends Phaser.Scene {
 
   // The Taxidermist's pop-up: the newest trophy's plaque, centred under the power-up titles.
   private drawPlaque(s: GameState, time: number, w: number): void {
-    this.plaques ??= newPlaqueQueue(s.trophies)
-    notePlaques(this.plaques, s.trophies)
-    const f = plaqueFrame(this.plaques, time), { board, name, bonus } = this.plaque
+    if (this.plaquesStale) { this.plaques = resumePlaques(this.plaques, s.trophies); this.plaquesStale = false }
+    notePlaques(this.plaques!, s.trophies)
+    const f = plaqueFrame(this.plaques!, time), { board, name, bonus } = this.plaque
     for (const img of [board, name, bonus]) img.setVisible(!!f)
     if (!f) return
     if (f.started) {

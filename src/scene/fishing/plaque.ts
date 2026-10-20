@@ -10,6 +10,12 @@ export function newPlaqueQueue(trophies: string[]): PlaqueQueue {
   return { seen: trophies.length, queue: [], startMs: null }
 }
 
+// After a wake or a swapped-in save: plaques still waiting (or cut short) show again from the start if the new
+// trophies still have them; everything else the save holds counts as seen.
+export function resumePlaques(q: PlaqueQueue | null, trophies: string[]): PlaqueQueue {
+  return { ...newPlaqueQueue(trophies), queue: (q?.queue ?? []).filter(id => trophies.includes(id)) }
+}
+
 export function notePlaques(q: PlaqueQueue, trophies: string[]): string[] {
   const fresh = trophies.slice(q.seen)
   q.seen = trophies.length
