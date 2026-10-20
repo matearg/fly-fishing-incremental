@@ -113,8 +113,8 @@ export const HELPERS = {
   sorter: { cost: 1000 },
   buyer: { cost: 800 },
   release: { cost: 1500 },
-  taxidermist: { cost: 25_000 },
-  guide: { cost: 8_000 },
+  taxidermist: { cost: 300_000 },
+  guide: { cost: 300_000 },
 }
 // each trophy (first legendary of a species, mounted by the Taxidermist) adds pctEach to every fish sold
 export const TROPHY = { pctEach: 0.1 }
