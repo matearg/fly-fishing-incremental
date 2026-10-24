@@ -94,7 +94,7 @@ const game = new Phaser.Game({
     new FishingScene({
       getState: () => session.state,
       onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
-      play: (id, scale) => sound.play(id, scale),
+      play: (id, scale, pitch) => sound.play(id, scale, pitch),
       onMenu: () => {
         sound.play('back')
         session.toMenu()

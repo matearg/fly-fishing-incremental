@@ -24,7 +24,7 @@ import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from '.
 import { insectBitmaps } from '../../art/sprites/insects'
 import { LINE_FLY_EYE, lineFlyBitmap } from '../../art/sprites/flies'
 import { addBitmap, addText, fineImage, TEXT_WHITE, TEXT_YELLOW } from '../textures'
-import { anglerCues, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
+import { anglerCues, comboCue, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
 import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
 import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
@@ -38,7 +38,7 @@ const WRAP = 30 // off-screen margin so fish leave fully before wrapping
 const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, helper: 5.5, figures: 6, line: 7, insects: 7.6, hud: 8 }
 const INSECTS = 16
 
-export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void; play: (id: SoundId, scale?: number) => void }
+export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void; play: (id: SoundId, scale?: number, pitch?: number) => void }
 
 // stray: a hooked fish from another place, removed once it lands
 interface Swimmer { img: Phaser.GameObjects.Image; id: string; frames: [string, string]; x0: number; y: number; speed: number; phase: number; w: number; stray?: boolean }
@@ -53,6 +53,8 @@ export class FishingScene extends Phaser.Scene {
   private ripples!: Phaser.GameObjects.Graphics
   private biteText!: Phaser.GameObjects.Image
   private placeText!: Phaser.GameObjects.Image
+  private comboText!: Phaser.GameObjects.Image
+  private comboName!: Phaser.GameObjects.Image
   private helperText!: Phaser.GameObjects.Image
   private menuButton!: Phaser.GameObjects.Image
   private player!: Phaser.GameObjects.Image
@@ -76,6 +78,7 @@ export class FishingScene extends Phaser.Scene {
   // Last frame's player and visible helper, for the sounds of what changed since. Reset when the state object is swapped.
   private cues: [CueFrame | null, CueFrame | null] = [null, null]
   private cueState: GameState | null = null
+  private prevCombo: number | null = null // like prevHatchMs: no tick for a streak a loaded save already had
   private prevHatchMs: number | null = null // null right after a wake or a state swap: no hatch buzz for an effect already on
   // Power-up titles, one image per letter with its x from the title's left edge; and the hatch insects.
   private banners!: { chum: { img: Phaser.GameObjects.Image; dx: number }[]; hatch: { img: Phaser.GameObjects.Image; dx: number }[] }
@@ -91,6 +94,8 @@ export class FishingScene extends Phaser.Scene {
     this.ripples = this.add.graphics().setDepth(Z.ripples)
     this.biteText = this.add.image(0, 0, addText(this, '!', TEXT_YELLOW)).setOrigin(0.5, 1).setDepth(Z.hud)
     this.placeText = this.add.image(VIEW_W - 22, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0)
+    this.comboText = this.add.image(VIEW_W - 22, 0, addText(this, ' ', TEXT_YELLOW)).setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0)
+    this.comboName = this.add.image(VIEW_W - 22, 0, addText(this, ' ', TEXT_WHITE)).setOrigin(1, 0).setDepth(Z.hud).setScrollFactor(0)
     this.helperText = this.add.image(6, 6, addText(this, ' ', TEXT_WHITE)).setOrigin(0).setDepth(Z.hud).setScrollFactor(0)
     const helperBmps = figureBitmaps('helper')
     for (const pose of Object.keys(helperBmps) as Pose[]) addBitmap(this, `fig:helper:${pose}`, helperBmps[pose])
@@ -127,7 +132,7 @@ export class FishingScene extends Phaser.Scene {
     insectBitmaps().forEach((b, k) => addBitmap(this, `insect:${k}`, b))
     this.insects = Array.from({ length: INSECTS }, () => fineImage(this, 0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
     this.cameras.main.setOrigin(0).setZoom(FINE).fadeIn(300)
-    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.plaquesStale = true; this.cameras.main.fadeIn(300) })
+    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.prevCombo = null; this.plaquesStale = true; this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
     this.input.keyboard?.on('keydown-SPACE', () => { if (!this.settling && !document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
@@ -281,7 +286,7 @@ export class FishingScene extends Phaser.Scene {
     const w = this.scale.width / FINE
     this.cameras.main.setScroll(...viewScroll(w, this.scale.height / FINE, FISHING_KEEP, FISHING_ANCHOR))
     this.menuButton.x = w - 4
-    this.placeText.x = w - 22
+    this.placeText.x = this.comboText.x = this.comboName.x = w - 22
     const s = this.hooks.getState()
     const t = time / 1000
     if (this.place?.id !== s.location) { this.place = this.buildPlace(s.location); this.school = '' }
@@ -301,9 +306,12 @@ export class FishingScene extends Phaser.Scene {
     const p = s.anglers[0], h = s.anglers[1]
     const ptr = trackCatch(this.tracks[0], p), htr = trackCatch(this.tracks[1], h)
     // An adopted save, Continue or New Season swaps the state: comparing across it would play phantom splashes.
-    if (s !== this.cueState) { this.cues = [null, null]; this.prevHatchMs = null; this.plaquesStale = true; this.cueState = s }
+    if (s !== this.cueState) { this.cues = [null, null]; this.prevHatchMs = null; this.prevCombo = null; this.plaquesStale = true; this.cueState = s }
     if (this.prevHatchMs !== null) for (const id of hatchCue(this.prevHatchMs, s.hatchMs)) this.hooks.play(id)
     this.prevHatchMs = s.hatchMs
+    const pitch = this.prevCombo === null ? null : comboCue(this.prevCombo, s.combo.count)
+    if (pitch !== null) this.hooks.play('combo', 1, pitch)
+    this.prevCombo = s.combo.count
     this.drawPowerups(s, time, place, w)
     this.drawPlaque(s, time, w)
     const frames = [cueFrame(p, ptr), cueFrame(h, htr)] as const
@@ -350,6 +358,14 @@ export class FishingScene extends Phaser.Scene {
     const helpers = s.anglers.length - 1
     this.helperText.setVisible(helpers > 0).setTexture(addText(this, `HELPERS: ${helpers}`, TEXT_WHITE))
     this.placeText.setTexture(addText(this, LOCATIONS.find(l => l.id === s.location)!.name.toUpperCase(), TEXT_WHITE))
+    // The combo counter, under the place name while a streak of 2 or more runs.
+    const streak = s.combo.count >= 2 && s.combo.defId !== null
+    this.comboText.setVisible(streak).setY(this.placeText.y + this.placeText.height + 3)
+    this.comboName.setVisible(streak).setY(this.comboText.y + this.comboText.height + 1)
+    if (streak) {
+      this.comboText.setTexture(addText(this, `×${s.combo.count}`, TEXT_YELLOW))
+      this.comboName.setTexture(addText(this, SPECIES.find(d => d.id === s.combo.defId)!.name.toUpperCase(), TEXT_WHITE))
+    }
   }
 
   // Waving titles pinned to the top of the crop (chum above hatch when both are on), and insects over the water in a hatch.
