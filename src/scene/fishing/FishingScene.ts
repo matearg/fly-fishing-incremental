@@ -193,9 +193,10 @@ export class FishingScene extends Phaser.Scene {
   }
 
   // The visible water a swimmer of width w may use: the school turns at its edges, so every catchable fish is on screen.
+  // Not worldView: with origin 0 it's off by half a view, and it's only refreshed at render, a frame behind setScroll.
   private waterSpan(w: number, place: Place): [number, number] {
-    const view = this.cameras.main.worldView
-    return [Math.max(view.x, place.waterLeft), view.right - w]
+    const x0 = this.cameras.main.scrollX
+    return [Math.max(x0, place.waterLeft), x0 + this.scale.width / FINE - w]
   }
 
   // Position and facing (true = right) of a school swimmer at time t.

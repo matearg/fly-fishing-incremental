@@ -132,9 +132,9 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     // Upright, the scene's corner texts and power-up titles live here instead (same conditions as FishingScene's HUD).
     phoneTop: s => {
       const helpers = s.anglers.length - 1, streak = s.combo.count >= 2 && s.combo.defId !== null
-      const info = [helpers > 0 && `Helpers ${helpers}`, LOCATIONS.find(l => l.id === s.location)!.name, streak && `×${s.combo.count} ${SPECIES.find(d => d.id === s.combo.defId)!.name}`]
+      const info = [helpers > 0 && `Helpers ${helpers}`, LOCATIONS.find(l => l.id === s.location)!.name, streak && `×${s.combo.count} ${SPECIES.find(d => d.id === s.combo.defId)!.name}`,
+        s.chumMs > 0 && '<span class="ban">Chum!</span>', s.hatchMs > 0 && '<span class="ban">Hatch!</span>'] // inline, so the strip never grows past its band
       return `<div class="money">${moneyHtml(s)}</div><p class="info">${info.filter(Boolean).join(' · ')}</p>`
-        + (s.chumMs > 0 ? '<p class="ban">Chum!</p>' : '') + (s.hatchMs > 0 ? '<p class="ban">Hatch!</p>' : '')
     },
     tabs: () => TABS.map(([id, label]) => btn('tab', id, label, { pressed: tab === id })).join(''),
     fly: s => {
