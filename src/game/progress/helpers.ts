@@ -16,12 +16,7 @@ function baseCost(state: GameState, kind: HelperKind): number | null {
   switch (kind) {
     case 'angler': return HELPERS.angler.baseCost * HELPERS.angler.growth ** (state.anglers.length - 1) * discount
     case 'bench': return HELPERS.bench.baseCost * HELPERS.bench.growth ** state.bench * discount
-    case 'bulkTrash': return state.bulkTrash ? null : HELPERS.bulkTrash.cost * discount
-    case 'sorter': return state.sorter ? null : HELPERS.sorter.cost * discount
-    case 'buyer': return state.buyer ? null : HELPERS.buyer.cost * discount
-    case 'release': return state.release ? null : HELPERS.release.cost * discount
-    case 'taxidermist': return state.taxidermist ? null : HELPERS.taxidermist.cost * discount
-    case 'guide': return state.guide ? null : HELPERS.guide.cost * discount
+    default: return state[kind] ? null : HELPERS[kind].cost * discount
   }
 }
 
