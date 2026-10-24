@@ -60,8 +60,8 @@ export class SoundPlayer {
     if (this.musicMaster) this.musicMaster.gain.value = gain
   }
 
-  play(id: SoundId, scale = 1): void {
-    this.notes(SFX[id], scale)
+  play(id: SoundId, scale = 1, pitch = 1): void {
+    this.notes(SFX[id], scale, pitch)
   }
 
   ambience(loc: LocationId | null, scale = 1): void {

@@ -1,4 +1,5 @@
 import { catchSound, type SoundId } from './sounds'
+import { COMBO } from '../game/data'
 import { BACK_MS, CAST_MS, STRAIGHT_MS, type Track } from '../scene/fishing/choreo'
 import type { Angler, Pending, Phase } from '../game/state'
 
@@ -27,11 +28,23 @@ export function anglerCues(prev: CueFrame | null, cur: CueFrame | null): SoundId
   return out
 }
 
-const PURCHASES = new Set(['hire', 'unlockPattern', 'unlockMaterial', 'unlockLocation', 'licenseUpgrade', 'licenseSpecies'])
+const PURCHASES = new Set(['hire', 'unlockPattern', 'unlockMaterial', 'unlockLocation', 'licenseUpgrade', 'licenseSpecies', 'buyRod', 'buyWaders'])
 
 // `result` is what the action returned: whether a purchase went through, or the money a sale made.
 export function panelCue(action: string, result: unknown): SoundId {
   if (PURCHASES.has(action)) return result ? 'buy' : 'nope'
   if (action === 'sell') return result ? 'sell' : 'select'
+  if (action === 'throwChum') return result ? 'chum' : 'nope'
   return 'select'
+}
+
+// Frame to frame, like anglerCues: a hatch sounds once, as it starts.
+export function hatchCue(prevHatchMs: number, curHatchMs: number): SoundId[] {
+  return prevHatchMs <= 0 && curHatchMs > 0 ? ['hatch'] : []
+}
+
+// Frame to frame: the combo ticks each time the streak grows past 1, a semitone higher each step until maxSteps.
+// Returns the tick's pitch multiplier, or null for no tick.
+export function comboCue(prevCount: number, curCount: number): number | null {
+  return curCount > prevCount && curCount >= 2 ? 2 ** (Math.min(curCount - 2, COMBO.maxSteps - 1) / 12) : null
 }

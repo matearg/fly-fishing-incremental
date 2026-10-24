@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { LOCATIONS, SPECIES, TIERS } from '../../game/data'
+import { FINE } from '../pixels'
 import { FISH_COLORS, FISH_SIDE, FISH_TOP, fishBitmaps, fishColors, fishMouth, fishSideBitmaps, fishSideGrids, fishTopGrids } from './fish'
 
 describe('fish art', () => {
@@ -59,6 +60,8 @@ describe('fish art', () => {
       const [x, y] = fishMouth(sp.id), g = fishSideGrids(sp.id)[0]
       expect(g[y]?.[x], sp.id).toBeDefined()
       expect(g[y][x], sp.id).not.toBe('.')
+      const b = fishSideBitmaps(sp.id)[0]
+      expect(b.data[(y * FINE * b.w + x * FINE) * 4 + 3], sp.id).toBe(255)
     }
   })
 })

@@ -6,9 +6,28 @@ import { basicRecipe, flyStats, tieFly } from './fishing/flies'
 import { rollCatch } from './fishing/catch'
 import { castPlayer, reelPlayer, tick } from './fishing/sim'
 import { sellAll } from './progress/economy'
-import { TIMING } from './data'
+import { HATCH, RELEASE, SPECIES, TIMING } from './data'
 
 describe('save', () => {
+  it('power-up timers: bad values fall back to defaults, running ones resume', () => {
+    const s = newGame(); s.chumMs = 30_000
+    expect(parseSave(serialize(s))!.chumMs).toBe(30_000)
+    const raw = JSON.parse(serialize(newGame())); raw.hatchMs = -5; raw.nextHatchMs = 'x'; delete raw.chumMs
+    const t = parseSave(JSON.stringify(raw))!
+    expect([t.chumMs, t.hatchMs, t.nextHatchMs]).toEqual([0, 0, HATCH.firstMs])
+  })
+  it('drops unknown gear and falls back to plain', () => {
+    const s = newGame()
+    Object.assign(s, { rods: ['plainRod', 'willowRod', 'goneRod'], rod: 'goneRod', waders: ['canvasWaders'], wearing: 'neopreneWaders' })
+    const t = parseSave(serialize(s))!
+    expect(t.rods).toEqual(['plainRod', 'willowRod']); expect(t.rod).toBe('plainRod')
+    expect(t.waders).toEqual(['plainWaders', 'canvasWaders']); expect(t.wearing).toBe('plainWaders')
+  })
+  it('an old save without gear fields gets plain gear', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.rods; delete raw.rod; delete raw.waders; delete raw.wearing
+    const t = parseSave(JSON.stringify(raw))!
+    expect(t.rod).toBe('plainRod'); expect(t.wearing).toBe('plainWaders')
+  })
   it('round-trips a mid-game state', () => {
     const s = newGame()
     s.money = 1e6
@@ -114,5 +133,43 @@ describe('save with a pending catch', () => {
     expect(l.anglers[0]).toMatchObject({ phase: 'idle', pending: null })
     expect(() => tick(l, 100, Math.random)).not.toThrow()
     expect(l.basket).toHaveLength(0)
+  })
+})
+
+describe('catch & release fields', () => {
+  it('old saves get the new fields; the bonus is clamped', () => {
+    const old = JSON.parse(serialize(newGame()))
+    delete old.release; delete old.releaseBonus; delete old.buyerPaused
+    const s = parseSave(JSON.stringify(old))!
+    expect([s.release, s.releaseBonus, s.buyerPaused]).toEqual([false, 0, false])
+    const withBonus = (b: unknown) => parseSave(JSON.stringify({ ...old, releaseBonus: b }))!.releaseBonus
+    expect(withBonus(NaN)).toBe(0)
+    expect(withBonus(-1)).toBe(0)
+    expect(withBonus(50)).toBe(RELEASE.cap)
+    expect(withBonus('0.5')).toBe(0)
+    expect(withBonus(0.4)).toBe(0.4)
+  })
+  it('keeps only known legendary trophies, once each', () => {
+    const s = newGame(); s.trophies = ['muskie', 'muskie', 'nope', SPECIES.find(d => d.tier === 'rare')!.id, 'arcticChar']
+    expect(parseSave(serialize(s))!.trophies).toEqual(['muskie', 'arcticChar'])
+  })
+  it('keeps only known species in the log, once each, plus mounted trophies', () => {
+    const s = newGame(); s.speciesLog = ['dace', 'dace', 'nope']; s.trophies = ['muskie']
+    expect(parseSave(serialize(s))!.speciesLog).toEqual(['dace', 'muskie'])
+  })
+  it('resets a bad combo', () => {
+    const load = (combo: unknown) => { const raw = JSON.parse(serialize(newGame())); if (combo === undefined) delete raw.combo; else raw.combo = combo; return parseSave(JSON.stringify(raw))!.combo }
+    for (const bad of [{ defId: 'nope', count: 2 }, { defId: 'dace', count: -1 }, { defId: 'dace', count: 1.5 }, { defId: 'dace', count: 1e21 }, undefined, null, 3])
+      expect(load(bad)).toEqual({ defId: null, count: 0 })
+    expect(load({ defId: 'dace', count: 3 })).toEqual({ defId: 'dace', count: 3 })
+  })
+  it('fills an empty log for old saves', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.speciesLog
+    expect(parseSave(JSON.stringify(raw))!.speciesLog).toEqual([])
+  })
+  it('an old save without the new helper fields loads with defaults', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.taxidermist; delete raw.guide; delete raw.trophies
+    const s = parseSave(JSON.stringify(raw))!
+    expect([s.taxidermist, s.guide, s.trophies]).toEqual([false, false, []])
   })
 })

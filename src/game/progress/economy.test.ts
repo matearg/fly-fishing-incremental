@@ -1,11 +1,31 @@
 import { describe, it, expect } from 'vitest'
-import { sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe } from './economy'
+import { price, releaseBonusOf, saleValue, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe, wadersDiscount } from './economy'
+import { flyStats, tieFly } from '../fishing/flies'
 import { newGame, type CatchItem } from '../state'
-import { PATTERNS, MATERIALS } from '../data'
+import { PATTERNS, MATERIALS, RELEASE, RODS, SPECIES, TROPHY } from '../data'
+import { rollCatch } from '../fishing/catch'
+import { seqRand } from '../util/testutil'
 
 const item = (id: number, value: number, kind: CatchItem['kind'] = 'fish'): CatchItem => ({ id, kind, defId: 'x', value, size: 1 })
+const fish = (id: number, defId: string, size: number): CatchItem => ({ id, kind: 'fish', defId, value: SPECIES.find(d => d.id === defId)!.baseValue * size, size })
+
+describe('travel', () => {
+  it('travel ends the chum bucket and the hatch, not the hatch countdown', () => {
+    const s = newGame(); s.unlockedLocations.push('river'); s.chumMs = 10_000; s.hatchMs = 10_000; s.nextHatchMs = 5_000
+    travel(s, 'river')
+    expect([s.chumMs, s.hatchMs, s.nextHatchMs]).toEqual([0, 0, 5_000])
+  })
+})
 
 describe('selling and trash', () => {
+  it('the release bonus is the same whatever rod caught the fish', () => {
+    const s = newGame(), bamboo = RODS.find(r => r.id === 'bambooCane')!
+    const f = { patternId: 'basicDry', materialIds: [], wearLeft: 1 }
+    const a = { id: 1, ...rollCatch(s, f, seqRand(0, 0.5)) }
+    const b = { id: 2, ...rollCatch(s, f, seqRand(0, 0.5), bamboo) }
+    expect(b.value).toBeGreaterThan(a.value)
+    expect(releaseBonusOf(b)).toBe(releaseBonusOf(a))
+  })
   it('sellAll sums fish and junk', () => {
     const s = newGame()
     s.basket = [item(1, 10), item(2, 5), item(3, -3, 'junk')]
@@ -88,5 +108,96 @@ describe('setRecipe duplicates', () => {
     const s = newGame()
     s.unlockedMaterials.push(MATERIALS[0].id)
     expect(setRecipe(s, { patternId: PATTERNS[0].id, materialIds: [MATERIALS[0].id, MATERIALS[0].id] })).toBe(false)
+  })
+})
+
+describe('catch & release', () => {
+  it('bonus is 2% per multiple of the place’s cheapest fish', () => {
+    expect(releaseBonusOf(fish(1, 'dace', 1))).toBeCloseTo(0.02)
+    expect(releaseBonusOf(fish(1, 'brownTrout', 1))).toBeCloseTo(0.30)
+    expect(releaseBonusOf(fish(1, 'whitefish', 1.5))).toBeCloseTo(0.03)
+    expect(releaseBonusOf({ ...fish(1, 'dace', 1), kind: 'junk', defId: 'tire' })).toBe(0)
+  })
+  it('same bonus per dollar for any species at one place', () => {
+    const a = fish(1, 'creekChub', 1.3), b = fish(2, 'brownTrout', 1.7)
+    expect(releaseBonusOf(a) / a.value).toBeCloseTo(releaseBonusOf(b) / b.value)
+  })
+  it('only counts once owned, and only fish', () => {
+    const s = newGame()
+    s.basket = [fish(1, 'brownTrout', 1), { ...item(2, -2, 'junk'), defId: 'boot' }]
+    trash(s, 1); expect(s.releaseBonus).toBe(0)
+    s.release = true
+    s.basket.push(fish(3, 'brownTrout', 1))
+    trash(s, 2); expect(s.releaseBonus).toBe(0)
+    trash(s, 3); expect(s.releaseBonus).toBeCloseTo(0.30)
+  })
+  it('trash all adds every fish and stops at the cap', () => {
+    const s = newGame(); s.release = true; s.bulkTrash = true
+    s.basket = Array.from({ length: 5 }, (_, i) => fish(i + 1, 'brownTrout', 1))
+    expect(trashStack(s, 'fish', 'brownTrout')).toBe(true)
+    expect(s.releaseBonus).toBe(RELEASE.cap)
+    s.basket = [fish(9, 'brownTrout', 1)]; trash(s, 9)
+    expect(s.releaseBonus).toBe(RELEASE.cap)
+  })
+  it('a fish from another place uses its own place’s cheapest fish', () => {
+    const s = newGame(); s.release = true; s.location = 'greatLake'
+    s.basket = [fish(1, 'brownTrout', 1)]; trash(s, 1)
+    expect(s.releaseBonus).toBeCloseTo(0.30)
+  })
+  it('manual sell multiplies fish only, then resets', () => {
+    const s = newGame(); s.releaseBonus = 0.5
+    s.basket = [item(1, 10), item(2, -2, 'junk')]
+    expect(saleValue(s, true)).toBe(13)
+    expect(saleValue(s)).toBe(8)
+    expect(sellAll(s, true)).toBe(13)
+    expect(s.releaseBonus).toBe(0)
+  })
+  it('a junk-only sale and the buyer’s sale keep the bonus', () => {
+    const s = newGame(); s.releaseBonus = 0.5
+    s.basket = [item(1, -2, 'junk')]; sellAll(s, true)
+    expect(s.releaseBonus).toBe(0.5)
+    s.basket = [item(2, 10)]
+    expect(sellAll(s)).toBe(10)
+    expect(s.releaseBonus).toBe(0.5)
+  })
+})
+
+describe('waders discount', () => {
+  it('is the best pair owned', () => {
+    const s = newGame()
+    expect(wadersDiscount(s)).toBe(0)
+    s.waders.push('neopreneWaders', 'rubberWaders')
+    expect(wadersDiscount(s)).toBeCloseTo(0.06)
+    expect(price(s, 1000)).toBeCloseTo(940)
+  })
+  it('prices are whole dollars, so the shown price is the one charged', () => {
+    const s = newGame(); s.waders.push('rubberWaders')
+    for (const p of PATTERNS) expect(Number.isInteger(price(s, p.unlockCost)), p.id).toBe(true)
+    const pat = PATTERNS[1]; s.money = Math.floor(price(s, pat.unlockCost))
+    expect(unlockPattern(s, pat.id)).toBe(true)
+  })
+  it('unlocks charge the discounted price', () => {
+    const s = newGame(); s.waders.push('guideProWaders')
+    const pat = PATTERNS[1]; s.money = price(s, pat.unlockCost)
+    expect(unlockPattern(s, pat.id)).toBe(true)
+    expect(s.money).toBeCloseTo(0)
+  })
+  it('tying a fly is not discounted', () => {
+    const s = newGame(); s.waders.push('guideProWaders'); s.unlockedPatterns.push('pheasantTail')
+    setRecipe(s, { patternId: 'pheasantTail', materialIds: [] }); s.money = 100
+    tieFly(s)
+    expect(s.money).toBe(100 - flyStats(s, s.recipe).tieCost)
+  })
+  it('trophies raise every fish in saleValue, not junk, and multiply with the release bonus', () => {
+    const s = newGame(); s.trophies = ['muskie']; s.releaseBonus = 0.5
+    s.basket = [{ id: 1, kind: 'fish', defId: 'muskie', value: 100, size: 1 }, { id: 2, kind: 'junk', defId: 'can', value: -5, size: 1 }]
+    expect(saleValue(s)).toBeCloseTo(100 * (1 + TROPHY.pctEach) - 5)
+    expect(saleValue(s, true)).toBeCloseTo(100 * 1.5 * (1 + TROPHY.pctEach) - 5)
+  })
+  it("the buyer's sale pays trophies but not the release bonus", () => {
+    const s = newGame(); s.trophies = ['muskie']; s.releaseBonus = 0.5
+    s.basket = [{ id: 1, kind: 'fish', defId: 'muskie', value: 100, size: 1 }]
+    expect(sellAll(s)).toBeCloseTo(100 * (1 + TROPHY.pctEach))
+    expect(s.releaseBonus).toBe(0.5)
   })
 })

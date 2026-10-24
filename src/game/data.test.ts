@@ -1,9 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { LOCATIONS, PATTERNS, MATERIALS, SPECIES, JUNK, LICENSE_UPGRADES } from './data'
+import { LOCATIONS, PATTERNS, MATERIALS, SPECIES, JUNK, LICENSE_UPGRADES, RODS, WADERS } from './data'
 
 const unique = (ids: string[]) => new Set(ids).size === ids.length
 
 describe('content tables', () => {
+  it('gear starts with a free plain item and costs rise', () => {
+    for (const list of [RODS, WADERS]) {
+      expect(list[0].cost).toBe(0)
+      expect(list.length).toBe(6)
+      for (let i = 1; i < list.length; i++) expect(list[i].cost).toBeGreaterThan(list[i - 1].cost)
+    }
+    expect(RODS[0].tiers).toEqual([]); expect(WADERS[0].discount).toBe(0)
+  })
   it('five places in order, unlock cost strictly increasing from a free creek', () => {
     expect(LOCATIONS.map(l => l.id)).toEqual(['creek', 'river', 'bigRiver', 'mountainLake', 'greatLake'])
     expect(LOCATIONS[0].unlockCost).toBe(0)

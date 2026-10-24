@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { placeSpecies, rollCatch } from './catch'
 import { newGame, type Fly } from '../state'
-import { LICENSE_UPGRADES, LOCATIONS, SPECIES, TIERS } from '../data'
+import { CHUM, GUIDE, LICENSE_UPGRADES, LOCATIONS, RODS, SPECIES, TIERS } from '../data'
 import { seqRand, lcg } from '../util/testutil'
 
 const fly = (patternId: string, materialIds: string[] = []): Fly => ({ patternId, materialIds, wearLeft: 1 })
@@ -16,6 +16,31 @@ const fishIds = (state: ReturnType<typeof newGame>, f: Fly, n: number, rand: () 
 }
 
 describe('rollCatch', () => {
+  it('chum multiplies rare and legendary odds', () => {
+    const s = newGame(); s.location = 'bigRiver'
+    const count = (chum: boolean) => {
+      const rand = lcg(7), n = { rare: 0, common: 0, junk: 0 }
+      for (let i = 0; i < 2000; i++) {
+        const c = rollCatch(s, fly('woollyBugger'), rand, RODS[0], chum)
+        const tier = c.kind === 'fish' ? TIERS.indexOf(SPECIES.find(d => d.id === c.defId)!.tier) : -1
+        if (tier >= 2) n.rare++; else if (tier === 0) n.common++; else if (tier < 0) n.junk++
+      }
+      return n
+    }
+    const off = count(false), on = count(true)
+    expect(on.rare).toBeGreaterThan(3 * off.rare)
+    // junk weights don't change: junk keeps its ratio to common fish
+    expect(Math.abs(on.junk / on.common - off.junk / off.common) / (off.junk / off.common)).toBeLessThan(0.2)
+    expect(CHUM.mult).toBeGreaterThan(1)
+  })
+  it('the rod raises the value of its tiers only', () => {
+    const s = newGame(), f = fly('basicDry'), bamboo = RODS.find(r => r.id === 'bambooCane')!
+    const plain = rollCatch(s, f, seqRand(0, 0.5)) // first species: Puyen, common
+    const boosted = rollCatch(s, f, seqRand(0, 0.5), bamboo)
+    expect(boosted.value).toBeCloseTo(plain.value * 1.4); expect(boosted.size).toBe(plain.size)
+    const fiber = RODS.find(r => r.id === 'fiberglassRod')!
+    expect(rollCatch(s, f, seqRand(0, 0.5), fiber).value).toBeCloseTo(plain.value)
+  })
   it('dry fly never reaches below the surface', () => {
     const s = newGame()
     for (let i = 0; i < 500; i++) {
@@ -76,5 +101,11 @@ describe('rollCatch', () => {
     expect(placeSpecies('mountainLake', []).map(s => s.id)).not.toContain('tigerTrout')
     expect(placeSpecies('mountainLake', ['tigerTrout']).map(s => s.id)).toContain('tigerTrout')
     expect(placeSpecies('mountainLake', ['tigerTrout']).every(s => s.location === 'mountainLake')).toBe(true)
+  })
+  it('extraOdds adds to the fly odds bonus, so legendaries come up more often', () => {
+    const s = newGame(); s.location = 'bigRiver'
+    const fly = { patternId: 'woollyBugger', materialIds: [], wearLeft: 5 }
+    const count = (extra: number) => { const r = lcg(7); let n = 0; for (let i = 0; i < 4000; i++) if (rollCatch(s, fly, r, RODS[0], false, extra).defId === 'muskie') n++; return n }
+    expect(count(GUIDE.oddsBonus)).toBeGreaterThan(count(0) * 1.3)
   })
 })

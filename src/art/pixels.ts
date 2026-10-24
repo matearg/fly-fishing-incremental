@@ -1,6 +1,8 @@
 // Code-drawn pixel art: grids of chars + a palette, baked to RGBA buffers.
 // Pure (no DOM) so it runs in tests; scenes upload the result as textures.
 
+export const FINE = 2 // art pixels per world unit
+
 export type Grid = string[] // one char per pixel, '.' = transparent
 export interface Bitmap { w: number; h: number; data: Uint8ClampedArray }
 export interface Mask { w: number; h: number; on: Uint8Array }
@@ -40,6 +42,16 @@ export function blit(dst: Bitmap, src: Bitmap, dx: number, dy: number): void {
   }
 }
 
+// Nearest-neighbour: each pixel becomes a k×k block.
+export function upscale(b: Bitmap, k: number): Bitmap {
+  const out = blank(b.w * k, b.h * k)
+  for (let y = 0; y < out.h; y++) for (let x = 0; x < out.w; x++) {
+    const s = (((y / k) | 0) * b.w + ((x / k) | 0)) * 4
+    out.data.set(b.data.subarray(s, s + 4), (y * out.w + x) * 4)
+  }
+  return out
+}
+
 export function scaleMask(m: Mask, k: number): Mask {
   const out: Mask = { w: m.w * k, h: m.h * k, on: new Uint8Array(m.w * k * m.h * k) }
   for (let y = 0; y < out.h; y++) for (let x = 0; x < out.w; x++) out.on[y * out.w + x] = m.on[((y / k) | 0) * m.w + ((x / k) | 0)]
@@ -50,8 +62,8 @@ export interface TextStyle { top: number; bottom: number; outline: number; outli
 
 const SHADOW_OFFSET = 2
 const SHADOW_ALPHA = 89 // ≈35%
-export const mix = (a: number, b: number, t: number) =>
-  [16, 8, 0].reduce((c, sh) => c | (Math.round(((a >> sh) & 0xff) + (((b >> sh) & 0xff) - ((a >> sh) & 0xff)) * t) << sh), 0)
+const lerpByte = (a: number, b: number, sh: number, t: number) => Math.round(((a >> sh) & 0xff) + (((b >> sh) & 0xff) - ((a >> sh) & 0xff)) * t) << sh
+export const mix = (a: number, b: number, t: number) => lerpByte(a, b, 16, t) | lerpByte(a, b, 8, t) | lerpByte(a, b, 0, t)
 
 // Ink gets a 4-step vertical gradient, then a square outline ring, then an optional drop shadow.
 export function stylize(mask: Mask, style: TextStyle): Bitmap {

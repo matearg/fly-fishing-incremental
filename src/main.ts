@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { FINE } from './art/pixels'
 import { FishingScene } from './scene/fishing/FishingScene'
 import { TitleScene } from './scene/title/TitleScene'
 import { FISHING_KEEP, TITLE_KEEP, VIEW_H, VIEW_W, viewSize } from './scene/view'
@@ -48,7 +49,7 @@ function fit(): void {
   game.scale.scaleMode = mode
   game.scale.displaySize.setAspectMode(mode)
   game.scale.getParentBounds() // refresh() alone reuses the cached parent size
-  game.scale.setGameSize(w, h)
+  game.scale.setGameSize(w * FINE, h * FINE)
 }
 
 const title = new TitleScene({
@@ -82,8 +83,8 @@ const title = new TitleScene({
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
-  width: VIEW_W,
-  height: VIEW_H,
+  width: VIEW_W * FINE,
+  height: VIEW_H * FINE,
   pixelArt: true,
   audio: { noAudio: true }, // sounds are our own Web Audio (src/audio/player.ts)
   backgroundColor: '#000000',
@@ -93,7 +94,7 @@ const game = new Phaser.Game({
     new FishingScene({
       getState: () => session.state,
       onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
-      play: (id, scale) => sound.play(id, scale),
+      play: (id, scale, pitch) => sound.play(id, scale, pitch),
       onMenu: () => {
         sound.play('back')
         session.toMenu()

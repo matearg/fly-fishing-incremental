@@ -1,11 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import { newGame } from './state'
-import { PATTERNS, LICENSE_UPGRADES } from './data'
+import { PATTERNS, LICENSE_UPGRADES, HATCH } from './data'
 import { licenseEffects } from './progress/license'
 
 const zero = Object.fromEntries(LICENSE_UPGRADES.map(u => [u.id, 0])) as Record<(typeof LICENSE_UPGRADES)[number]['id'], number>
 
 describe('newGame', () => {
+  it('a new game has no power-up running and the first hatch on its countdown', () => {
+    const s = newGame()
+    expect(s.chumMs).toBe(0); expect(s.hatchMs).toBe(0); expect(s.nextHatchMs).toBe(HATCH.firstMs)
+  })
+  it('a new game owns and uses only the plain gear', () => {
+    const s = newGame()
+    expect(s.rods).toEqual(['plainRod']); expect(s.rod).toBe('plainRod')
+    expect(s.waders).toEqual(['plainWaders']); expect(s.wearing).toBe('plainWaders')
+  })
   it('fresh season', () => {
     const s = newGame()
     expect(s.money).toBe(0)
@@ -21,7 +30,7 @@ describe('newGame', () => {
   })
   it('license carry applies minute-0 upgrades', () => {
     const levels = { ...zero, startLocation: 2, startPattern: 1 }
-    const s = newGame({ licenses: 5, licenseLevels: levels, licenseSpecies: ['x'] })
+    const s = newGame({ licenses: 5, licenseLevels: levels, licenseSpecies: ['x'], speciesLog: [] })
     expect(s.unlockedLocations).toEqual(['creek', 'river', 'bigRiver'])
     expect(s.location).toBe('bigRiver')
     expect(s.unlockedPatterns).toEqual(PATTERNS.slice(0, 1 + licenseEffects(levels).startPatterns).map(p => p.id))

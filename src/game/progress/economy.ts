@@ -1,10 +1,22 @@
-import { LOCATIONS, MATERIALS, PATTERNS, type LocationId } from '../data'
+import { LOCATIONS, MATERIALS, PATTERNS, RELEASE, SPECIES, WADERS, type LocationId } from '../data'
 import type { CatchItem, GameState, Recipe } from '../state'
+import { trophyMult } from './trophies'
 
 export function spend(state: GameState, cost: number): boolean {
   if (state.money < cost) return false
   state.money -= cost
   return true
+}
+
+// The best pair of waders owned sets the discount, whichever pair is worn.
+export function wadersDiscount(state: GameState): number {
+  return Math.max(0, ...WADERS.filter(w => state.waders.includes(w.id)).map(w => w.discount))
+}
+
+// What a money purchase from the panel costs; the panel shows this, never its own math.
+// Whole dollars, so the panel's number is exactly what is charged.
+export function price(state: GameState, base: number): number {
+  return Math.round(base * (1 - wadersDiscount(state)))
 }
 
 // Junk can make amount negative; money never drops below 0 and losses don't count against earnings.
@@ -13,17 +25,37 @@ export function earn(state: GameState, amount: number): void {
   state.seasonEarnings += Math.max(0, amount)
 }
 
-export function sellAll(state: GameState): number {
-  const sum = state.basket.reduce((a, c) => a + c.value, 0)
+// withBonus: only the player's own Sell all pays the release bonus. It and the trophies multiply fish, never junk.
+export function saleValue(state: GameState, withBonus = false): number {
+  const fishMult = (1 + (withBonus ? state.releaseBonus : 0)) * trophyMult(state)
+  return state.basket.reduce((a, c) => a + c.value * (c.kind === 'fish' ? fishMult : 1), 0)
+}
+
+// A sale with no fish in it leaves the bonus waiting.
+export function sellAll(state: GameState, withBonus = false): number {
+  const sum = saleValue(state, withBonus)
+  if (withBonus && state.basket.some(c => c.kind === 'fish')) state.releaseBonus = 0
   earn(state, sum)
   state.basket = []
   return sum
 }
 
+// What one trashed catch adds to the release bonus, measured by price against its own place's cheapest fish.
+export function releaseBonusOf(c: CatchItem): number {
+  const def = c.kind === 'fish' ? SPECIES.find(d => d.id === c.defId) : undefined
+  if (!def) return 0
+  const cheapest = Math.min(...SPECIES.filter(d => d.location === def.location).map(d => d.baseValue))
+  return RELEASE.pctPerUnit * def.baseValue * c.size / cheapest
+}
+
+function release(state: GameState, gone: CatchItem[]): void {
+  if (state.release) state.releaseBonus = Math.min(RELEASE.cap, gone.reduce((a, c) => a + releaseBonusOf(c), state.releaseBonus))
+}
+
 export function trash(state: GameState, catchId: number): boolean {
   const i = state.basket.findIndex(c => c.id === catchId)
   if (i < 0) return false
-  state.basket.splice(i, 1)
+  release(state, state.basket.splice(i, 1))
   return true
 }
 
@@ -32,12 +64,13 @@ export function trashStack(state: GameState, kind: CatchItem['kind'], defId: str
   if (!state.bulkTrash) return false
   const kept = state.basket.filter(c => c.kind !== kind || c.defId !== defId)
   if (kept.length === state.basket.length) return false
+  release(state, state.basket.filter(c => !kept.includes(c)))
   state.basket = kept
   return true
 }
 
 function unlock(state: GameState, owned: string[], def: { id: string; unlockCost: number } | undefined): boolean {
-  if (!def || owned.includes(def.id) || !spend(state, def.unlockCost)) return false
+  if (!def || owned.includes(def.id) || !spend(state, price(state, def.unlockCost))) return false
   owned.push(def.id)
   return true
 }
@@ -60,6 +93,7 @@ export function unlockLocation(state: GameState, id: LocationId): boolean {
 export function travel(state: GameState, id: LocationId): boolean {
   if (!state.unlockedLocations.includes(id)) return false
   state.location = id
+  state.chumMs = 0; state.hatchMs = 0 // both belong to the water left behind
   return true
 }
 
