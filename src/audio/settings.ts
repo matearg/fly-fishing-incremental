@@ -1,3 +1,4 @@
+import { storeAt } from '../game/util/store'
 export interface SoundSettings { level: number; muted: boolean } // level: bar steps 1–10, 10% each
 
 export const SOUND_KEY = 'flyfishing-sound'
@@ -39,12 +40,5 @@ export function toggleMute(s: SoundSettings): SoundSettings {
   return { ...s, muted: !s.muted }
 }
 
-// Storage can throw (private mode, quota, blocked site data).
-export function storeAt(key: string): { read(): string | null; write(raw: string): void } {
-  return {
-    read() { try { return localStorage.getItem(key) } catch { return null } },
-    write(raw) { try { localStorage.setItem(key, raw) } catch { /* the setting just won't stick */ } },
-  }
-}
 export const soundStore = storeAt(SOUND_KEY)
 export const musicStore = storeAt(MUSIC_KEY)
