@@ -40,6 +40,9 @@ const money = (n: number) => `${n < 0 ? '-' : ''}$${fmt(Math.abs(n))}`
 const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</span>`
 // Owned things are inert rows with a stamp, never a disabled button; they keep the description they had for sale.
 const owned = (ico: string, label: string, stamp = 'OWNED', desc?: string) => `<div class="owned">${ico}<span>${label}${desc ? ` <small>${desc}</small>` : ''}</span><span class="stamp">${stamp}</span></div>`
+const moneyHtml = (s: GameState) => `${icon('ui', 'coin', UI_ICONS.coin)}$${fmt(s.money)}`
+// The phone menu's tabs, one per panel section plus the basket, labelled like their headings.
+const TABS = [['basket', 'Basket'], ['fly', 'Fly'], ['powerups', 'Power-ups'], ['shop', 'Shop'], ['gear', 'Gear'], ['helpers', 'Helpers'], ['places', 'Places'], ['season', 'New Season'], ['licenses', 'Licenses'], ['log', 'Species log']] as const
 const ticket = (n: number) => `${n}${icon('ui', 'license', UI_ICONS.license, 1)}`
 
 function btn(action: string, id: string, label: string, opts: { disabled?: boolean; pressed?: boolean; expanded?: boolean; label?: string; cls?: string } = {}): string {
@@ -87,33 +90,47 @@ function benchBar(s: GameState): string {
   return `<div class="bar${full ? ' paused' : ''}" role="progressbar" aria-label="Bench" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${n}"><span style="width:${n}%"></span></div><p class="label">${full ? 'Box full' : 'Tying…'}</p>`
 }
 
-export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void, play: (id: SoundId) => void): { render(): void } {
+export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void, play: (id: SoundId) => void, toTitle: () => void): { render(): void; closeMenu(): void } {
   let confirmSeason = false
+  let menuOpen = false // the phone's full-screen menu; CSS ignores it on desktop
+  let tab = 'basket'
   let stacks: Stack[] = []
   let openStack: string | null = null // key of the one tile whose catches are listed
   let logOpen = false
 
   root.innerHTML = `
+    <header class="phone-top" data-sec="phoneTop"></header>
+    <nav class="menu-head">
+      <div class="money" data-sec="menuMoney"></div>
+      <button data-action="title" data-id="">Title screen</button>
+      <button data-action="menu" data-id="" aria-label="Close menu">✕</button>
+      <div class="tabs" data-sec="tabs"></div>
+    </nav>
     <aside class="side">
       <div class="money" data-sec="money"></div>
-      <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Fly</h2><div data-sec="fly"></div><div data-sec="recipe"></div></section>
-      <section><h2>${icon('ui', 'basket', UI_ICONS.basket, 1)}Power-ups</h2><div data-sec="powerups"></div></section>
-      <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Shop</h2><div data-sec="shop"></div></section>
-      <section><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Gear</h2><div data-sec="gear"></div></section>
-      <section><h2>${icon('helper', 'angler', HELPER_ICONS.angler, 1)}Helpers</h2><div data-sec="helpers"></div></section>
-      <section><h2>${icon('place', 'creek', PLACE_ICONS.creek, 1)}Places</h2><div data-sec="places"></div></section>
-      <section><h2>${icon('ui', 'season', UI_ICONS.season, 1)}New Season</h2><div data-sec="season"></div></section>
-      <section><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Licenses</h2><div data-sec="licenses"></div></section>
-      <section><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Species log</h2><div data-sec="log"></div></section>
+      <section data-tab="fly"><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Fly</h2><div data-sec="fly"></div><div data-sec="recipe"></div></section>
+      <section data-tab="powerups"><h2>${icon('ui', 'basket', UI_ICONS.basket, 1)}Power-ups</h2><div data-sec="powerups"></div></section>
+      <section data-tab="shop"><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Shop</h2><div data-sec="shop"></div></section>
+      <section data-tab="gear"><h2>${icon('ui', 'fly', UI_ICONS.fly, 1)}Gear</h2><div data-sec="gear"></div></section>
+      <section data-tab="helpers"><h2>${icon('helper', 'angler', HELPER_ICONS.angler, 1)}Helpers</h2><div data-sec="helpers"></div></section>
+      <section data-tab="places"><h2>${icon('place', 'creek', PLACE_ICONS.creek, 1)}Places</h2><div data-sec="places"></div></section>
+      <section data-tab="season"><h2>${icon('ui', 'season', UI_ICONS.season, 1)}New Season</h2><div data-sec="season"></div></section>
+      <section data-tab="licenses"><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Licenses</h2><div data-sec="licenses"></div></section>
+      <section data-tab="log"><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Species log</h2><div data-sec="log"></div></section>
     </aside>
     <footer class="basket">
       <div data-sec="basketHead"></div>
       <ul class="items" aria-label="Basket" data-sec="basket"></ul>
       <div class="stack-list" data-sec="stackList"></div>
-    </footer>`
+    </footer>
+    <button class="phone-menu" data-action="menu" data-id="">☰ Menu</button>`
+  const tabbed = [...root.querySelectorAll<HTMLElement>('.side section')]
 
   const sections: Record<string, (s: GameState) => string> = {
-    money: s => `${icon('ui', 'coin', UI_ICONS.coin)}$${fmt(s.money)}`,
+    money: moneyHtml,
+    menuMoney: moneyHtml,
+    phoneTop: s => `<div class="money">${moneyHtml(s)}</div>`,
+    tabs: () => TABS.map(([id, label]) => btn('tab', id, label, { pressed: tab === id })).join(''),
     fly: s => {
       const f = s.anglers[0].fly
       if (!f) return `<p>No fly on the line. Box: ${s.flyBox.length}</p>`
@@ -214,6 +231,9 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       last[name] = html
       patch(root.querySelector(`[data-sec="${name}"]`)!, html)
     }
+    document.body.classList.toggle('menu-open', menuOpen)
+    root.dataset.tab = tab
+    for (const el of tabbed) el.classList.toggle('on', el.dataset.tab === tab)
     if (fKey && !root.contains(focused)) {
       const [a, id] = fKey.split('|')
       root.querySelector<HTMLElement>(`[data-action="${a}"][data-id="${id}"]`)?.focus()
@@ -244,6 +264,8 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       case 'trashStack': { const st = stacks.find(x => x.key === id); return st && act(s => trashStack(s, st.kind, st.defId)) }
       case 'toggleStack': openStack = openStack === id ? null : id; return render()
       case 'toggleLog': logOpen = !logOpen; return render()
+      case 'menu': menuOpen = !menuOpen; return render()
+      case 'tab': tab = id; return render()
     }
   }
 
@@ -260,6 +282,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       return setState(startNewSeason(getState()))
     }
     confirmSeason = false
+    if (a === 'title') return toTitle() // it plays its own 'back' and closes the menu
     play(panelCue(a, run(a, id)))
   })
   // Disabled buttons fire no click; a press on one (can't afford it) gets the "nope" buzz.
@@ -268,5 +291,5 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
   })
 
   render()
-  return { render }
+  return { render, closeMenu: () => { menuOpen = false; render() } }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { BODY_W, figureSpots } from './spots'
+import { BODY_W, figureSpots, flyXs } from './spots'
 import { LOCATIONS } from '../../game/data'
 import { placeLook } from '../../art/places'
 
@@ -20,5 +20,11 @@ describe('figure spots', () => {
   it('at the Great Lake all three stand on the dock', () => {
     const look = placeLook('greatLake')
     expect(figureSpots(look).guideX).toBeGreaterThanOrEqual(look.shoreX - 20) // past the bank's shoulder, on the deck
+  })
+})
+
+describe('flyXs', () => {
+  it('keeps the scene\'s fly spots', () => {
+    expect(flyXs(placeLook('creek'))).toEqual({ playerFlyX: 207, helperFlyX: 177 })
   })
 })

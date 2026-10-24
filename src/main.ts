@@ -3,6 +3,7 @@ import { FINE } from './art/pixels'
 import { FishingScene } from './scene/fishing/FishingScene'
 import { TitleScene } from './scene/title/TitleScene'
 import { FISHING_KEEP, TITLE_KEEP, VIEW_H, VIEW_W, viewSize } from './scene/view'
+import { layoutFor, type Layout } from './layout'
 import { castPlayer, reelPlayer, tick } from './game/fishing/sim'
 import { localStore, SAVE_KEY } from './game/save'
 import type { GameState } from './game/state'
@@ -30,14 +31,32 @@ function act(fn: (s: GameState) => unknown): unknown {
   return result
 }
 
-const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() }, id => sound.play(id))
+const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() }, id => sound.play(id), toTitle)
 setInterval(() => panel.render(), 250)
+
+// From the game back to the title menu (Esc, the scene's icon, the phone menu's Title screen), leaving the phone menu closed.
+function toTitle(): void {
+  sound.play('back')
+  panel.closeMenu()
+  session.toMenu()
+  titleMode(true)
+  game.scene.switch('fishing', 'title')
+}
 
 // The title takes the whole window; panels show only in game. The canvas must re-fit either way.
 function titleMode(on: boolean): void {
   document.body.classList.toggle('title-mode', on)
   fit()
 }
+
+// One body class per layout, so CSS and the scene agree on which one is up.
+let layout: Layout = layoutFor(innerWidth, innerHeight)
+function applyLayout(): void {
+  layout = layoutFor(innerWidth, innerHeight)
+  for (const l of ['desktop', 'sideways', 'upright']) document.body.classList.toggle(`layout-${l}`, l === layout)
+  if (game.isBooted) fit()
+}
+addEventListener('resize', applyLayout)
 
 // Size the game to a crop of the world matching #game's aspect, so it fills the cell (ENVELOP covers rounding).
 // Past a scene's zoom limit the crop stops and FIT shows thin bars instead of hiding what must stay in view.
@@ -95,16 +114,13 @@ const game = new Phaser.Game({
       getState: () => session.state,
       onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
       play: (id, scale, pitch) => sound.play(id, scale, pitch),
-      onMenu: () => {
-        sound.play('back')
-        session.toMenu()
-        titleMode(true)
-        game.scene.switch('fishing', 'title')
-      },
+      layout: () => layout,
+      onMenu: toTitle,
     }),
   ],
 })
 game.events.once(Phaser.Core.Events.READY, () => new ResizeObserver(fit).observe(cell))
+applyLayout()
 
 // Dev-only fast-forward: ?speed=20 runs 20 clamped sub-ticks per frame.
 const speed = import.meta.env.DEV ? Math.max(1, Math.floor(Number(new URLSearchParams(location.search).get('speed') ?? 1)) || 1) : 1
