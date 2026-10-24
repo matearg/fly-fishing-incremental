@@ -9,12 +9,12 @@ import { FINE, paint } from '../../art/pixels'
 import { refine } from '../../art/refine'
 import { addBitmap, fineImage } from '../textures'
 import { VIEW_H, VIEW_W } from '../view'
+import { glints, tailFrame, type Glint } from '../swim'
 
 const WRAP = 30 // off-screen margin so sprites leave fully before wrapping
 const wrapX = (x: number) => (((x + WRAP) % (VIEW_W + WRAP * 2)) + VIEW_W + WRAP * 2) % (VIEW_W + WRAP * 2) - WRAP
 
 interface Swimmer { img: Phaser.GameObjects.Image; frames: [string, string]; x0: number; y: number; speed: number; phase: number }
-interface Glint { x0: number; y: number; len: number; speed: number }
 
 // Top-down river for the title: banks, water, a school of the place's fish, twinkling glints and the place's drift (foam, leaves, twigs).
 export class RiverBackdrop {
@@ -61,7 +61,7 @@ export class RiverBackdrop {
     }
 
     this.glintColor = look.ripple
-    this.glints = Array.from({ length: 40 }, () => ({ x0: rand() * VIEW_W, y: top + 3 + Math.floor(rand() * (look.riverH - 6)), len: 2 + Math.floor(rand() * 5), speed: 6 + rand() * 10 }))
+    this.glints = glints(rand, 40, top + 3, look.riverH - 6)
     this.g = scene.add.graphics()
     this.objs.push(this.g)
 
@@ -72,7 +72,7 @@ export class RiverBackdrop {
     const t = timeMs / 1000
     for (const f of this.fish) {
       f.img.setPosition(Math.round(wrapX(f.x0 + t * f.speed)), Math.round(f.y + Math.sin(t * 1.3 + f.phase) * 2))
-      f.img.setTexture(f.frames[Math.floor(t * 8 + f.phase) % 2]) // ≈4 Hz tail wiggle
+      f.img.setTexture(tailFrame(f.frames, f.phase, t))
     }
     for (const p of this.drift) p.img.setX(Math.round(wrapX(p.x0 + t * p.speed)))
     this.g.clear()

@@ -19,11 +19,12 @@ import { bakeHorizon } from '../../art/scenery/skyline'
 import { bakeSideWater } from '../../art/scenery/water'
 import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import { FINE } from '../../art/pixels'
-import { approach, approachTarget, CAST_MS, castLine, castPose, ease, insectPos, letterWave, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
+import { approach, approachTarget, CAST_MS, castLine, castPose, ease, insectPos, lerp, letterWave, NOTICE_SHARE, releaseOffscreen, sameCatch, schoolKey, SINK_MS, trackCatch, type Pt, type Track } from './choreo'
 import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from '../../art/banner'
 import { insectBitmaps } from '../../art/sprites/insects'
 import { LINE_FLY_EYE, lineFlyBitmap } from '../../art/sprites/flies'
 import { addBitmap, addText, fineImage, TEXT_WHITE, TEXT_YELLOW } from '../textures'
+import { glints, tailFrame, type Glint } from '../swim'
 import { anglerCues, comboCue, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
 import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
 import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
@@ -44,8 +45,6 @@ export interface SceneHooks { getState: () => GameState; onWaterClick: () => voi
 interface Swimmer { img: Phaser.GameObjects.Image; id: string; frames: [string, string]; x0: number; y: number; speed: number; phase: number; w: number; stray?: boolean }
 interface Chosen { sw: Swimmer; pending: Pending; from: [number, number] | null; right: boolean; lastPhase: Angler['phase'] }
 interface Place { id: LocationId; look: PlaceLook; maxDepth: number; waterLeft: number; playerX: number; helperX: number; guideX: number; playerFlyX: number; helperFlyX: number }
-
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k
 
 export class FishingScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics
@@ -72,7 +71,7 @@ export class FishingScene extends Phaser.Scene {
   private school = ''
   private tracks: [Track, Track] = [{ pending: null, waitMs: 0, castMs: 0, lastMs: 0 }, { pending: null, waitMs: 0, castMs: 0, lastMs: 0 }]
   private chosen: Chosen | null = null
-  private rippleDots: { x0: number; y: number; len: number; speed: number }[] = []
+  private rippleDots: Glint[] = []
   // True until the first update after create/wake: a key that switched scenes must not also cast or leave.
   private settling = true
   // Last frame's player and visible helper, for the sounds of what changed since. Reset when the state object is swapped.
@@ -132,7 +131,7 @@ export class FishingScene extends Phaser.Scene {
     insectBitmaps().forEach((b, k) => addBitmap(this, `insect:${k}`, b))
     this.insects = Array.from({ length: INSECTS }, () => fineImage(this, 0, 0, 'insect:0').setOrigin(0.5).setDepth(Z.insects).setVisible(false))
     this.cameras.main.setOrigin(0).setZoom(FINE).fadeIn(300)
-    this.events.on('wake', () => { this.settling = true; this.cues = [null, null]; this.prevHatchMs = null; this.prevCombo = null; this.plaquesStale = true; this.cameras.main.fadeIn(300) })
+    this.events.on('wake', () => { this.settling = true; this.resetCues(); this.cameras.main.fadeIn(300) })
     // Keyboard access to the main action.
     // Space on a focused panel button belongs to that button, not the line.
     this.input.keyboard?.on('keydown-SPACE', () => { if (!this.settling && !document.activeElement?.closest('#ui')) this.hooks.onWaterClick() })
@@ -155,7 +154,7 @@ export class FishingScene extends Phaser.Scene {
       fineImage(this, 0, GROUND_Y - BANK_SURFACE, `sidebank:${id}`).setOrigin(0).setDepth(Z.bank),
     ]
     const rand = lcg(hashString(id) + 7)
-    this.rippleDots = Array.from({ length: 34 }, () => ({ x0: rand() * VIEW_W, y: WATER_Y + Math.floor(rand() * 8), len: 2 + Math.floor(rand() * 5), speed: 6 + rand() * 10 }))
+    this.rippleDots = glints(rand, 34, WATER_Y, 8)
     // The player stands at the water's edge (or out on the dock), the helper a step behind.
     const { playerX, helperX, guideX } = figureSpots(look)
     const tipX = playerX - BODY_X + ROD_TIP.idle[0]
@@ -201,6 +200,16 @@ export class FishingScene extends Phaser.Scene {
   }
 
   // Where the fly comes to rest after the cast and sink.
+  // Sound cues and plaques compare against the last frame; forget it when there's no valid last frame.
+  private resetCues(): void {
+    this.cues = [null, null]; this.prevHatchMs = null; this.prevCombo = null; this.plaquesStale = true
+  }
+
+  // Rod tip for the pose and the back-cast tip, for a figure whose sprite left is x.
+  private rodTips(x: number, figY: number, pose: Pose): { tip: Pt; backTip: Pt } {
+    return { tip: [x + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]], backTip: [x + ROD_TIP.back[0], figY + ROD_TIP.back[1]] }
+  }
+
   private restPos(s: GameState, a: Angler, landX: number, place: Place): [number, number] {
     return [landX, depthY(reachDepth(s, a.fly!), place.maxDepth)]
   }
@@ -299,14 +308,14 @@ export class FishingScene extends Phaser.Scene {
     for (const f of this.fish) {
       if (f === this.chosen?.sw) continue
       const [x, y] = this.schoolPos(f, t, place)
-      f.img.setPosition(Math.round(x), Math.round(y)).setTexture(f.frames[Math.floor(t * 8 + f.phase) % 2]) // ≈4 Hz tail
+      f.img.setPosition(Math.round(x), Math.round(y)).setTexture(tailFrame(f.frames, f.phase, t))
     }
 
     const figY = GROUND_Y - FEET_Y
     const p = s.anglers[0], h = s.anglers[1]
     const ptr = trackCatch(this.tracks[0], p), htr = trackCatch(this.tracks[1], h)
     // An adopted save, Continue or New Season swaps the state: comparing across it would play phantom splashes.
-    if (s !== this.cueState) { this.cues = [null, null]; this.prevHatchMs = null; this.prevCombo = null; this.plaquesStale = true; this.cueState = s }
+    if (s !== this.cueState) { this.resetCues(); this.cueState = s }
     if (this.prevHatchMs !== null) for (const id of hatchCue(this.prevHatchMs, s.hatchMs)) this.hooks.play(id)
     this.prevHatchMs = s.hatchMs
     const pitch = this.prevCombo === null ? null : comboCue(this.prevCombo, s.combo.count)
@@ -327,8 +336,7 @@ export class FishingScene extends Phaser.Scene {
       const pose = this.pose(h, htr)
       const hx = place.helperX - BODY_X // sprite left; helperX is where the body starts
       this.helper.setTexture(`fig:helper:${pose}`).setPosition(hx, figY)
-      const tip: [number, number] = [hx + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
-      const backTip: Pt = [hx + ROD_TIP.back[0], figY + ROD_TIP.back[1]]
+      const { tip, backTip } = this.rodTips(hx, figY, pose)
       this.drawLine(this.helperLine, this.linePos(s, h, htr, tip, backTip, place.helperFlyX, place, t + 1.7), this.flies[1], h.fly?.patternId)
     } else this.flies[1].setVisible(false)
 
@@ -337,8 +345,7 @@ export class FishingScene extends Phaser.Scene {
     const pose = this.pose(p, ptr)
     const px = place.playerX - BODY_X
     this.player.setTexture(this.playerFig(s.rod, s.wearing, pose)).setPosition(px, figY)
-    const tip: [number, number] = [px + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]]
-    const backTip: Pt = [px + ROD_TIP.back[0], figY + ROD_TIP.back[1]]
+    const { tip, backTip } = this.rodTips(px, figY, pose)
     const line = this.linePos(s, p, ptr, tip, backTip, place.playerFlyX, place, t), fly = line && line[line.length - 1]
     this.drawLine(this.g, line, this.flies[0], p.fly?.patternId)
     this.biteText.setVisible(p.phase === 'bite').setPosition(place.playerX + 7, figY + BODY_Y - 2)
@@ -426,7 +433,7 @@ export class FishingScene extends Phaser.Scene {
     if (!c.from && a.stage !== 'cruise' && p.phase === 'waiting' && !c.sw.stray) c.sw = this.nearest(c.sw.id, fly, t, place) ?? c.sw
     const { sw } = c, mouth = fishMouth(sw.id)
     c.lastPhase = p.phase
-    sw.img.setTexture(sw.frames[Math.floor(t * 8 + sw.phase) % 2])
+    sw.img.setTexture(tailFrame(sw.frames, sw.phase, t))
     if (a.stage === 'cruise') {
       const [x, y] = this.schoolPos(sw, t, place)
       sw.img.setPosition(Math.round(x), Math.round(y))

@@ -7,7 +7,7 @@ export function hash2(i: number, j: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296
 }
 
-const smooth = (f: number) => f * f * (3 - 2 * f)
+export const smooth = (f: number) => f * f * (3 - 2 * f)
 
 export function noise1(x: number, seed: number): number {
   const i = Math.floor(x), u = smooth(x - i)

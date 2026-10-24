@@ -3,6 +3,7 @@ import { placeSpecies } from '../../game/fishing/catch'
 import type { Angler, GameState, Pending } from '../../game/state'
 import { hashString, lcg } from '../../game/util/rand'
 import type { Rect } from '../view'
+import { smooth } from '../../art/scenery/noise'
 
 export const APPROACH_MS = 2000 // the chosen fish's notice + swim to the fly, ending at the bite
 export const NOTICE_SHARE = 0.4 // first part of the approach: stop and turn toward the fly
@@ -17,9 +18,9 @@ const LOOP = 6 // gap between the legs of the line's U loop
 const LIFT = 20 // how high the forward loop arcs, keeping the line over the anglers
 
 export type Pt = [number, number]
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k
+export const lerp = (a: number, b: number, k: number) => a + (b - a) * k
 const lerpPt = (a: Pt, b: Pt, k: number): Pt => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)]
-export const ease = (k: number) => k * k * (3 - 2 * k)
+export const ease = smooth
 
 export type ApproachStage = 'cruise' | 'notice' | 'swim'
 
@@ -100,9 +101,13 @@ export function letterWave(i: number, tMs: number): number {
 }
 
 // A hatch insect: a slow drift across the area with a quicker bob and a flutter, stable per insect.
-export function insectPos(i: number, tMs: number, area: Rect): Pt {
+const insects: [number, number, number, number][] = [] // each insect's phases and speeds, drawn once
+function insectSeed(i: number): [number, number, number, number] {
   const r = lcg(hashString('insect' + i))
-  const px = r() * 2 * Math.PI, py = r() * 2 * Math.PI, sx = 0.0002 + r() * 0.0004, sy = 0.002 + r() * 0.004
+  return [r() * 2 * Math.PI, r() * 2 * Math.PI, 0.0002 + r() * 0.0004, 0.002 + r() * 0.004]
+}
+export function insectPos(i: number, tMs: number, area: Rect): Pt {
+  const [px, py, sx, sy] = insects[i] ??= insectSeed(i)
   const w = area.x1 - area.x0, h = area.y1 - area.y0
   const x = area.x0 + w * (0.5 + 0.5 * Math.sin(tMs * sx + px))
   const y = area.y0 + h * (0.5 + 0.4 * Math.sin(tMs * sy + py) + 0.1 * Math.sin(tMs * 0.02 + px))
