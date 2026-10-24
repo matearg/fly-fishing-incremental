@@ -22,7 +22,7 @@ body.layout-upright { grid-template-columns: 100%; grid-template-rows: minmax(0,
 .layout-upright:not(.title-mode) #game { grid-column: 1; grid-row: 2; width: 100%; max-height: calc(100dvh - 88px); }
 body.layout-sideways { grid-template-columns: 100%; grid-template-rows: 100%; }
 .layout-sideways #game { grid-column: 1; grid-row: 1; }
-.side, .basket { background: var(--paper); border: 3px solid var(--ink); box-shadow: inset 3px 3px 0 var(--bevel-light), inset -3px -3px 0 var(--bevel-dark); }
+.side, .basket, .phone-top, .phone-menu, .menu-head { background: var(--paper); border: 3px solid var(--ink); box-shadow: inset 3px 3px 0 var(--bevel-light), inset -3px -3px 0 var(--bevel-dark); }
 .side { grid-column: 2; grid-row: 1 / span 2; overflow-y: auto; padding: 12px; overflow-wrap: anywhere; }
 .money { display: flex; align-items: center; gap: 8px; font: 28px/1 var(--head); color: var(--money); font-variant-numeric: tabular-nums; }
 /* Money stays in view while the panel scrolls; top is measured inside the 12px padding, so -9px stops it 3px down, under the bevel; and its shadow repaints the bevel over the content scrolling under it. */
@@ -69,3 +69,33 @@ button.danger b, button[aria-pressed="true"] b { color: inherit; }
 .row-catch > span { flex: 1; }
 .row-catch b { font: 12px/1 var(--head); color: var(--rust); }
 .row-catch button.x { padding: 1px 3px; margin: 0; box-shadow: none; }
+/* Phone strips and the full-screen menu (panel.ts). Hidden on desktop and on the title; every phone rule skips .title-mode. */
+.phone-top, .phone-menu, .menu-head { display: none; }
+.phone-top .money, .menu-head .money { position: static; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; }
+.phone-top .info { color: var(--owned); }
+.phone-top .ban { font: 16px/1 var(--head); color: var(--rust); }
+.phone-menu { justify-content: center; margin: 0; min-height: 44px; font-family: var(--head); }
+/* Upright: info fills the band above the river, the whole band below is the Menu button. */
+.layout-upright:not(.title-mode) .phone-top { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; grid-column: 1; grid-row: 1; padding: 8px 12px; text-align: center; overflow: hidden; }
+.layout-upright:not(.title-mode) .phone-menu { display: flex; grid-column: 1; grid-row: 3; width: 100%; height: 100%; font-size: 22px; }
+/* Sideways: money and Menu sit in the bottom corners, clear of the scene's own top corner texts. */
+.layout-sideways:not(.title-mode) .phone-top { display: block; position: fixed; left: 8px; bottom: 8px; padding: 8px 12px; }
+.layout-sideways .phone-top .money { font-size: 22px; }
+.layout-sideways .phone-top .info, .layout-sideways .phone-top .ban { display: none; }
+.layout-sideways:not(.title-mode) .phone-menu { display: flex; position: fixed; right: 8px; bottom: 8px; padding: 8px 14px; font-size: 18px; }
+/* Menu open: the panel takes the screen, one section per tab; the basket is its own tab. */
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) #ui { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; background: var(--paper); }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) :is(.phone-top, .phone-menu) { display: none; }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) .menu-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; }
+.menu-head .money { flex: 1; }
+.menu-head button { min-height: 44px; margin: 0; }
+.menu-head .tabs { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px 6px; }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) .side { display: block; flex: 1; min-height: 0; }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) .side > .money, :is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) .side section:not(.on) { display: none; }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) .side section.on { margin-top: 0; }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) #ui[data-tab="basket"] .side { display: none; }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) #ui[data-tab="basket"] .basket { display: flex; flex: 1; min-height: 0; flex-wrap: wrap; align-content: flex-start; overflow-y: auto; }
+/* In the menu the stack list sits in flow under the tiles, not popped above the basket over the header. */
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) [data-sec="basketHead"] { flex-basis: 100%; padding: 0 0 6px; border-right: 0; border-bottom: 2px dashed var(--rule); }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) .items { flex-basis: 100%; height: auto; }
+:is(.layout-upright, .layout-sideways).menu-open:not(.title-mode) .stack-list { position: static; flex-basis: 100%; width: auto; max-height: none; }

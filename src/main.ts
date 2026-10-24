@@ -33,8 +33,17 @@ function act(fn: (s: GameState) => unknown): unknown {
   return result
 }
 
-const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() }, id => sound.play(id))
+const panel = mountPanel(document.getElementById('ui')!, () => session.state, act, s => { session.replace(s); panel.render() }, id => sound.play(id), toTitle)
 setInterval(() => panel.render(), 250)
+
+// From the game back to the title menu (Esc, the scene's icon, the phone menu's Title screen), leaving the phone menu closed.
+function toTitle(): void {
+  sound.play('back')
+  panel.closeMenu()
+  session.toMenu()
+  titleMode(true)
+  game.scene.switch('fishing', 'title')
+}
 
 // The title takes the whole window; panels show only in game. The canvas must re-fit either way.
 function titleMode(on: boolean): void {
@@ -111,12 +120,7 @@ const game = new Phaser.Game({
       onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
       play: (id, scale, pitch) => sound.play(id, scale, pitch),
       layout: () => layout,
-      onMenu: () => {
-        sound.play('back')
-        session.toMenu()
-        titleMode(true)
-        game.scene.switch('fishing', 'title')
-      },
+      onMenu: toTitle,
     }),
   ],
 })
