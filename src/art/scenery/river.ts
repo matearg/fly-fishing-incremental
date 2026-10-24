@@ -4,7 +4,7 @@ import { blit, FINE, mix, type Bitmap } from '../pixels'
 import type { PlaceLook, PropKind } from '../places'
 import { hash2, noise1, noise2, ramp, shade } from './noise'
 import { topProp } from './props'
-import { fill, fineBlank } from './raster'
+import { fill, fineBlank, litStone } from './raster'
 
 const EDGE = 1 / FINE
 const SHORE = 3 // world rows of wet ground and stones along the water
@@ -48,12 +48,7 @@ export function bakeBank(look: PlaceLook, w: number, h: number, waterSide: 'top'
   const stone = [shade(look.edge, -0.55), shade(look.edge, 0.15), look.edge, shade(look.edge, -0.25)]
   for (let i = 0; i < w / 4; i++) {
     const cx = rand() * w, rx = 0.8 + rand() * 1.4, ry = rx * 0.75, d = rand() * SHORE * 1.4, cy = waterSide === 'top' ? d : h - d
-    fill(b, cx - rx, cy - ry, cx + rx, cy + ry, (_px, _py, x, y) => {
-      const nx = (x - cx) / rx, ny = (y - cy) / ry, r = nx * nx + ny * ny
-      if (r > 1) return null
-      const l = -(nx + ny) * 0.55
-      return r > 0.7 ? stone[0] : l > 0.2 ? stone[1] : l > -0.2 ? stone[2] : stone[3]
-    })
+    fill(b, cx - rx, cy - ry, cx + rx, cy + ry, (_px, _py, x, y) => litStone((x - cx) / rx, (y - cy) / ry, stone, 0.7, 0.2, -0.2, 0.55))
   }
   // A plank dock running from the far edge down to the water.
   if (look.dock) {

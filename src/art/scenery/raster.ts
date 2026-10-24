@@ -22,3 +22,12 @@ export function fill(b: Bitmap, x0: number, y0: number, x1: number, y1: number, 
       if (c !== null) setPx(b, px, py, c)
     }
 }
+
+// A round stone lit from the upper left, at (nx, ny) in its unit circle: null outside, stone[0] past `rim`,
+// else stone[1] / [2] / [3] by how much the point faces the light (above `hi`, above `lo`, below).
+export function litStone(nx: number, ny: number, stone: readonly number[], rim: number, hi: number, lo: number, slope: number): number | null {
+  const r = nx * nx + ny * ny
+  if (r > 1) return null
+  const l = -(nx + ny) * slope
+  return r > rim ? stone[0] : l > hi ? stone[1] : l > lo ? stone[2] : stone[3]
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { FINE } from '../pixels'
-import { fill, fineBlank, getPx, setPx } from './raster'
+import { fill, fineBlank, getPx, litStone, setPx } from './raster'
 
 describe('raster', () => {
   it('fineBlank is FINE× the world size', () => {
@@ -28,5 +28,16 @@ describe('raster', () => {
     expect([...b.data].every(v => v === 0)).toBe(true)
     setPx(b, 0, 0, 0x123456)
     expect(getPx(b, -5, -5)).toBe(0x123456)
+  })
+})
+
+describe('litStone', () => {
+  it('litStone shades rim, lit, mid and shadow', () => {
+    const st = [0, 1, 2, 3]
+    expect(litStone(0, 0, st, 0.7, 0.2, -0.2, 0.55)).toBe(2)
+    expect(litStone(0.9, 0, st, 0.7, 0.2, -0.2, 0.55)).toBe(0)
+    expect(litStone(-0.5, -0.5, st, 0.7, 0.2, -0.2, 0.55)).toBe(1)
+    expect(litStone(0.5, 0.5, st, 0.7, 0.2, -0.2, 0.55)).toBe(3)
+    expect(litStone(1, 1, st, 0.7, 0.2, -0.2, 0.55)).toBeNull()
   })
 })
