@@ -270,7 +270,7 @@ export class FishingScene extends Phaser.Scene {
     return [at[0] - (right ? point[0] : w - 1 - point[0]), at[1] - point[1]]
   }
 
-  private release(t: number, place: Place, offscreen: boolean): void {
+  private release(t: number, offscreen: boolean): void {
     const c = this.chosen
     if (!c) return
     this.chosen = null
@@ -345,7 +345,7 @@ export class FishingScene extends Phaser.Scene {
 
     // The catch picked at cast swims (or drifts) to the fly, bites, and is reeled in.
     const pending = p.phase === 'idle' ? null : p.pending
-    if (this.chosen && !sameCatch(this.chosen.pending, pending)) this.release(t, place, releaseOffscreen(this.chosen.lastPhase))
+    if (this.chosen && !sameCatch(this.chosen.pending, pending)) this.release(t, releaseOffscreen(this.chosen.lastPhase))
     if (pending?.kind === 'fish' && !this.chosen) {
       // A fish hooked at another place (travel during a bite) has no school here; it gets a sprite of its own.
       const sw = this.fish.find(f => f.id === pending.defId) ?? (p.phase !== 'waiting' && fly ? Object.assign(this.addSwimmer(pending.defId, fly[0], fly[1], -10, 0), { stray: true }) : undefined)

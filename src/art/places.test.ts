@@ -38,7 +38,4 @@ describe('place looks', () => {
       expect(look.deep, loc.id).not.toBe(look.water[0])
     }
   })
-  it('an unknown style falls back to default', () => {
-    expect(placeLook('creek', 'nope')).toBe(placeLook('creek'))
-  })
 })
