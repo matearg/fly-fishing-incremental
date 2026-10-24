@@ -25,7 +25,7 @@ import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from '.
 import { insectBitmaps } from '../../art/sprites/insects'
 import { LINE_FLY_EYE, lineFlyBitmap } from '../../art/sprites/flies'
 import { addBitmap, addText, fineImage, TEXT_WHITE, TEXT_YELLOW } from '../textures'
-import { glints, tailFrame, type Glint } from '../swim'
+import { foldX, glints, tailFrame, type Glint } from '../swim'
 import { anglerCues, comboCue, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
 import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
 import { FISHING_ANCHOR, VIEW_H, VIEW_W, viewScroll } from '../view'
@@ -34,7 +34,7 @@ const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
 const GROUND_Y = WATER_Y - 8 // the row the anglers stand on
 // Middle of a depth band; the place's water splits into maxDepth + 1 bands.
 const depthY = (depth: number, maxDepth: number) => WATER_Y + ((depth + 0.5) / (maxDepth + 1)) * (VIEW_H - WATER_Y)
-const WRAP = 30 // off-screen margin so fish leave fully before wrapping
+const WRAP = 30 // off-screen margin so ripple dots leave fully before wrapping
 // Draw order, back to front.
 // The helper stands a step behind the player: it, its line and its fly draw under the player.
 const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, helper: 5.5, figures: 6, line: 7, insects: 7.6, hud: 8 }
@@ -186,13 +186,22 @@ export class FishingScene extends Phaser.Scene {
     return sw
   }
 
+  // Ripple dots drift off one side and come back on the other.
   private wrapX(x: number, place: Place): number {
     const left = place.waterLeft - WRAP, span = VIEW_W + WRAP - left
     return ((((x - left) % span) + span) % span) + left
   }
 
-  private schoolPos(f: Swimmer, t: number, place: Place): [number, number] {
-    return [this.wrapX(f.x0 + t * f.speed, place), f.y + Math.sin(t * 1.3 + f.phase) * 2]
+  // The visible water a swimmer of width w may use: the school turns at its edges, so every catchable fish is on screen.
+  private waterSpan(w: number, place: Place): [number, number] {
+    const view = this.cameras.main.worldView
+    return [Math.max(view.x, place.waterLeft), view.right - w]
+  }
+
+  // Position and facing (true = right) of a school swimmer at time t.
+  private schoolPos(f: Swimmer, t: number, place: Place): [number, number, boolean] {
+    const { x, right } = foldX(f.x0 + t * f.speed, ...this.waterSpan(f.w, place))
+    return [x, f.y + Math.sin(t * 1.3 + f.phase) * 2, right === f.speed >= 0]
   }
 
   // Sound cues and plaques compare against the last frame; forget it when there's no valid last frame.
@@ -275,14 +284,17 @@ export class FishingScene extends Phaser.Scene {
     return [at[0] - (right ? point[0] : w - 1 - point[0]), at[1] - point[1]]
   }
 
-  private release(t: number, offscreen: boolean): void {
+  private release(t: number, offscreen: boolean, place: Place): void {
     const c = this.chosen
     if (!c) return
     this.chosen = null
-    if (c.sw.stray) { c.sw.img.destroy(); this.fish = this.fish.filter(f => f !== c.sw); return }
-    const x = offscreen ? VIEW_W + WRAP - 1 : c.sw.img.x
-    c.sw.x0 = x - t * c.sw.speed
-    c.sw.img.setFlipX(c.sw.speed < 0)
+    const sw = c.sw
+    if (sw.stray) { sw.img.destroy(); this.fish = this.fish.filter(f => f !== sw); return }
+    if (!offscreen) { sw.x0 = sw.img.x - t * sw.speed; return } // inside the water the fold is the identity: it swims on from here
+    // A landed fish rejoins at the visible water's right end: the fold turns there, so it heads left either way. It fades in, not pops.
+    sw.x0 = this.waterSpan(sw.w, place)[1] - t * sw.speed
+    sw.img.setAlpha(0)
+    this.tweens.add({ targets: sw.img, alpha: 1, duration: 600 })
   }
 
   update(time: number): void {
@@ -303,8 +315,8 @@ export class FishingScene extends Phaser.Scene {
 
     for (const f of this.fish) {
       if (f === this.chosen?.sw) continue
-      const [x, y] = this.schoolPos(f, t, place)
-      f.img.setPosition(Math.round(x), Math.round(y)).setTexture(tailFrame(f.frames, f.phase, t))
+      const [x, y, right] = this.schoolPos(f, t, place)
+      f.img.setPosition(Math.round(x), Math.round(y)).setTexture(tailFrame(f.frames, f.phase, t)).setFlipX(!right)
     }
 
     const figY = GROUND_Y - FEET_Y
@@ -348,7 +360,7 @@ export class FishingScene extends Phaser.Scene {
 
     // The catch picked at cast swims (or drifts) to the fly, bites, and is reeled in.
     const pending = p.phase === 'idle' ? null : p.pending
-    if (this.chosen && !sameCatch(this.chosen.pending, pending)) this.release(t, releaseOffscreen(this.chosen.lastPhase))
+    if (this.chosen && !sameCatch(this.chosen.pending, pending)) this.release(t, releaseOffscreen(this.chosen.lastPhase), place)
     if (pending?.kind === 'fish' && !this.chosen) {
       // A fish hooked at another place (travel during a bite) has no school here; it gets a sprite of its own.
       const sw = this.fish.find(f => f.id === pending.defId) ?? (p.phase !== 'waiting' && fly ? Object.assign(this.addSwimmer(pending.defId, fly[0], fly[1], -10, 0), { stray: true }) : undefined)
@@ -409,15 +421,13 @@ export class FishingScene extends Phaser.Scene {
     bonus.setPosition(x, name.y + name.height + 2).setAlpha(f.alpha)
   }
 
-  // The same-species swimmer nearest the fly, preferring ones inside the camera's view so the catch never swims in from off-screen.
+  // The same-species swimmer nearest the fly; the school never leaves the visible water, so it's always on screen.
   private nearest(id: string, fly: [number, number], t: number, place: Place): Swimmer | undefined {
-    const view = this.cameras.main.worldView
     let best: Swimmer | undefined, bestD = Infinity
     for (const f of this.fish) {
       if (f.id !== id || f.stray) continue
       const [x, y] = this.schoolPos(f, t, place)
-      const seen = x >= Math.max(view.x, place.waterLeft) && x + f.w <= view.right
-      const d = Math.hypot(x + f.w / 2 - fly[0], y - fly[1]) + (seen ? 0 : 1e6)
+      const d = Math.hypot(x + f.w / 2 - fly[0], y - fly[1])
       if (d < bestD) { best = f; bestD = d }
     }
     return best
@@ -431,20 +441,21 @@ export class FishingScene extends Phaser.Scene {
     c.lastPhase = p.phase
     sw.img.setTexture(tailFrame(sw.frames, sw.phase, t))
     if (a.stage === 'cruise') {
-      const [x, y] = this.schoolPos(sw, t, place)
-      sw.img.setPosition(Math.round(x), Math.round(y))
+      const [x, y, right] = this.schoolPos(sw, t, place)
+      sw.img.setPosition(Math.round(x), Math.round(y)).setFlipX(!right)
       return
     }
     if (!c.from) {
-      c.from = this.schoolPos(sw, t, place)
+      const [x, y] = this.schoolPos(sw, t, place)
+      c.from = [x, y]
       c.right = c.from[0] + sw.w / 2 < fly[0]
     }
     const target = this.anchor(fly, mouth, sw.w, c.right)
     let x = target[0], y = target[1]
     if (a.stage === 'notice') {
-      // Stops, then turns to face the fly halfway through.
+      // Stops, keeping its cruising facing, then turns to face the fly halfway through.
       ;[x, y] = [c.from[0], c.from[1] + Math.sin(t * 6) * 0.5]
-      sw.img.setFlipX(a.k < 0.5 ? sw.speed < 0 : !c.right)
+      if (a.k >= 0.5) sw.img.setFlipX(!c.right)
     } else {
       x = lerp(c.from[0], target[0], ease(a.k)); y = lerp(c.from[1], target[1], ease(a.k))
       sw.img.setFlipX(!c.right)
