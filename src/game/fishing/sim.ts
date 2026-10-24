@@ -2,6 +2,7 @@ import { rollCatch } from './catch'
 import { BENCH_SPEEDUP, GUIDE, HATCH, RODS, TIMING } from '../data'
 import { earn, sellAll } from '../progress/economy'
 import { equippedRod } from '../progress/gear'
+import { noteCombo } from '../progress/combo'
 import { logCatch } from '../progress/log'
 import { mountTrophy } from '../progress/trophies'
 import { basicRecipe, isDry, tieFly } from './flies'
@@ -29,7 +30,7 @@ function land(state: GameState, a: Angler, rand: () => number): void {
   // Fallback for an old save loaded mid-bite or mid-reel, before catches were picked at cast.
   const { location: _, ...c } = a.pending ?? { ...rollCatch(state, a.fly!, rand, rodOf(state, a)), location: state.location }
   a.pending = null
-  if (c.kind === 'fish' && !a.auto) earn(state, logCatch(state, c.defId))
+  if (c.kind === 'fish' && !a.auto) { earn(state, logCatch(state, c.defId)); c.value *= noteCombo(state, c.defId) }
   if (!(state.sorter && c.kind === 'junk')) state.basket.push({ id: state.nextCatchId++, ...c })
   if (c.kind === 'fish') mountTrophy(state, c.defId)
   if (--a.fly!.wearLeft <= 0) a.fly = null

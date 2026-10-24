@@ -22,6 +22,7 @@ export interface GameState {
   chumMs: number; hatchMs: number; nextHatchMs: number // power-ups: time left (0 = off), and the countdown to the next hatch
   taxidermist: boolean; guide: boolean; trophies: string[] // trophies: mounted species ids, in mount order
   speciesLog: string[] // species the player has ever logged, in log order; carries over New Season
+  combo: { defId: string | null; count: number } // the player's current same-species streak
 }
 export type Carry = Pick<GameState, 'licenses' | 'licenseLevels' | 'licenseSpecies' | 'speciesLog'>
 
@@ -44,6 +45,6 @@ export function newGame(carry?: Carry): GameState {
     licenses: carry?.licenses ?? 0, licenseLevels: { ...licenseLevels }, licenseSpecies: [...(carry?.licenseSpecies ?? [])],
     chumMs: 0, hatchMs: 0, nextHatchMs: HATCH.firstMs,
     taxidermist: false, guide: false, trophies: [],
-    speciesLog: [...(carry?.speciesLog ?? [])],
+    speciesLog: [...(carry?.speciesLog ?? [])], combo: { defId: null, count: 0 },
   }
 }

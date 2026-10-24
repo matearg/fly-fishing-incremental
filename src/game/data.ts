@@ -120,6 +120,8 @@ export const HELPERS = {
 export const TROPHY = { pctEach: 0.1 }
 // the player's first catch of each non-legendary species pays mult × its base value
 export const BOUNTY = { mult: 5 }
+// each fish in the player's same-species streak is worth pctStep more than the one before, up to maxSteps steps
+export const COMBO = { pctStep: 0.1, maxSteps: 10 }
 // the Guide adds oddsBonus to every hired angler's cast, on top of the fly's own
 export const GUIDE = { oddsBonus: 0.3 }
 // a trashed fish adds pctPerUnit per multiple of its place's cheapest base value; the bonus stops at cap
