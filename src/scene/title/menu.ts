@@ -1,5 +1,5 @@
 // Title menu as a pure state machine; TitleScene only draws it and maps input.
-import type { SoundSettings } from '../../audio/settings'
+import { setLevel, toggleMute, type SoundSettings } from '../../audio/settings'
 import type { SoundId } from '../../audio/sounds'
 
 export type MenuPage = 'attract' | 'main' | 'settings' | 'confirmNew'
@@ -68,4 +68,12 @@ export function menuCue(m: MenuState, key: MenuKey, r: { next: MenuState; action
   }
   // Only BACK and NO select their way back to main without an action.
   return m.page !== 'main' && r.next.page === 'main' && !r.action ? 'back' : 'select'
+}
+
+// The new setting a volume action makes for its own kind, or null for any other action.
+export function volumeAction(action: MenuAction | undefined, kind: 'sound' | 'music', s: SoundSettings): SoundSettings | null {
+  if (action === `${kind}Mute`) return toggleMute(s)
+  if (action === `${kind}Up`) return setLevel(s, s.level + 1)
+  if (action === `${kind}Down`) return setLevel(s, s.level - 1)
+  return null
 }

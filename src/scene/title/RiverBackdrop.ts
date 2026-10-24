@@ -39,9 +39,11 @@ export class RiverBackdrop {
     this.objs.push(fineImage(scene, 0, top, river).setOrigin(0))
 
     for (const sp of placeSpecies(location, licensed)) {
-      const [a, b] = fishBitmaps(sp.id)
       const frames: [string, string] = [`fish:${sp.id}:0`, `fish:${sp.id}:1`]
-      addBitmap(scene, frames[0], a); addBitmap(scene, frames[1], b)
+      if (!scene.textures.exists(frames[0])) {
+        const [a, b] = fishBitmaps(sp.id)
+        addBitmap(scene, frames[0], a); addBitmap(scene, frames[1], b)
+      }
       for (let k = 0; k < TIER_SCHOOL[sp.tier]; k++) {
         const against = rand() < 0.2
         const img = fineImage(scene, 0, 0, frames[0]).setFlipX(against)
@@ -51,7 +53,7 @@ export class RiverBackdrop {
     }
 
     const drift = `drift:${location}`
-    addBitmap(scene, drift, refine(paint(look.drift.grid, look.drift.palette)))
+    if (!scene.textures.exists(drift)) addBitmap(scene, drift, refine(paint(look.drift.grid, look.drift.palette)))
     for (let i = 0; i < look.drift.perBank; i++) {
       const img = fineImage(scene, 0, top + 10 + rand() * (look.riverH - 20), drift)
       this.drift.push({ img, x0: rand() * VIEW_W, speed: 4 + rand() * 3 })
