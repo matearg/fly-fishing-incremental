@@ -5,7 +5,7 @@ import { blit, FINE, mix, type Bitmap } from '../pixels'
 import type { PlaceLook } from '../places'
 import { fbm, hash2, noise1, noise2, shade } from './noise'
 import { PROP_SIZE, sideProp } from './props'
-import { fill, fineBlank } from './raster'
+import { fill, fineBlank, litStone } from './raster'
 
 export const BANK_SURFACE = 64 // world rows above the walkable ground, room for the tallest prop
 const SLOPE = 20 // world units from the shoulder to shoreX
@@ -75,10 +75,8 @@ export function bakeSideBank(look: PlaceLook, h: number, waterY: number, seed: n
     const cx = rand() * (w - 2), rx = 1.4 + rand() * 3.4, ry = rx * (0.55 + rand() * 0.25), cy = surf(cx) + top + 6 + rand() * (h - surf(cx) - top - 6)
     fill(b, cx - rx, cy - ry, cx + rx, cy + ry, (_px, _py, x, y) => {
       if (!solid(x, y) || y < surf(x) + top + 4) return null
-      const nx = (x - cx) / rx, ny = (y - cy) / ry, r = nx * nx + ny * ny
-      if (r > 1) return null
-      const l = -(nx + ny) * 0.55
-      return below(r > 0.72 ? stone[0] : l > 0.25 ? stone[1] : l > -0.15 ? stone[2] : stone[3], y)
+      const c = litStone((x - cx) / rx, (y - cy) / ry, stone, 0.72, 0.25, -0.15, 0.55)
+      return c === null ? null : below(c, y)
     })
   }
   groundTop(b, look, flat, surf, seed, rand)

@@ -28,6 +28,14 @@ export type Carry = Pick<GameState, 'licenses' | 'licenseLevels' | 'licenseSpeci
 
 export const SAVE_VERSION = 1
 
+export function basicRecipe(): Recipe {
+  return { patternId: PATTERNS[0].id, materialIds: [] }
+}
+
+export function newAngler(auto: boolean): Angler {
+  return { auto, phase: 'idle', timerMs: 0, fly: null, pending: null }
+}
+
 export function newGame(carry?: Carry): GameState {
   const licenseLevels = carry?.licenseLevels ?? (Object.fromEntries(LICENSE_UPGRADES.map(u => [u.id, 0])) as Record<LicenseUpgradeId, number>)
   const fx = licenseEffects(licenseLevels)
@@ -36,8 +44,8 @@ export function newGame(carry?: Carry): GameState {
     version: SAVE_VERSION, money: 0, seasonEarnings: 0,
     location: unlockedLocations[unlockedLocations.length - 1], unlockedLocations,
     unlockedPatterns: PATTERNS.slice(0, 1 + fx.startPatterns).map(p => p.id), unlockedMaterials: [],
-    recipe: { patternId: PATTERNS[0].id, materialIds: [] },
-    flyBox: [], anglers: [{ auto: false, phase: 'idle', timerMs: 0, fly: null, pending: null }],
+    recipe: basicRecipe(),
+    flyBox: [], anglers: [newAngler(false)],
     bench: 0, bulkTrash: false, sorter: false, buyer: false, release: false, benchTimerMs: 0, buyerTimerMs: 0,
     releaseBonus: 0, buyerPaused: false,
     basket: [], nextCatchId: 1,

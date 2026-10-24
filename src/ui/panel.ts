@@ -49,6 +49,13 @@ function btn(action: string, id: string, label: string, opts: { disabled?: boole
   return `<button data-action="${action}" data-id="${id}"${opts.disabled ? ' disabled' : ''}${pressed}${expanded}${aria} class="${opts.cls ?? ''}">${label}</button>`
 }
 
+// A shop unlock: an owned row once bought, else a button with its price.
+function forSale(s: GameState, action: string, def: { id: string; name: string; unlockCost: number }, ico: string, desc: string, own: boolean): string {
+  if (own) return owned(ico, def.name, undefined, desc)
+  const cost = price(s, def.unlockCost)
+  return btn(action, def.id, `${lbl(ico, `${def.name} <small>${desc}</small>`)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
+}
+
 // Update a section in place so the button under the cursor is never swapped mid-click
 // (a replaced node loses the click when mousedown and mouseup land on different elements).
 function patch(el: Element, html: string): void {
@@ -131,8 +138,8 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         + (s.hatchMs > 0 ? `<p>Hatch! Dry flies bite faster: ${Math.ceil(s.hatchMs / 1000)} s</p>` : '')
     },
     shop: s => {
-      const pats = PATTERNS.map(p => s.unlockedPatterns.includes(p.id) ? owned(icon('fly', p.id, FLY_ICONS[p.id]), p.name, undefined, patternDesc(p)) : btn('unlockPattern', p.id, `${lbl(icon('fly', p.id, FLY_ICONS[p.id]), `${p.name} <small>${patternDesc(p)}</small>`)}<b>$${fmt(price(s, p.unlockCost))}</b>`, { disabled: s.money < price(s, p.unlockCost) }))
-      const mats = MATERIALS.map(m => s.unlockedMaterials.includes(m.id) ? owned(icon('mat', m.id, MATERIAL_ICONS[m.id]), m.name, undefined, materialDesc(m)) : btn('unlockMaterial', m.id, `${lbl(icon('mat', m.id, MATERIAL_ICONS[m.id]), `${m.name} <small>${materialDesc(m)}</small>`)}<b>$${fmt(price(s, m.unlockCost))}</b>`, { disabled: s.money < price(s, m.unlockCost) }))
+      const pats = PATTERNS.map(p => forSale(s, 'unlockPattern', p, icon('fly', p.id, FLY_ICONS[p.id]), patternDesc(p), s.unlockedPatterns.includes(p.id)))
+      const mats = MATERIALS.map(m => forSale(s, 'unlockMaterial', m, icon('mat', m.id, MATERIAL_ICONS[m.id]), materialDesc(m), s.unlockedMaterials.includes(m.id)))
       return [...pats, ...mats].join('')
     },
     gear: s => {
@@ -168,9 +175,11 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
         const lvl = `${s.licenseLevels[u.id]}/${u.costs.length}`
         return cost === null ? owned(icon('license', u.id, LICENSE_ICONS[u.id]), u.name, `MAX ${lvl}`) : btn('licenseUpgrade', u.id, `${lbl(icon('license', u.id, LICENSE_ICONS[u.id]), `${u.name} (${lvl})`)}<b>${ticket(cost)}</b>`, { disabled: s.licenses < cost })
       }).join('')
-      + SPECIES.filter(sp => sp.licenseCost).map(sp => s.licenseSpecies.includes(sp.id)
-        ? owned(catchImg('fish', sp.id), sp.name, 'IN THE WATER', `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)
-        : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
+      + SPECIES.filter(sp => sp.licenseCost).map(sp => {
+        const what = `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`
+        return s.licenseSpecies.includes(sp.id) ? owned(catchImg('fish', sp.id), sp.name, 'IN THE WATER', what)
+          : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), what)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })
+      }).join(''),
     log: s => btn('toggleLog', '', `Caught ${s.speciesLog.length} of ${SPECIES.length}`, { expanded: logOpen, cls: 'wide' })
       + (logOpen ? logPlaces(s).map(p => `<p class="label">${p.name.toUpperCase()} ${p.logged}/${p.total}${p.locked ? ' · locked' : ''}</p>`
         + p.rows.map(r => `<div class="row-catch">${r.logged ? `${catchImg('fish', r.id)}<span>${SPECIES.find(d => d.id === r.id)!.name}</span>` : `<span>???${r.legendary ? ' (Taxidermist)' : ''}</span>`}</div>`).join('')).join('') : ''),

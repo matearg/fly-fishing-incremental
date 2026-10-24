@@ -110,11 +110,8 @@ const GREAT_LAKE: PlaceLook = {
   drift: FOAM,
 }
 
-// Named art styles (seam for future cosmetics); only `default` exists today.
-export const PLACE_STYLES: Record<string, Record<LocationId, PlaceLook>> = {
-  default: { creek: CREEK, river: RIVER, bigRiver: BIG_RIVER, mountainLake: MOUNTAIN_LAKE, greatLake: GREAT_LAKE },
-}
+const LOOKS: Record<LocationId, PlaceLook> = { creek: CREEK, river: RIVER, bigRiver: BIG_RIVER, mountainLake: MOUNTAIN_LAKE, greatLake: GREAT_LAKE }
 
-export function placeLook(id: LocationId, style = 'default'): PlaceLook {
-  return (PLACE_STYLES[style] ?? PLACE_STYLES.default)[id]
+export function placeLook(id: LocationId): PlaceLook {
+  return LOOKS[id]
 }

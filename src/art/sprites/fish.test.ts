@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { LOCATIONS, SPECIES, TIERS } from '../../game/data'
 import { FINE } from '../pixels'
-import { FISH_COLORS, FISH_SIDE, FISH_TOP, fishBitmaps, fishColors, fishMouth, fishSideBitmaps, fishSideGrids, fishTopGrids } from './fish'
+import { FISH_COLORS, FISH_SIDE, FISH_TOP, fishBitmaps, fishMouth, fishSideBitmaps, fishSideGrids, fishTopGrids } from './fish'
 
 describe('fish art', () => {
   it('colours exist for exactly the current species', () => {
@@ -39,9 +39,6 @@ describe('fish art', () => {
   })
   it('fishSideBitmaps paints both frames for every species', () => {
     for (const sp of SPECIES) expect(fishSideBitmaps(sp.id)).toHaveLength(2)
-  })
-  it('an unknown style falls back to default colours', () => {
-    expect(fishColors('dace', 'nope')).toBe(fishColors('dace'))
   })
   it('El Cuero and Nahuelito have their own shapes in both views', () => {
     for (const id of ['lakeSturgeon', 'ghostSturgeon']) {

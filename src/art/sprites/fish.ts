@@ -195,21 +195,18 @@ export const FISH_COLORS: Record<string, FishColors> = {
   ghostSturgeon: { b: 0xe8f2f8, a: 0xa8d8f2, f: 0xf8ffff }, // Nahuelito: pale and ghostly
 }
 
-// Named art styles (seam for future cosmetics); only `default` exists today.
-export const FISH_STYLES: Record<string, Record<string, FishColors>> = { default: FISH_COLORS }
-
-export function fishColors(id: string, style = 'default'): FishColors {
-  return (FISH_STYLES[style] ?? FISH_STYLES.default)[id]
+export function fishColors(id: string): FishColors {
+  return FISH_COLORS[id]
 }
 
-export function fishBitmaps(speciesId: string, style = 'default'): [Bitmap, Bitmap] {
-  const pal = { ...fishColors(speciesId, style), o: OUTLINE, e: EYE }
+export function fishBitmaps(speciesId: string): [Bitmap, Bitmap] {
+  const pal = { ...fishColors(speciesId), o: OUTLINE, e: EYE }
   const [a, b] = fishTopGrids(speciesId)
   return [refine(paint(a, pal), OUTLINE), refine(paint(b, pal), OUTLINE)]
 }
 
-export function fishSideBitmaps(speciesId: string, style = 'default'): [Bitmap, Bitmap] {
-  const pal = { ...fishColors(speciesId, style), o: OUTLINE, e: EYE }
+export function fishSideBitmaps(speciesId: string): [Bitmap, Bitmap] {
+  const pal = { ...fishColors(speciesId), o: OUTLINE, e: EYE }
   const [a, b] = fishSideGrids(speciesId)
   return [refine(paint(a, pal), OUTLINE), refine(paint(b, pal), OUTLINE)]
 }

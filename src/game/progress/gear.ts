@@ -1,18 +1,13 @@
-import { LOCATIONS, RODS, WADERS, type LocationId, type RodDef } from '../data'
+import { RODS, WADERS, type LocationId, type RodDef } from '../data'
 import { placeSpecies, speciesWeight } from '../fishing/catch'
-import { flyStats } from '../fishing/flies'
-import { price, spend } from './economy'
+import { flyStats, reachDepth } from '../fishing/flies'
+import { purchase } from './economy'
 import type { GameState } from '../state'
 
 // Buying a piece of gear puts it on right away.
-function buy(state: GameState, owned: string[], def: { id: string; cost: number } | undefined): boolean {
-  if (!def || owned.includes(def.id) || !spend(state, price(state, def.cost))) return false
-  owned.push(def.id)
-  return true
-}
-
 export function buyRod(state: GameState, id: string): boolean {
-  return buy(state, state.rods, RODS.find(r => r.id === id)) && equipRod(state, id)
+  const def = RODS.find(r => r.id === id)
+  return !!def && purchase(state, state.rods, def.id, def.cost) && equipRod(state, id)
 }
 
 export function equipRod(state: GameState, id: string): boolean {
@@ -22,7 +17,8 @@ export function equipRod(state: GameState, id: string): boolean {
 }
 
 export function buyWaders(state: GameState, id: string): boolean {
-  return buy(state, state.waders, WADERS.find(w => w.id === id)) && wearWaders(state, id)
+  const def = WADERS.find(w => w.id === id)
+  return !!def && purchase(state, state.waders, def.id, def.cost) && wearWaders(state, id)
 }
 
 export function wearWaders(state: GameState, id: string): boolean {
@@ -44,7 +40,7 @@ export function rodGain(rod: RodDef, location: LocationId, maxDepth: number, odd
 // The owned rod that pays most for the player's fly here; ties go to the earlier rod.
 export function bestRod(state: GameState): string {
   const st = flyStats(state, state.recipe)
-  const depth = Math.min(st.maxDepth, LOCATIONS.find(l => l.id === state.location)!.maxDepth)
+  const depth = reachDepth(state, state.recipe, st)
   const gain = (r: RodDef) => rodGain(r, state.location, depth, st.oddsBonus, state.licenseSpecies)
   return RODS.filter(r => state.rods.includes(r.id)).reduce((b, r) => gain(r) > gain(b) ? r : b).id
 }

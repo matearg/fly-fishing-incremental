@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { price, releaseBonusOf, saleValue, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe, wadersDiscount } from './economy'
+import { price, purchase, releaseBonusOf, saleValue, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe, wadersDiscount } from './economy'
 import { flyStats, tieFly } from '../fishing/flies'
 import { newGame, type CatchItem } from '../state'
 import { PATTERNS, MATERIALS, RELEASE, RODS, SPECIES, TROPHY } from '../data'
@@ -199,5 +199,25 @@ describe('waders discount', () => {
     s.basket = [{ id: 1, kind: 'fish', defId: 'muskie', value: 100, size: 1 }]
     expect(sellAll(s)).toBeCloseTo(100 * (1 + TROPHY.pctEach))
     expect(s.releaseBonus).toBe(0.5)
+  })
+})
+
+describe('purchase', () => {
+  it('purchase charges the discounted price once', () => {
+    const s = newGame(); s.money = 100
+    expect(purchase(s, s.unlockedPatterns, 'elkHair', 30)).toBe(true)
+    expect(s.money).toBe(70)
+    expect(s.unlockedPatterns).toContain('elkHair')
+    expect(purchase(s, s.unlockedPatterns, 'elkHair', 30)).toBe(false)
+    expect(s.money).toBe(70)
+    s.money = 10
+    expect(purchase(s, s.unlockedPatterns, 'pheasantTail', 150)).toBe(false)
+  })
+  it('trashStack keeps the rest of the basket in order', () => {
+    const s = newGame(); s.bulkTrash = true
+    const [a, b] = [SPECIES[0].id, SPECIES[1].id]
+    s.basket = [a, b, a, b].map((defId, i) => ({ id: i + 1, kind: 'fish' as const, defId, value: 1, size: 1 }))
+    expect(trashStack(s, 'fish', a)).toBe(true)
+    expect(s.basket.map(c => c.id)).toEqual([2, 4])
   })
 })

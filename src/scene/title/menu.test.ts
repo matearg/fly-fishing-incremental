@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { menuCue, menuInput, menuItems, type MenuCtx, type MenuKey, type MenuState } from './menu'
+import { menuCue, menuInput, menuItems, volumeAction, type MenuCtx, type MenuKey, type MenuState } from './menu'
 import { DEFAULT_MUSIC, DEFAULT_SOUND } from '../../audio/settings'
 
 const save: MenuCtx = { hasSave: true, fullscreen: false, canFullscreen: true, sound: DEFAULT_SOUND, music: DEFAULT_MUSIC }
@@ -90,5 +90,16 @@ describe('menuCue', () => {
     expect(cue(at('settings', 3), 'select')).toBe('back')
     expect(cue(at('confirmNew', 0), 'select')).toBe('back')
     expect(cue(at('main', 1), 'select')).toBe('select')
+  })
+})
+
+describe('volumeAction', () => {
+  it('volumeAction maps only its own kind', () => {
+    const s = { level: 5, muted: false }
+    expect(volumeAction('soundUp', 'sound', s)).toEqual({ level: 6, muted: false })
+    expect(volumeAction('musicMute', 'music', s)).toEqual({ level: 5, muted: true })
+    expect(volumeAction('soundUp', 'music', s)).toBeNull()
+    expect(volumeAction(undefined, 'sound', s)).toBeNull()
+    expect(volumeAction('soundDown', 'sound', { level: 1, muted: false })).toEqual({ level: 1, muted: false })
   })
 })

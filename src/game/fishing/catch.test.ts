@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { placeSpecies, rollCatch } from './catch'
+import { isRarePlus, placeSpecies, rollCatch } from './catch'
 import { newGame, type Fly } from '../state'
-import { CHUM, GUIDE, LICENSE_UPGRADES, LOCATIONS, RODS, SPECIES, TIERS } from '../data'
+import { CHUM, GUIDE, LICENSE_UPGRADES, LOCATIONS, RODS, SPECIES, TIERS, type Tier } from '../data'
 import { seqRand, lcg } from '../util/testutil'
 
 const fly = (patternId: string, materialIds: string[] = []): Fly => ({ patternId, materialIds, wearLeft: 1 })
@@ -107,5 +107,11 @@ describe('rollCatch', () => {
     const fly = { patternId: 'woollyBugger', materialIds: [], wearLeft: 5 }
     const count = (extra: number) => { const r = lcg(7); let n = 0; for (let i = 0; i < 4000; i++) if (rollCatch(s, fly, r, RODS[0], false, extra).defId === 'muskie') n++; return n }
     expect(count(GUIDE.oddsBonus)).toBeGreaterThan(count(0) * 1.3)
+  })
+})
+
+describe('isRarePlus', () => {
+  it('isRarePlus is rare and legendary only', () => {
+    expect(['common', 'uncommon', 'rare', 'legendary'].map(t => isRarePlus(t as Tier))).toEqual([false, false, true, true])
   })
 })

@@ -133,18 +133,20 @@ document.addEventListener('visibilitychange', () => {
     sound.pause()
   } else {
     sound.resume()
-    session.adopt(localStore.read())
-    panel.render()
-    title.refreshMenu() // Continue may have appeared or gone
+    adopt(localStore.read())
   }
 })
 // Adopt saves written by another tab (e.g. its final save when the player switches back here).
 addEventListener('storage', e => {
   if (e.key !== SAVE_KEY) return
-  session.adopt(e.newValue)
+  adopt(e.newValue)
+})
+// Continue may have appeared or gone.
+function adopt(raw: string | null): void {
+  session.adopt(raw)
   panel.render()
   title.refreshMenu()
-})
+}
 // The browser's own Esc/F11 can leave fullscreen too.
 document.addEventListener('fullscreenchange', () => title.refreshMenu())
 addEventListener('pagehide', () => { if (!document.hidden) session.save() })

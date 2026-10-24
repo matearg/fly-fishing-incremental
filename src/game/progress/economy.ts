@@ -62,32 +62,35 @@ export function trash(state: GameState, catchId: number): boolean {
 // Bulk trash throws away every catch of one kind and species at once.
 export function trashStack(state: GameState, kind: CatchItem['kind'], defId: string): boolean {
   if (!state.bulkTrash) return false
-  const kept = state.basket.filter(c => c.kind !== kind || c.defId !== defId)
-  if (kept.length === state.basket.length) return false
-  release(state, state.basket.filter(c => !kept.includes(c)))
+  const kept: CatchItem[] = [], gone: CatchItem[] = []
+  for (const c of state.basket) (c.kind === kind && c.defId === defId ? gone : kept).push(c)
+  if (!gone.length) return false
+  release(state, gone)
   state.basket = kept
   return true
 }
 
-function unlock(state: GameState, owned: string[], def: { id: string; unlockCost: number } | undefined): boolean {
-  if (!def || owned.includes(def.id) || !spend(state, price(state, def.unlockCost))) return false
-  owned.push(def.id)
+// Buys `id` into `owned` once, at the discounted price.
+export function purchase(state: GameState, owned: string[], id: string, base: number): boolean {
+  if (owned.includes(id) || !spend(state, price(state, base))) return false
+  owned.push(id)
   return true
 }
 
 export function unlockPattern(state: GameState, id: string): boolean {
-  return unlock(state, state.unlockedPatterns, PATTERNS.find(p => p.id === id))
+  const p = PATTERNS.find(p => p.id === id)
+  return !!p && purchase(state, state.unlockedPatterns, p.id, p.unlockCost)
 }
 
 export function unlockMaterial(state: GameState, id: string): boolean {
-  return unlock(state, state.unlockedMaterials, MATERIALS.find(m => m.id === id))
+  const m = MATERIALS.find(m => m.id === id)
+  return !!m && purchase(state, state.unlockedMaterials, m.id, m.unlockCost)
 }
 
 // Only the next locked location in LOCATIONS order can be bought.
 export function unlockLocation(state: GameState, id: LocationId): boolean {
   const next = LOCATIONS.find(l => !state.unlockedLocations.includes(l.id))
-  if (next?.id !== id) return false
-  return unlock(state, state.unlockedLocations, next)
+  return next?.id === id && purchase(state, state.unlockedLocations, next.id, next.unlockCost)
 }
 
 export function travel(state: GameState, id: LocationId): boolean {

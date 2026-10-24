@@ -4,7 +4,7 @@ import { lcg } from '../../game/util/rand'
 import { FINE, mix, type Bitmap } from '../pixels'
 import type { PlaceLook } from '../places'
 import { fbm, hash2, noise1, noise2, ramp, shade } from './noise'
-import { fill, fineBlank, getPx } from './raster'
+import { fill, fineBlank, getPx, litStone } from './raster'
 
 const STEPS = 8
 const REFLECT = 24 // world rows of the horizon mirrored under the waterline
@@ -53,12 +53,7 @@ export function bakeSideWater(look: PlaceLook, reflect: Bitmap, w: number, h: nu
   const stone = [0x2a2620, 0xa8a090, 0x7a7468, 0x55504a].map(c => mix(c, look.deep, 0.55))
   for (let i = 0; i < w / 18; i++) {
     const cx = rand() * w, rx = 2 + rand() * 4, ry = rx * 0.6, cy = bedTop(cx, h, clear, seed) + ry * 0.3
-    fill(b, cx - rx, cy - ry, cx + rx, cy + ry, (_px, _py, x, y) => {
-      const nx = (x - cx) / rx, ny = (y - cy) / ry, r = nx * nx + ny * ny
-      if (r > 1) return null
-      const l = -(nx + ny) * 0.5
-      return r > 0.75 ? stone[0] : l > 0.2 ? stone[1] : l > -0.2 ? stone[2] : stone[3]
-    })
+    fill(b, cx - rx, cy - ry, cx + rx, cy + ry, (_px, _py, x, y) => litStone((x - cx) / rx, (y - cy) / ry, stone, 0.75, 0.2, -0.2, 0.5))
   }
   return b
 }

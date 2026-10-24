@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { flyStats, tieFly, basicRecipe, isDry } from './flies'
-import { newGame } from '../state'
+import { flyStats, tieFly, isDry, reachDepth, tieAny } from './flies'
+import { basicRecipe, newGame } from '../state'
 import { PATTERNS, MATERIALS, LICENSE_UPGRADES } from '../data'
 
 const nymph = PATTERNS.find(p => p.cls === 'nymph')!
@@ -48,5 +48,24 @@ describe('tieFly', () => {
 describe('isDry', () => {
   it('isDry follows the pattern class', () => {
     for (const p of PATTERNS) expect(isDry({ patternId: p.id })).toBe(p.cls === 'dry')
+  })
+})
+
+describe('fly helpers', () => {
+  it('reachDepth stops at the place floor', () => {
+    const s = newGame() // creek, maxDepth 1
+    expect(reachDepth(s, { patternId: 'woollyBugger', materialIds: [] })).toBe(1)
+    expect(reachDepth(s, { patternId: 'basicDry', materialIds: [] })).toBe(0)
+    s.location = 'river'
+    expect(reachDepth(s, { patternId: 'woollyBugger', materialIds: ['goldBead'] })).toBe(2)
+  })
+  it('tieAny falls back to the free Basic Dry', () => {
+    const s = newGame(); s.recipe = { patternId: 'zonker', materialIds: [] }
+    expect(tieAny(s)).toBe(true)
+    expect(s.flyBox[0].patternId).toBe('basicDry')
+    s.money = 1000
+    expect(tieAny(s)).toBe(true)
+    expect(s.flyBox[1].patternId).toBe('zonker')
+    expect(s.money).toBe(600)
   })
 })

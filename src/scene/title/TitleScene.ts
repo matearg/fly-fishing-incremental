@@ -4,9 +4,9 @@ import { iconBitmap, SCENE_ICONS } from '../../art/icons'
 import type { Session } from '../../session'
 import { BAR_SEGMENT, NOTES, SPEAKER, soundIconMask } from '../../art/soundIcons'
 import { FINE, stylize, type Grid } from '../../art/pixels'
-import { setLevel, toggleMute, type SoundSettings } from '../../audio/settings'
+import { setLevel, type SoundSettings } from '../../audio/settings'
 import type { SoundId } from '../../audio/sounds'
-import { CONFIRM_PROMPT, menuCue, menuInput, menuItems, type MenuKey, type MenuState } from './menu'
+import { CONFIRM_PROMPT, menuCue, menuInput, menuItems, volumeAction, type MenuKey, type MenuState } from './menu'
 import { RiverBackdrop } from './RiverBackdrop'
 import { addBitmap, addText, TEXT_GREY, TEXT_WHITE, TEXT_YELLOW } from '../textures'
 import { TITLE_ANCHOR, TITLE_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
@@ -116,7 +116,7 @@ export class TitleScene extends Phaser.Scene {
   private volumeRow(y: number, i: number, sel: boolean, grid: Grid, s: SoundSettings, set: (s: SoundSettings) => void): void {
     const style = sel ? TEXT_YELLOW : TEXT_WHITE, styleName = sel ? 'yellow' : 'white'
     const iconKey = `snd:${grid.join('/')}:${s.muted}:${styleName}`
-    addBitmap(this, iconKey, stylize(soundIconMask(grid, s.muted), style))
+    if (!this.textures.exists(iconKey)) addBitmap(this, iconKey, stylize(soundIconMask(grid, s.muted), style))
     const label = this.text(s.muted ? 'OFF' : `${s.level * 10}%`, sel)
     // Images carry a 1 px outline on each side; lay out by their ink.
     const iconW = grid[0].length, labelW = this.textures.get(label).getSourceImage().width - 2
@@ -130,7 +130,7 @@ export class TitleScene extends Phaser.Scene {
     for (let j = 0; j < 10; j++) {
       const on = j < s.level && !s.muted
       const segKey = `snd:seg:${on ? styleName : 'grey'}`
-      addBitmap(this, segKey, stylize(soundIconMask(BAR_SEGMENT, false), on ? style : TEXT_GREY))
+      if (!this.textures.exists(segKey)) addBitmap(this, segKey, stylize(soundIconMask(BAR_SEGMENT, false), on ? style : TEXT_GREY))
       const seg = this.add.image(x + j * SEG_STEP - 1, y, segKey).setOrigin(0, 0.5)
       this.hover(seg, i).on('pointerdown', () => {
         if (this.busy) return
@@ -164,11 +164,8 @@ export class TitleScene extends Phaser.Scene {
     this.menu = next
     if (wasAttract) this.tweens.add({ targets: this.logo, y: LOGO_Y_MENU, duration: 250, ease: 'Quad.easeOut' })
     if (action === 'toggleFullscreen') this.hooks.toggleFullscreen()
-    const s = this.hooks.sound(), mu = this.hooks.music()
-    if (action === 'soundMute') this.hooks.setSound(toggleMute(s))
-    if (action === 'soundDown' || action === 'soundUp') this.hooks.setSound(setLevel(s, s.level + (action === 'soundUp' ? 1 : -1)))
-    if (action === 'musicMute') this.hooks.setMusic(toggleMute(mu))
-    if (action === 'musicDown' || action === 'musicUp') this.hooks.setMusic(setLevel(mu, mu.level + (action === 'musicUp' ? 1 : -1)))
+    const sv = volumeAction(action, 'sound', this.hooks.sound()); if (sv) this.hooks.setSound(sv)
+    const mv = volumeAction(action, 'music', this.hooks.music()); if (mv) this.hooks.setMusic(mv)
     // After the volume change, so it's heard at the new level.
     const cue = menuCue(prev, k, r)
     if (cue) this.hooks.play(cue)

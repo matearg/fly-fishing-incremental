@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { newGame } from './state'
+import { newAngler, newGame } from './state'
 import { PATTERNS, LICENSE_UPGRADES, HATCH } from './data'
 import { licenseEffects } from './progress/license'
 
@@ -38,5 +38,11 @@ describe('newGame', () => {
     expect(s.licenses).toBe(5)
     expect(s.licenseLevels).toEqual(levels)
     expect(s.licenseSpecies).toEqual(['x'])
+  })
+})
+
+describe('newAngler', () => {
+  it('newAngler is idle with nothing on the line', () => {
+    expect(newAngler(true)).toEqual({ auto: true, phase: 'idle', timerMs: 0, fly: null, pending: null })
   })
 })
