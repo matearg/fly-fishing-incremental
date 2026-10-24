@@ -6,6 +6,9 @@ import { hashString, lcg } from '../../game/util/rand'
 import type { Angler, GameState, Pending } from '../../game/state'
 import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, guideBitmap, ROD_TIP, type Pose } from '../../art/sprites/figures'
 import { PLAQUE_STYLE, plaqueBitmap } from '../../art/sprites/plaque'
+import { BOUNTY_STYLE, logCardBitmap } from '../../art/sprites/logcard'
+import { bountyOf } from '../../game/progress/log'
+import { formatNumber } from '../../game/util/format'
 import { notePlaques, plaqueFrame, resumePlaques, type PlaqueQueue } from './plaque'
 import { figureSpots } from './spots'
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
@@ -99,7 +102,7 @@ export class FishingScene extends Phaser.Scene {
     this.plaque = {
       board: hud(fineImage(this, 0, 0, 'fig:guide')),
       name: hud(this.add.image(0, 0, addText(this, ' ', PLAQUE_STYLE))),
-      bonus: hud(this.add.image(0, 0, addText(this, `+${Math.round(TROPHY.pctEach * 100)}% SALES`, PLAQUE_STYLE))),
+      bonus: hud(this.add.image(0, 0, addText(this, ' ', PLAQUE_STYLE))),
     }
     this.player = fineImage(this, 0, 0, this.playerFig('plainRod', 'plainWaders', 'idle')).setOrigin(0).setDepth(Z.figures)
     this.flies = [Z.line + 0.5, Z.helper + 0.2].map(z => fineImage(this, 0, 0, this.lineFly('basicDry')).setOrigin(0).setDepth(z).setVisible(false)) as [Phaser.GameObjects.Image, Phaser.GameObjects.Image]
@@ -365,18 +368,21 @@ export class FishingScene extends Phaser.Scene {
     })
   }
 
-  // The Taxidermist's pop-up: the newest trophy's plaque, centred under the power-up titles.
+  // The pop-up for a new log entry or trophy, centred under the power-up titles.
   private drawPlaque(s: GameState, time: number, w: number): void {
-    if (this.plaquesStale) { this.plaques = resumePlaques(this.plaques, s.trophies); this.plaquesStale = false }
-    notePlaques(this.plaques!, s.trophies)
+    if (this.plaquesStale) { this.plaques = resumePlaques(this.plaques, s); this.plaquesStale = false }
+    notePlaques(this.plaques!, s)
     const f = plaqueFrame(this.plaques!, time), { board, name, bonus } = this.plaque
     for (const img of [board, name, bonus]) img.setVisible(!!f)
     if (!f) return
     if (f.started) {
-      if (!this.textures.exists(`plaque:${f.id}`)) addBitmap(this, `plaque:${f.id}`, plaqueBitmap(f.id))
-      board.setTexture(`plaque:${f.id}`)
-      name.setTexture(addText(this, SPECIES.find(d => d.id === f.id)!.name.toUpperCase(), PLAQUE_STYLE))
-      this.hooks.play('trophy')
+      const { kind, id } = f.popup, log = kind === 'log', key = `${log ? 'logcard' : 'plaque'}:${id}`
+      if (!this.textures.exists(key)) addBitmap(this, key, log ? logCardBitmap(id) : plaqueBitmap(id))
+      board.setTexture(key)
+      const spName = SPECIES.find(d => d.id === id)!.name.toUpperCase()
+      name.setTexture(addText(this, log ? `NEW SPECIES: ${spName}` : spName, PLAQUE_STYLE))
+      bonus.setTexture(log ? addText(this, `+$${formatNumber(bountyOf(id))}`, BOUNTY_STYLE) : addText(this, `+${Math.round(TROPHY.pctEach * 100)}% SALES`, PLAQUE_STYLE))
+      this.hooks.play(log ? 'logged' : 'trophy')
     }
     const y = 28 + 20 * [s.chumMs, s.hatchMs].filter(ms => ms > 0).length + f.dy, x = Math.round(w / 2)
     board.setPosition(x, Math.round(y)).setAlpha(f.alpha)
