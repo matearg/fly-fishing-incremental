@@ -14,6 +14,14 @@ body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template
 #ui { display: contents; }
 .title-mode .side, .title-mode .basket { display: none; }
 .title-mode #game { grid-column: 1 / -1; grid-row: 1 / -1; }
+/* Phones (layoutFor in src/layout.ts): the river gets the room; panel and basket wait behind the Menu. dvh keeps the strips above mobile browser bars. */
+.layout-upright, .layout-sideways { height: 100dvh; touch-action: manipulation; }
+.layout-upright .side, .layout-upright .basket, .layout-sideways .side, .layout-sideways .basket { display: none; }
+body.layout-upright { grid-template-columns: 100%; grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr); }
+/* Its aspect comes from fit() in main.ts; max-height leaves the strips a tap target when the window is barely upright. */
+.layout-upright:not(.title-mode) #game { grid-column: 1; grid-row: 2; width: 100%; max-height: calc(100dvh - 88px); }
+body.layout-sideways { grid-template-columns: 100%; grid-template-rows: 100%; }
+.layout-sideways #game { grid-column: 1; grid-row: 1; }
 .side, .basket { background: var(--paper); border: 3px solid var(--ink); box-shadow: inset 3px 3px 0 var(--bevel-light), inset -3px -3px 0 var(--bevel-dark); }
 .side { grid-column: 2; grid-row: 1 / span 2; overflow-y: auto; padding: 12px; overflow-wrap: anywhere; }
 .money { display: flex; align-items: center; gap: 8px; font: 28px/1 var(--head); color: var(--money); font-variant-numeric: tabular-nums; }

@@ -10,7 +10,8 @@ import { BOUNTY_STYLE, logCardBitmap } from '../../art/sprites/logcard'
 import { bountyOf } from '../../game/progress/log'
 import { formatNumber } from '../../game/util/format'
 import { notePlaques, plaqueFrame, resumePlaques, type PlaqueQueue } from './plaque'
-import { figureSpots } from './spots'
+import { figureSpots, fishingKeep, flyXs } from './spots'
+import type { Layout } from '../../layout'
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
 import { placeLook, type PlaceLook } from '../../art/places'
@@ -27,7 +28,7 @@ import { addBitmap, addText, fineImage, TEXT_WHITE, TEXT_YELLOW } from '../textu
 import { glints, tailFrame, type Glint } from '../swim'
 import { anglerCues, comboCue, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
 import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
-import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
+import { FISHING_ANCHOR, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
 const GROUND_Y = WATER_Y - 8 // the row the anglers stand on
@@ -39,7 +40,7 @@ const WRAP = 30 // off-screen margin so fish leave fully before wrapping
 const Z = { horizon: 0, water: 1, ripples: 2, fish: 3, junk: 4, bank: 5, helper: 5.5, figures: 6, line: 7, insects: 7.6, hud: 8 }
 const INSECTS = 16
 
-export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void; play: (id: SoundId, scale?: number, pitch?: number) => void }
+export interface SceneHooks { getState: () => GameState; onWaterClick: () => void; onMenu: () => void; layout: () => Layout; play: (id: SoundId, scale?: number, pitch?: number) => void }
 
 // stray: a hooked fish from another place, removed once it lands
 interface Swimmer { img: Phaser.GameObjects.Image; id: string; frames: [string, string]; x0: number; y: number; speed: number; phase: number; w: number; stray?: boolean }
@@ -156,12 +157,7 @@ export class FishingScene extends Phaser.Scene {
     const rand = lcg(hashString(id) + 7)
     this.rippleDots = glints(rand, 34, WATER_Y, 8)
     // The player stands at the water's edge (or out on the dock), the helper a step behind.
-    const { playerX, helperX, guideX } = figureSpots(look)
-    const tipX = playerX - BODY_X + ROD_TIP.idle[0]
-    return {
-      id, look, maxDepth, waterLeft: look.shoreX - 10, playerX, helperX, guideX,
-      playerFlyX: Math.min(VIEW_W - 40, tipX + 140), helperFlyX: tipX + 110, // far enough that its line clears the bank face at depth
-    }
+    return { id, look, maxDepth, waterLeft: look.shoreX - 10, ...figureSpots(look), ...flyXs(look) }
   }
 
   private buildSchool(s: GameState, place: Place): void {
@@ -293,13 +289,13 @@ export class FishingScene extends Phaser.Scene {
     this.settling = false
     // The HUD is pinned to the corners of whatever crop is showing.
     const w = this.scale.width / FINE
-    this.cameras.main.setScroll(...viewScroll(w, this.scale.height / FINE, FISHING_KEEP, FISHING_ANCHOR))
-    this.menuButton.x = w - 4
-    this.placeText.x = this.comboText.x = this.comboName.x = w - 22
     const s = this.hooks.getState()
     const t = time / 1000
     if (this.place?.id !== s.location) { this.place = this.buildPlace(s.location); this.school = '' }
     const place = this.place
+    this.cameras.main.setScroll(...viewScroll(w, this.scale.height / FINE, fishingKeep(place.look, this.hooks.layout()), FISHING_ANCHOR))
+    this.menuButton.x = w - 4
+    this.placeText.x = this.comboText.x = this.comboName.x = w - 22
     if (this.school !== schoolKey(s)) { this.school = schoolKey(s); this.buildSchool(s, place) }
 
     this.ripples.clear().fillStyle(place.look.ripple)

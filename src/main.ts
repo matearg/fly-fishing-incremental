@@ -2,7 +2,10 @@ import Phaser from 'phaser'
 import { FINE } from './art/pixels'
 import { FishingScene } from './scene/fishing/FishingScene'
 import { TitleScene } from './scene/title/TitleScene'
-import { FISHING_KEEP, TITLE_KEEP, VIEW_H, VIEW_W, viewSize } from './scene/view'
+import { TITLE_KEEP, VIEW_H, VIEW_W, viewSize } from './scene/view'
+import { fishingKeep, UPRIGHT_KEEP_W } from './scene/fishing/spots'
+import { placeLook } from './art/places'
+import { layoutFor, type Layout } from './layout'
 import { castPlayer, reelPlayer, tick } from './game/fishing/sim'
 import { localStore, SAVE_KEY } from './game/save'
 import type { GameState } from './game/state'
@@ -39,12 +42,24 @@ function titleMode(on: boolean): void {
   fit()
 }
 
+// One body class per layout, so CSS and the scene agree on which one is up.
+let layout: Layout = layoutFor(innerWidth, innerHeight)
+function applyLayout(): void {
+  layout = layoutFor(innerWidth, innerHeight)
+  for (const l of ['desktop', 'sideways', 'upright']) document.body.classList.toggle(`layout-${l}`, l === layout)
+  if (game.isBooted) fit()
+}
+addEventListener('resize', applyLayout)
+
 // Size the game to a crop of the world matching #game's aspect, so it fills the cell (ENVELOP covers rounding).
 // Past a scene's zoom limit the crop stops and FIT shows thin bars instead of hiding what must stay in view.
 const cell = document.getElementById('game')!
 function fit(): void {
+  // Upright in game, #game takes the narrow crop's aspect so the river band fills the width with no bars.
+  cell.style.aspectRatio = layout === 'upright' && session.mode === 'game' ? `${UPRIGHT_KEEP_W} / ${VIEW_H}` : ''
   if (!cell.clientWidth || !cell.clientHeight) return
-  const { w, h, clamped } = viewSize(cell.clientWidth, cell.clientHeight, session.mode === 'title' ? TITLE_KEEP : FISHING_KEEP)
+  const keep = session.mode === 'title' ? TITLE_KEEP : fishingKeep(placeLook(session.state.location), layout)
+  const { w, h, clamped } = viewSize(cell.clientWidth, cell.clientHeight, keep)
   const mode = clamped ? Phaser.Scale.FIT : Phaser.Scale.ENVELOP
   game.scale.scaleMode = mode
   game.scale.displaySize.setAspectMode(mode)
@@ -95,6 +110,7 @@ const game = new Phaser.Game({
       getState: () => session.state,
       onWaterClick: () => act(s => castPlayer(s, Math.random) || reelPlayer(s)),
       play: (id, scale, pitch) => sound.play(id, scale, pitch),
+      layout: () => layout,
       onMenu: () => {
         sound.play('back')
         session.toMenu()
@@ -105,6 +121,7 @@ const game = new Phaser.Game({
   ],
 })
 game.events.once(Phaser.Core.Events.READY, () => new ResizeObserver(fit).observe(cell))
+applyLayout()
 
 // Dev-only fast-forward: ?speed=20 runs 20 clamped sub-ticks per frame.
 const speed = import.meta.env.DEV ? Math.max(1, Math.floor(Number(new URLSearchParams(location.search).get('speed') ?? 1)) || 1) : 1
