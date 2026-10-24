@@ -80,4 +80,14 @@ describe('New Season and catch & release', () => {
     const n = startNewSeason(s)
     expect([n.buyerPaused, n.releaseBonus, n.release]).toEqual([false, 0, false])
   })
+  it('a new season drops the Taxidermist, the Guide and the trophies', () => {
+    const s = newGame(); s.taxidermist = true; s.guide = true; s.trophies = ['muskie', 'arcticChar']
+    const n = startNewSeason(s)
+    expect([n.taxidermist, n.guide, n.trophies]).toEqual([false, false, []])
+  })
+  it('New Season keeps the species log and clears the combo', () => {
+    const s = newGame(); s.speciesLog = ['dace']; s.combo = { defId: 'dace', count: 4 }
+    expect(startNewSeason(s).speciesLog).toEqual(['dace'])
+    expect(startNewSeason(s).combo).toEqual({ defId: null, count: 0 })
+  })
 })

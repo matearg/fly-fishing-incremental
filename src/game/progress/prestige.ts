@@ -11,7 +11,7 @@ export function canStartSeason(state: GameState): boolean {
 
 // Returns a fresh state; the caller replaces its state with it.
 export function startNewSeason(state: GameState): GameState {
-  return newGame({ licenses: state.licenses + licensesForSeason(state), licenseLevels: state.licenseLevels, licenseSpecies: state.licenseSpecies })
+  return newGame({ licenses: state.licenses + licensesForSeason(state), licenseLevels: state.licenseLevels, licenseSpecies: state.licenseSpecies, speciesLog: state.speciesLog })
 }
 
 // null = max level

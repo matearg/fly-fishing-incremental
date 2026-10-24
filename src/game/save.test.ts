@@ -6,7 +6,7 @@ import { basicRecipe, flyStats, tieFly } from './fishing/flies'
 import { rollCatch } from './fishing/catch'
 import { castPlayer, reelPlayer, tick } from './fishing/sim'
 import { sellAll } from './progress/economy'
-import { HATCH, RELEASE, TIMING } from './data'
+import { HATCH, RELEASE, SPECIES, TIMING } from './data'
 
 describe('save', () => {
   it('power-up timers: bad values fall back to defaults, running ones resume', () => {
@@ -148,5 +148,28 @@ describe('catch & release fields', () => {
     expect(withBonus(50)).toBe(RELEASE.cap)
     expect(withBonus('0.5')).toBe(0)
     expect(withBonus(0.4)).toBe(0.4)
+  })
+  it('keeps only known legendary trophies, once each', () => {
+    const s = newGame(); s.trophies = ['muskie', 'muskie', 'nope', SPECIES.find(d => d.tier === 'rare')!.id, 'arcticChar']
+    expect(parseSave(serialize(s))!.trophies).toEqual(['muskie', 'arcticChar'])
+  })
+  it('keeps only known species in the log, once each, plus mounted trophies', () => {
+    const s = newGame(); s.speciesLog = ['dace', 'dace', 'nope']; s.trophies = ['muskie']
+    expect(parseSave(serialize(s))!.speciesLog).toEqual(['dace', 'muskie'])
+  })
+  it('resets a bad combo', () => {
+    const load = (combo: unknown) => { const raw = JSON.parse(serialize(newGame())); if (combo === undefined) delete raw.combo; else raw.combo = combo; return parseSave(JSON.stringify(raw))!.combo }
+    for (const bad of [{ defId: 'nope', count: 2 }, { defId: 'dace', count: -1 }, { defId: 'dace', count: 1.5 }, { defId: 'dace', count: 1e21 }, undefined, null, 3])
+      expect(load(bad)).toEqual({ defId: null, count: 0 })
+    expect(load({ defId: 'dace', count: 3 })).toEqual({ defId: 'dace', count: 3 })
+  })
+  it('fills an empty log for old saves', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.speciesLog
+    expect(parseSave(JSON.stringify(raw))!.speciesLog).toEqual([])
+  })
+  it('an old save without the new helper fields loads with defaults', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.taxidermist; delete raw.guide; delete raw.trophies
+    const s = parseSave(JSON.stringify(raw))!
+    expect([s.taxidermist, s.guide, s.trophies]).toEqual([false, false, []])
   })
 })

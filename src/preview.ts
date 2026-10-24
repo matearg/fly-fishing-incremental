@@ -7,7 +7,7 @@ import { bakeBank, bakeRiver } from './art/scenery/river'
 import { BANK_SURFACE, bakeSideBank } from './art/scenery/bank'
 import { bakeHorizon } from './art/scenery/skyline'
 import { bakeSideWater } from './art/scenery/water'
-import { blank, blit, FINE, paint, stylize, type Bitmap, type TextStyle } from './art/pixels'
+import { blank, blit, FINE, paint, stylize, upscale, type Bitmap, type TextStyle } from './art/pixels'
 import { refine } from './art/refine'
 import { SMALL, textMask } from './art/font'
 import { BAR_SEGMENT, NOTES, SPEAKER, soundIconMask } from './art/soundIcons'
@@ -15,13 +15,21 @@ import { SoundPlayer } from './audio/player'
 import { SFX, TITLE_AMBIENCE, type SoundId } from './audio/sounds'
 import { TUNES, type TuneId } from './audio/music'
 import { TEXT_GREY, TEXT_WHITE, TEXT_YELLOW } from './scene/textures'
-import { BODY_X, FEET_Y, figureBitmaps, ROD_LOOKS, WADERS_LOOKS, type FigureKind, type Pose } from './art/sprites/figures'
+import { BODY_X, FEET_Y, figureBitmaps, guideBitmap, ROD_LOOKS, WADERS_LOOKS, type FigureKind, type Pose } from './art/sprites/figures'
 import { lineFlyBitmap } from './art/sprites/flies'
 import { fishBitmaps, fishSideBitmaps } from './art/sprites/fish'
 import { junkBitmap } from './art/sprites/junk'
 import { bannerLetters, CHUM_STYLE, CHUM_TEXT, HATCH_STYLE, HATCH_TEXT } from './art/banner'
 import { insectBitmaps } from './art/sprites/insects'
 import { letterWave } from './scene/fishing/choreo'
+import { figureSpots } from './scene/fishing/spots'
+import { PLAQUE_STYLE, plaqueBitmap } from './art/sprites/plaque'
+import { BOUNTY_STYLE, logCardBitmap } from './art/sprites/logcard'
+import { bountyOf } from './game/progress/log'
+import { formatNumber } from './game/util/format'
+import { comboCue } from './audio/cues'
+import { LEGENDARY_IDS } from './game/progress/trophies'
+import { TROPHY } from './game/data'
 
 const W = 480, H = 270, SCALE = 2
 const HORIZON_H = 110 // waterline of the side view
@@ -92,16 +100,56 @@ const gear = section('Gear — angler with each rod, then each pair of waders, i
 for (const rod of Object.keys(ROD_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { rod })[p], `${rod} · ${p}`, 4 / FINE)
 for (const waders of Object.keys(WADERS_LOOKS)) for (const p of ['idle', 'reel'] as Pose[]) show(gear, figureBitmaps('angler', { waders })[p], `${waders} · ${p}`, 4 / FINE)
 
-// Each place's fishing view with the two figures on the bank (on the dock at the Great Lake), one pose per place.
-const onBank = section('Figures on each bank')
+// Each place's fishing view with the figures on the bank (on the dock at the Great Lake), one pose per place:
+// first the Guide with the helper, then the Guide alone.
+const onBank = section('Figures on each bank — with the Guide, with and without the helper')
 LOCATIONS.forEach((loc, i) => {
-  const look = placeLook(loc.id), b = sideView(loc), pose = POSES[i % POSES.length]
-  // Player at the water's edge (end of the flat ground, or near the end of the dock), helper a step behind.
-  const player = look.dock ? look.shoreX + 70 : look.shoreX - 34, feet = HORIZON_H - BANK_ABOVE_WATER
-  blit(b, figureBitmaps('helper')[pose], (player - 24 - BODY_X) * FINE, (feet - FEET_Y) * FINE)
-  blit(b, figureBitmaps('angler')[pose], (player - BODY_X) * FINE, (feet - FEET_Y) * FINE)
-  show(onBank, b, `${loc.name} · ${pose}`, SCALE / FINE)
+  const look = placeLook(loc.id), pose = POSES[i % POSES.length], { playerX, helperX, guideX } = figureSpots(look), feet = HORIZON_H - BANK_ABOVE_WATER
+  for (const withHelper of [true, false]) {
+    const b = sideView(loc)
+    if (withHelper) blit(b, figureBitmaps('helper')[pose], (helperX - BODY_X) * FINE, (feet - FEET_Y) * FINE)
+    blit(b, guideBitmap(), (guideX - BODY_X) * FINE, (feet - FEET_Y) * FINE) // over the helper, so the net shows
+    blit(b, figureBitmaps('angler')[pose], (playerX - BODY_X) * FINE, (feet - FEET_Y) * FINE)
+    show(onBank, b, `${loc.name} · ${pose}${withHelper ? '' : ' · no helper'}`, SCALE / FINE)
+  }
 })
+
+// The pop-up as the scene lays it out: the board fine, its two text lines chunky (scale 1), over the place's water.
+const plaques = section('Taxidermist plaques (2×)')
+for (const id of LEGENDARY_IDS) {
+  const board = plaqueBitmap(id), sp = SPECIES.find(s => s.id === id)!
+  const lines = [sp.name.toUpperCase(), `+${Math.round(TROPHY.pctEach * 100)}% SALES`].map(t => upscale(stylize(textMask(t, SMALL), PLAQUE_STYLE), FINE))
+  const card = blank(Math.max(board.w, ...lines.map(l => l.w)) + 16, board.h + lines.reduce((h, l) => h + l.h + 2, 0) + 16)
+  fillRect(card, 0, 0, card.w, card.h, placeLook(sp.location).water[1])
+  blit(card, board, (card.w - board.w) >> 1, 8)
+  let y = 8 + board.h + 2
+  for (const l of lines) { blit(card, l, (card.w - l.w) >> 1, y); y += l.h + 2 }
+  show(plaques, card, sp.name, SCALE / FINE)
+}
+
+// The species log's pop-up, laid out like the plaques: the card fine, the two lines chunky.
+const logCards = section('Species log cards (2×)')
+for (const sp of SPECIES.filter(s => !LEGENDARY_IDS.includes(s.id))) {
+  const board = logCardBitmap(sp.id)
+  const lines = ([[`NEW SPECIES: ${sp.name.toUpperCase()}`, PLAQUE_STYLE], [`+$${formatNumber(bountyOf(sp.id))}`, BOUNTY_STYLE]] as const).map(([t, st]) => upscale(stylize(textMask(t, SMALL), st), FINE))
+  const card = blank(Math.max(board.w, ...lines.map(l => l.w)) + 16, board.h + lines.reduce((h, l) => h + l.h + 2, 0) + 16)
+  fillRect(card, 0, 0, card.w, card.h, placeLook(sp.location).water[1])
+  blit(card, board, (card.w - board.w) >> 1, 8)
+  let y = 8 + board.h + 2
+  for (const l of lines) { blit(card, l, (card.w - l.w) >> 1, y); y += l.h + 2 }
+  show(logCards, card, sp.name, SCALE / FINE)
+}
+
+// The combo counter as the HUD shows it: "×N" over the species name, right-aligned, chunky.
+const comboRow = section('Combo counter (2×)')
+for (const [n, id] of [[2, 'dace'], [5, 'brookTrout'], [11, 'steelhead']] as const) {
+  const lines = [stylize(textMask(`×${n}`, SMALL), TEXT_YELLOW), stylize(textMask(SPECIES.find(s => s.id === id)!.name.toUpperCase(), SMALL), TEXT_WHITE)]
+  const card = blank(Math.max(...lines.map(l => l.w)) + 8, lines.reduce((h, l) => h + l.h + 2, 0) + 6)
+  fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
+  let y = 4
+  for (const l of lines) { blit(card, l, card.w - 4 - l.w, y); y += l.h + 2 }
+  show(comboRow, card, `×${n}`)
+}
 
 // Fish: side view (both tail frames) and the title's top-down view, grouped by place, on that place's water.
 for (const loc of LOCATIONS) {
@@ -203,6 +251,7 @@ const button = (label: string, run: () => void, into = sounds) => {
   into.append(b)
 }
 for (const id of Object.keys(SFX) as SoundId[]) button(id, () => player.play(id))
+for (const n of [2, 6, 11]) button(`combo ×${n}`, () => player.play('combo', 1, comboCue(n - 1, n)!))
 for (const l of LOCATIONS) button(`water · ${l.name}`, () => player.ambience(waterAt = l.id))
 button('title water', () => player.ambience(waterAt, TITLE_AMBIENCE))
 button('stop water', () => player.ambience(null))

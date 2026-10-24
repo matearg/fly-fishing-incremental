@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { tick, castPlayer, reelPlayer, benchFull } from './sim'
-import { newGame, type GameState } from '../state'
-import { CHUM, HATCH, PATTERNS, SPECIES, TIERS, TIMING } from '../data'
+import { tick, castPlayer, reelPlayer, benchFull, castOdds } from './sim'
+import { newGame, type Angler, type GameState } from '../state'
+import { CHUM, GUIDE, HATCH, PATTERNS, SPECIES, TIERS, TIMING } from '../data'
 import { setRecipe, travel } from '../progress/economy'
 import { basicRecipe } from './flies'
 import { lcg, seqRand } from '../util/testutil'
+import { bountyOf } from '../progress/log'
+import { comboMult } from '../progress/combo'
 
 const r = seqRand(0.1, 0.3, 0.5)
 const run = (s: GameState, ms: number) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
@@ -276,5 +278,55 @@ describe('benchFull', () => {
     expect(benchFull(s)).toBe(false)
     s.flyBox = [{ patternId: 'basicDry', materialIds: [], wearLeft: 3 }]
     expect(benchFull(s)).toBe(true)
+  })
+  it("a hired angler's legendary is mounted and still goes to the basket", () => {
+    const s = newGame(); s.taxidermist = true
+    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1, fly: { patternId: 'basicDry', materialIds: [], wearLeft: 3 }, pending: { kind: 'fish', defId: 'muskie', value: 2500, size: 1, location: s.location } })
+    tick(s, 10, seqRand(0.5))
+    expect(s.trophies).toEqual(['muskie'])
+    expect(s.basket.map(c => c.defId)).toEqual(['muskie'])
+  })
+  it("the player's first catch of a species pays its bounty once", () => {
+    const s = newGame()
+    const land = () => { Object.assign(s.anglers[0], { phase: 'reeling', timerMs: 1, fly: { patternId: 'basicDry', materialIds: [], wearLeft: 3 }, pending: { kind: 'fish', defId: 'brookTrout', value: 8, size: 1, location: s.location } }); tick(s, 10, seqRand(0.5)) }
+    land()
+    expect([s.money, s.speciesLog]).toEqual([bountyOf('brookTrout'), ['brookTrout']])
+    land()
+    expect(s.money).toBe(bountyOf('brookTrout'))
+  })
+  it("a helper's catch never logs, pays or touches the combo", () => {
+    const s = newGame()
+    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1, fly: { patternId: 'basicDry', materialIds: [], wearLeft: 3 }, pending: { kind: 'fish', defId: 'brookTrout', value: 8, size: 1, location: s.location } })
+    tick(s, 10, seqRand(0.5))
+    expect([s.speciesLog, s.money]).toEqual([[], 0])
+    expect(s.combo).toEqual({ defId: null, count: 0 })
+    expect(s.basket.map(c => c.value)).toEqual([8])
+  })
+  const landAs = (s: GameState, pending: NonNullable<Angler['pending']>) => {
+    Object.assign(s.anglers[0], { phase: 'reeling', timerMs: 1, fly: { patternId: 'basicDry', materialIds: [], wearLeft: 3 }, pending })
+    tick(s, 10, seqRand(0.5))
+  }
+  const dace = (s: GameState) => ({ kind: 'fish' as const, defId: 'dace', value: 2, size: 1, location: s.location })
+  it("the player's streak raises each fish's stored value", () => {
+    const s = newGame()
+    for (let i = 0; i < 3; i++) landAs(s, dace(s))
+    expect(s.basket.map(c => c.value)).toEqual([2, 2 * comboMult(2), 2 * comboMult(3)])
+  })
+  it.each([false, true])('junk leaves the streak alone (sorter %s)', sorter => {
+    const s = newGame(); s.sorter = sorter
+    landAs(s, dace(s))
+    landAs(s, { kind: 'junk', defId: 'can', value: 0, size: 1, location: s.location })
+    landAs(s, dace(s))
+    expect(s.combo.count).toBe(2)
+  })
+  it('castOdds gives hired anglers the Guide bonus', () => {
+    const s = newGame(), helper: Angler = { auto: true, phase: 'idle', timerMs: 0, fly: null, pending: null }
+    expect(castOdds(s, helper)).toBe(0)
+    s.guide = true
+    expect(castOdds(s, helper)).toBe(GUIDE.oddsBonus)
+  })
+  it('castOdds is 0 for the player even with the Guide', () => {
+    const s = newGame(); s.guide = true
+    expect(castOdds(s, s.anglers[0])).toBe(0)
   })
 })

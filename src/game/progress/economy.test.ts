@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { price, releaseBonusOf, saleValue, sellAll, trash, trashStack, unlockPattern, unlockMaterial, unlockLocation, travel, setRecipe, wadersDiscount } from './economy'
 import { flyStats, tieFly } from '../fishing/flies'
 import { newGame, type CatchItem } from '../state'
-import { PATTERNS, MATERIALS, RELEASE, RODS, SPECIES } from '../data'
+import { PATTERNS, MATERIALS, RELEASE, RODS, SPECIES, TROPHY } from '../data'
 import { rollCatch } from '../fishing/catch'
 import { seqRand } from '../util/testutil'
 
@@ -187,5 +187,17 @@ describe('waders discount', () => {
     setRecipe(s, { patternId: 'pheasantTail', materialIds: [] }); s.money = 100
     tieFly(s)
     expect(s.money).toBe(100 - flyStats(s, s.recipe).tieCost)
+  })
+  it('trophies raise every fish in saleValue, not junk, and multiply with the release bonus', () => {
+    const s = newGame(); s.trophies = ['muskie']; s.releaseBonus = 0.5
+    s.basket = [{ id: 1, kind: 'fish', defId: 'muskie', value: 100, size: 1 }, { id: 2, kind: 'junk', defId: 'can', value: -5, size: 1 }]
+    expect(saleValue(s)).toBeCloseTo(100 * (1 + TROPHY.pctEach) - 5)
+    expect(saleValue(s, true)).toBeCloseTo(100 * 1.5 * (1 + TROPHY.pctEach) - 5)
+  })
+  it("the buyer's sale pays trophies but not the release bonus", () => {
+    const s = newGame(); s.trophies = ['muskie']; s.releaseBonus = 0.5
+    s.basket = [{ id: 1, kind: 'fish', defId: 'muskie', value: 100, size: 1 }]
+    expect(sellAll(s)).toBeCloseTo(100 * (1 + TROPHY.pctEach))
+    expect(s.releaseBonus).toBe(0.5)
   })
 })

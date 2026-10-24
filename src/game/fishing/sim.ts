@@ -1,15 +1,21 @@
 import { rollCatch } from './catch'
-import { BENCH_SPEEDUP, HATCH, RODS, TIMING } from '../data'
-import { sellAll } from '../progress/economy'
+import { BENCH_SPEEDUP, GUIDE, HATCH, RODS, TIMING } from '../data'
+import { earn, sellAll } from '../progress/economy'
 import { equippedRod } from '../progress/gear'
+import { noteCombo } from '../progress/combo'
+import { logCatch } from '../progress/log'
+import { mountTrophy } from '../progress/trophies'
 import { basicRecipe, isDry, tieFly } from './flies'
 import type { Angler, GameState } from '../state'
 
 // Only the player fishes with the bought rods; helpers keep the plain one.
 const rodOf = (state: GameState, a: Angler) => a.auto ? RODS[0] : equippedRod(state)
 
+// The Guide only helps hired anglers.
+export const castOdds = (state: GameState, a: Angler) => a.auto && state.guide ? GUIDE.oddsBonus : 0
+
 function pick(state: GameState, a: Angler, rand: () => number): void {
-  a.pending = { ...rollCatch(state, a.fly!, rand, rodOf(state, a), !a.auto && state.chumMs > 0), location: state.location }
+  a.pending = { ...rollCatch(state, a.fly!, rand, rodOf(state, a), !a.auto && state.chumMs > 0, castOdds(state, a)), location: state.location }
 }
 
 function startWaiting(state: GameState, a: Angler, rand: () => number): void {
@@ -24,7 +30,9 @@ function land(state: GameState, a: Angler, rand: () => number): void {
   // Fallback for an old save loaded mid-bite or mid-reel, before catches were picked at cast.
   const { location: _, ...c } = a.pending ?? { ...rollCatch(state, a.fly!, rand, rodOf(state, a)), location: state.location }
   a.pending = null
+  if (c.kind === 'fish' && !a.auto) { earn(state, logCatch(state, c.defId)); c.value *= noteCombo(state, c.defId) }
   if (!(state.sorter && c.kind === 'junk')) state.basket.push({ id: state.nextCatchId++, ...c })
+  if (c.kind === 'fish') mountTrophy(state, c.defId)
   if (--a.fly!.wearLeft <= 0) a.fly = null
   a.phase = 'idle'
 }

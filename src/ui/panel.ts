@@ -1,4 +1,4 @@
-import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SEASON, SPECIES, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
+import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, GUIDE, SEASON, SPECIES, TROPHY, WADERS, type LicenseUpgradeId, type LocationId } from '../game/data'
 import { price, saleValue, setRecipe, sellAll, trash, trashStack, travel, unlockLocation, unlockMaterial, unlockPattern, wadersDiscount } from '../game/progress/economy'
 import { buyRod, buyWaders, equipRod, wearWaders } from '../game/progress/gear'
 import { chumPrice, chumReach, throwChum } from '../game/progress/powerups'
@@ -6,17 +6,20 @@ import { flyStats, tieFly } from '../game/fishing/flies'
 import { benchCooldownMs, benchFull } from '../game/fishing/sim'
 import { formatNumber as fmt } from '../game/util/format'
 import { buyHelper, helperCost, toggleBuyerPause, type HelperKind } from '../game/progress/helpers'
+import { LEGENDARY_IDS, trophyMult } from '../game/progress/trophies'
 import { buyLicenseSpecies, buyLicenseUpgrade, canStartSeason, licensesForSeason, licenseUpgradeCost, startNewSeason } from '../game/progress/prestige'
 import type { CatchItem, GameState } from '../game/state'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS } from '../art/icons'
 import { catchImg, icon } from './icons'
 import { keepOpen, stackBasket, STACK_LIST_MAX, type Stack } from './basket'
+import { logPlaces } from './log'
 import { panelCue } from '../audio/cues'
 import type { SoundId } from '../audio/sounds'
 
 type Act = (fn: (s: GameState) => unknown) => unknown
 
-const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer', release: 'Catch & Release' }
+const pct = (x: number) => `${Math.round(x * 100)}%`
+const HELPER_LABELS: Record<HelperKind, string> = { angler: 'Hire angler', bench: 'Tying bench', bulkTrash: 'Bulk trash', sorter: 'Junk sorter', buyer: 'Fish buyer', release: 'Catch & Release', taxidermist: 'Taxidermist', guide: 'Guide' }
 const HELPER_DESC: Record<HelperKind, string> = {
   angler: 'Fishes on its own with flies from the box',
   bench: 'Ties flies from your recipe; more benches tie faster',
@@ -24,6 +27,8 @@ const HELPER_DESC: Record<HelperKind, string> = {
   sorter: 'Throws junk away before it reaches the basket',
   buyer: 'Sells the basket every 5 s; can be paused',
   release: 'Trashed fish add to your next Sell all, up to +100%',
+  taxidermist: `Mounts your first legendary of each species: +${pct(TROPHY.pctEach)} on every fish sold`,
+  guide: `Your hired anglers find rarer fish: odds +${pct(GUIDE.oddsBonus)}`,
 }
 const patternDesc = (p: (typeof PATTERNS)[number]) => `${p.cls}, depth ${p.maxDepth}, wear ${p.wear}, odds +${pct(p.oddsBonus)} · tie $${fmt(p.tieCost)}`
 const materialDesc = (m: (typeof MATERIALS)[number]) => [m.depthBonus && `depth +${m.depthBonus}`, m.wearBonus && `wear +${m.wearBonus}`, m.oddsBonus && `odds +${pct(m.oddsBonus)}`, m.sizeBonus && `size +${pct(m.sizeBonus)}`].filter(Boolean).join(', ') + ` · tie $${fmt(m.tieCost)}`
@@ -31,7 +36,6 @@ const rodDesc = (r: (typeof RODS)[number]) => r.tiers.length ? `+${pct(r.bonus)}
 const wadersDesc = (w: (typeof WADERS)[number]) => w.discount ? `${pct(w.discount)} off the shop` : 'No discount'
 const catchName = (c: CatchItem) => (c.kind === 'fish' ? SPECIES : JUNK).find(d => d.id === c.defId)?.name ?? c.defId
 const money = (n: number) => `${n < 0 ? '-' : ''}$${fmt(Math.abs(n))}`
-const pct = (x: number) => `${Math.round(x * 100)}%`
 // Icon + text label for a flex button, so <small> and the price lay out beside the icon.
 const lbl = (ico: string, text: string) => `${ico}<span class="txt">${text}</span>`
 // Owned things are inert rows with a stamp, never a disabled button; they keep the description they had for sale.
@@ -80,6 +84,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
   let confirmSeason = false
   let stacks: Stack[] = []
   let openStack: string | null = null // key of the one tile whose catches are listed
+  let logOpen = false
 
   root.innerHTML = `
     <aside class="side">
@@ -92,6 +97,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       <section><h2>${icon('place', 'creek', PLACE_ICONS.creek, 1)}Places</h2><div data-sec="places"></div></section>
       <section><h2>${icon('ui', 'season', UI_ICONS.season, 1)}New Season</h2><div data-sec="season"></div></section>
       <section><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Licenses</h2><div data-sec="licenses"></div></section>
+      <section><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Species log</h2><div data-sec="log"></div></section>
     </aside>
     <footer class="basket">
       <div data-sec="basketHead"></div>
@@ -143,7 +149,8 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
     helpers: s => (Object.keys(HELPER_LABELS) as HelperKind[]).map(k => {
       const cost = helperCost(s, k)
       const count = k === 'angler' ? ` (${s.anglers.length - 1})` : k === 'bench' ? ` (${s.bench})` : ''
-      return cost === null ? owned(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k], undefined, HELPER_DESC[k]) : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), `${HELPER_LABELS[k]}${count} <small>${HELPER_DESC[k]}</small>`)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
+      const desc = k === 'taxidermist' && s.taxidermist ? `${HELPER_DESC[k]} · Trophies: ${s.trophies.length} of ${LEGENDARY_IDS.length}` : HELPER_DESC[k]
+      return cost === null ? owned(icon('helper', k, HELPER_ICONS[k]), HELPER_LABELS[k], undefined, desc) : btn('hire', k, `${lbl(icon('helper', k, HELPER_ICONS[k]), `${HELPER_LABELS[k]}${count} <small>${HELPER_DESC[k]}</small>`)}<b>$${fmt(cost)}</b>`, { disabled: s.money < cost })
     }).join(''),
     places: s => {
       const next = LOCATIONS.find(l => !s.unlockedLocations.includes(l.id))
@@ -164,8 +171,11 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       + SPECIES.filter(sp => sp.licenseCost).map(sp => s.licenseSpecies.includes(sp.id)
         ? owned(catchImg('fish', sp.id), sp.name, 'IN THE WATER', `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)
         : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
+    log: s => btn('toggleLog', '', `Caught ${s.speciesLog.length} of ${SPECIES.length}`, { expanded: logOpen, cls: 'wide' })
+      + (logOpen ? logPlaces(s).map(p => `<p class="label">${p.name.toUpperCase()} ${p.logged}/${p.total}${p.locked ? ' · locked' : ''}</p>`
+        + p.rows.map(r => `<div class="row-catch">${r.logged ? `${catchImg('fish', r.id)}<span>${SPECIES.find(d => d.id === r.id)!.name}</span>` : `<span>???${r.legendary ? ' (Taxidermist)' : ''}</span>`}</div>`).join('')).join('') : ''),
     basketHead: s => {
-      const bonus = s.releaseBonus > 0 ? ` +${pct(s.releaseBonus)}` : ''
+      const bonus = (s.releaseBonus > 0 ? ` +${pct(s.releaseBonus)}` : '') + (s.trophies.length ? ` Trophies +${pct(trophyMult(s) - 1)}` : '')
       return btn('sell', '', `Sell all (${s.basket.length}) <b>${money(saleValue(s, true))}</b>${bonus}`, { disabled: !s.basket.length })
         + (s.buyer ? btn('pauseBuyer', '', lbl(icon('helper', 'buyer', HELPER_ICONS.buyer, 1), 'Pause buyer'), { pressed: s.buyerPaused, label: 'Pause fish buyer' }) : '')
     },
@@ -224,6 +234,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       case 'trash': return act(s => trash(s, Number(id)))
       case 'trashStack': { const st = stacks.find(x => x.key === id); return st && act(s => trashStack(s, st.kind, st.defId)) }
       case 'toggleStack': openStack = openStack === id ? null : id; return render()
+      case 'toggleLog': logOpen = !logOpen; return render()
     }
   }
 

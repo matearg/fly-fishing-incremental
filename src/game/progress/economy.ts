@@ -1,5 +1,6 @@
 import { LOCATIONS, MATERIALS, PATTERNS, RELEASE, SPECIES, WADERS, type LocationId } from '../data'
 import type { CatchItem, GameState, Recipe } from '../state'
+import { trophyMult } from './trophies'
 
 export function spend(state: GameState, cost: number): boolean {
   if (state.money < cost) return false
@@ -24,10 +25,10 @@ export function earn(state: GameState, amount: number): void {
   state.seasonEarnings += Math.max(0, amount)
 }
 
-// withBonus: only the player's own Sell all pays the release bonus, and it multiplies fish, never junk.
+// withBonus: only the player's own Sell all pays the release bonus. It and the trophies multiply fish, never junk.
 export function saleValue(state: GameState, withBonus = false): number {
-  const bonus = withBonus ? state.releaseBonus : 0
-  return state.basket.reduce((a, c) => a + c.value * (c.kind === 'fish' ? 1 + bonus : 1), 0)
+  const fishMult = (1 + (withBonus ? state.releaseBonus : 0)) * trophyMult(state)
+  return state.basket.reduce((a, c) => a + c.value * (c.kind === 'fish' ? fishMult : 1), 0)
 }
 
 // A sale with no fish in it leaves the bonus waiting.

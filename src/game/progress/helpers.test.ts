@@ -4,6 +4,7 @@ import { benchCooldownMs, tick } from '../fishing/sim'
 import { newGame, type GameState } from '../state'
 import { HELPERS, LICENSE_UPGRADES, PATTERNS, TIMING } from '../data'
 import { seqRand } from '../util/testutil'
+import { price } from './economy'
 
 const run = (s: GameState, ms: number, r = seqRand(0.1, 0.3, 0.5)) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
 
@@ -109,5 +110,14 @@ describe('buyer pause', () => {
   it('no buyer, no pause', () => {
     const s = newGame()
     expect(toggleBuyerPause(s)).toBe(false); expect(s.buyerPaused).toBe(false)
+  })
+  it('the Taxidermist and the Guide are one-off hires', () => {
+    for (const [k, cost] of [['taxidermist', HELPERS.taxidermist.cost], ['guide', HELPERS.guide.cost]] as const) {
+      const s = newGame(); s.money = 1e9
+      expect(helperCost(s, k), k).toBe(price(s, cost))
+      expect(buyHelper(s, k), k).toBe(true)
+      expect(s[k], k).toBe(true)
+      expect(helperCost(s, k), k).toBeNull()
+    }
   })
 })

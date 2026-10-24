@@ -1,4 +1,5 @@
 import { catchSound, type SoundId } from './sounds'
+import { COMBO } from '../game/data'
 import { BACK_MS, CAST_MS, STRAIGHT_MS, type Track } from '../scene/fishing/choreo'
 import type { Angler, Pending, Phase } from '../game/state'
 
@@ -40,4 +41,10 @@ export function panelCue(action: string, result: unknown): SoundId {
 // Frame to frame, like anglerCues: a hatch sounds once, as it starts.
 export function hatchCue(prevHatchMs: number, curHatchMs: number): SoundId[] {
   return prevHatchMs <= 0 && curHatchMs > 0 ? ['hatch'] : []
+}
+
+// Frame to frame: the combo ticks each time the streak grows past 1, a semitone higher each step until maxSteps.
+// Returns the tick's pitch multiplier, or null for no tick.
+export function comboCue(prevCount: number, curCount: number): number | null {
+  return curCount > prevCount && curCount >= 2 ? 2 ** (Math.min(curCount - 2, COMBO.maxSteps - 1) / 12) : null
 }

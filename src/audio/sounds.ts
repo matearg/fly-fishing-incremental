@@ -1,7 +1,7 @@
 import { SPECIES, type LocationId } from '../game/data'
 
 export type SoundId = 'castBack' | 'castForward' | 'plip' | 'bite' | 'reel' | 'splashOut' | 'catch' | 'catchBig' | 'junk'
-  | 'move' | 'select' | 'back' | 'nope' | 'buy' | 'sell' | 'season' | 'chum' | 'hatch'
+  | 'move' | 'select' | 'back' | 'nope' | 'buy' | 'sell' | 'season' | 'chum' | 'hatch' | 'trophy' | 'logged' | 'combo'
 export type Wave = 'square' | 'triangle' | 'noise'
 
 // One voice. Swells in over `attack` ms (default 5), then decays to silence by `dur`. Tones: freq is pitch in Hz.
@@ -39,6 +39,9 @@ export const SFX: Record<SoundId, Note[]> = {
   sell: [sq(0, 50, 1568, 0.06), sq(55, 150, 2093, 0.06)],
   chum: [noise(0, 400, 900, 0.4, 200), tri(0, 260, 150, 0.4, 70), noise(60, 200, 3000, 0.15, 800)], // a heavy bucket hitting the water
   hatch: [...Array.from({ length: 6 }, (_, i) => sq(i * 60, 70, 400 + i * 100, 0.06, 450 + i * 100)), noise(0, 500, 5000, 0.08)], // a rising buzz
+  trophy: [...arp([G5, C6, G5, C6], 90, 110, 0.09), sq(360, 420, E6, 0.1), sq(360, 420, G6, 0.06), tri(0, 360, G5 / 4, 0.3), tri(360, 500, C5 / 2, 0.3)], // a short brassy fanfare
+  logged: [sq(0, 110, E6, 0.05), sq(90, 200, A5 * 2, 0.05), tri(0, 260, E5, 0.2)], // a light two-note chime, well under the trophy
+  combo: [sq(0, 50, C6, 0.06), noise(0, 25, 6000, 0.05)], // a short tick; player.play raises its pitch with the streak
   season: [
     ...arp([G5, C6, E6, G6], 110, 140),
     sq(440, 220, E6, 0.1), sq(660, 600, G6, 0.1),

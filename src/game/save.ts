@@ -1,5 +1,6 @@
 import { JUNK, LOCATIONS, MATERIALS, PATTERNS, RELEASE, RODS, SPECIES, WADERS } from './data'
 import { basicRecipe } from './fishing/flies'
+import { LEGENDARY_IDS } from './progress/trophies'
 import { newGame, SAVE_VERSION, type Fly, type GameState, type Recipe } from './state'
 
 export const SAVE_KEY = 'flyfishing-save'
@@ -29,6 +30,10 @@ function sanitize(raw: GameState): GameState {
   if (!s.waders.includes(WADERS[0].id)) s.waders.unshift(WADERS[0].id)
   if (!s.waders.includes(s.wearing)) s.wearing = WADERS[0].id
   s.licenseSpecies = s.licenseSpecies.filter(id => has(SPECIES, id))
+  s.trophies = [...new Set(s.trophies.filter(id => LEGENDARY_IDS.includes(id)))]
+  s.speciesLog = [...new Set([...s.speciesLog.filter(id => has(SPECIES, id)), ...s.trophies])]
+  const c = s.combo // the cap keeps an edited count printable on the HUD (no exponent notation)
+  if (!(c && (c.defId === null || has(SPECIES, c.defId)) && Number.isInteger(c.count) && c.count >= 0 && c.count <= 1e6)) s.combo = d.combo
   if (!validRecipe(s.recipe)) s.recipe = basicRecipe()
   s.releaseBonus = Number.isFinite(s.releaseBonus) ? Math.min(RELEASE.cap, Math.max(0, s.releaseBonus)) : 0
   for (const k of ['chumMs', 'hatchMs', 'nextHatchMs'] as const) if (!(Number.isFinite(s[k]) && s[k] >= 0)) s[k] = d[k]

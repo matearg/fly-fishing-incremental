@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { BODY_X, BODY_Y, FEET_Y, FIGURE_POSES, figureBitmaps, ROD_LOOKS, ROD_TIP, WADERS_LOOKS, type FigureKind, type Pose } from './figures'
+import { BODY_X, BODY_Y, FEET_Y, FIGURE_POSES, figureBitmaps, guideBitmap, ROD_LOOKS, ROD_TIP, WADERS_LOOKS, type FigureKind, type Pose } from './figures'
 import { RODS, WADERS } from '../../game/data'
 import { FINE } from '../pixels'
 
@@ -53,5 +53,15 @@ describe('figures', () => {
   it('every rod and pair has a look', () => {
     expect(Object.keys(ROD_LOOKS).sort()).toEqual(RODS.map(r => r.id).sort())
     expect(Object.keys(WADERS_LOOKS).sort()).toEqual(WADERS.map(w => w.id).sort())
+  })
+  it('the guide is the same size as the anglers and stands on the bottom row', () => {
+    const g = guideBitmap(), a = figureBitmaps('angler').idle
+    expect([g.w, g.h]).toEqual([a.w, a.h])
+    expect([...Array(g.w).keys()].some(x => alpha(g, x, g.h - 1) === 255)).toBe(true)
+  })
+  it('the guide holds no rod', () => {
+    const g = guideBitmap(), rods = new Set(Object.values(ROD_LOOKS).flatMap(l => [l.r, l.R]))
+    const rgb = (i: number) => (g.data[i * 4] << 16) | (g.data[i * 4 + 1] << 8) | g.data[i * 4 + 2]
+    expect([...Array(g.w * g.h).keys()].some(i => g.data[i * 4 + 3] && rods.has(rgb(i)))).toBe(false)
   })
 })
