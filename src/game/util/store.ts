@@ -4,6 +4,6 @@ export interface SaveStore { read(): string | null; write(raw: string): void }
 export function storeAt(key: string): SaveStore {
   return {
     read() { try { return localStorage.getItem(key) } catch { return null } },
-    write(raw) { try { localStorage.setItem(key, raw) } catch { /* nothing to do; the next write retries */ } },
+    write(raw) { try { localStorage.setItem(key, raw) } catch { /* nothing to do; the value just isn't stored this time */ } },
   }
 }

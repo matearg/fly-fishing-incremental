@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { flyStats, tieFly, basicRecipe, isDry, reachDepth, tieAny } from './flies'
-import { newGame } from '../state'
+import { flyStats, tieFly, isDry, reachDepth, tieAny } from './flies'
+import { basicRecipe, newGame } from '../state'
 import { PATTERNS, MATERIALS, LICENSE_UPGRADES } from '../data'
 
 const nymph = PATTERNS.find(p => p.cls === 'nymph')!

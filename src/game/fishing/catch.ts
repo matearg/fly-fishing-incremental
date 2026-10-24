@@ -24,7 +24,7 @@ export function isRarePlus(tier: Tier): boolean {
 export function rollCatch(state: GameState, fly: Fly, rand: () => number, rod: RodDef = RODS[0], chum = false, extraOdds = 0): Omit<CatchItem, 'id'> {
   const loc = LOCATIONS.find(l => l.id === state.location)!
   const st = flyStats(state, fly)
-  const depth = reachDepth(state, fly)
+  const depth = reachDepth(state, fly, st)
   const fish = placeSpecies(loc.id, state.licenseSpecies).filter(s => s.depth <= depth)
   const options = [
     ...fish.map(s => ({ w: speciesWeight(s, st.oddsBonus + extraOdds) * (chum && isRarePlus(s.tier) ? CHUM.mult : 1), fish: s, junk: null })),

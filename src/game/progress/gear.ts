@@ -40,7 +40,7 @@ export function rodGain(rod: RodDef, location: LocationId, maxDepth: number, odd
 // The owned rod that pays most for the player's fly here; ties go to the earlier rod.
 export function bestRod(state: GameState): string {
   const st = flyStats(state, state.recipe)
-  const depth = reachDepth(state, state.recipe)
+  const depth = reachDepth(state, state.recipe, st)
   const gain = (r: RodDef) => rodGain(r, state.location, depth, st.oddsBonus, state.licenseSpecies)
   return RODS.filter(r => state.rods.includes(r.id)).reduce((b, r) => gain(r) > gain(b) ? r : b).id
 }

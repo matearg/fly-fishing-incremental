@@ -1,6 +1,5 @@
 import { HATCH, LICENSE_UPGRADES, LOCATIONS, PATTERNS, RODS, WADERS, type LicenseUpgradeId, type LocationId } from './data'
 import { licenseEffects } from './progress/license'
-import { basicRecipe } from './fishing/flies'
 
 export interface Fly { patternId: string; materialIds: string[]; wearLeft: number }
 export type Phase = 'idle' | 'waiting' | 'bite' | 'reeling'
@@ -28,6 +27,10 @@ export interface GameState {
 export type Carry = Pick<GameState, 'licenses' | 'licenseLevels' | 'licenseSpecies' | 'speciesLog'>
 
 export const SAVE_VERSION = 1
+
+export function basicRecipe(): Recipe {
+  return { patternId: PATTERNS[0].id, materialIds: [] }
+}
 
 export function newAngler(auto: boolean): Angler {
   return { auto, phase: 'idle', timerMs: 0, fly: null, pending: null }

@@ -199,7 +199,6 @@ export class FishingScene extends Phaser.Scene {
     return [this.wrapX(f.x0 + t * f.speed, place), f.y + Math.sin(t * 1.3 + f.phase) * 2]
   }
 
-  // Where the fly comes to rest after the cast and sink.
   // Sound cues and plaques compare against the last frame; forget it when there's no valid last frame.
   private resetCues(): void {
     this.cues = [null, null]; this.prevHatchMs = null; this.prevCombo = null; this.plaquesStale = true
@@ -210,6 +209,7 @@ export class FishingScene extends Phaser.Scene {
     return { tip: [x + ROD_TIP[pose][0], figY + ROD_TIP[pose][1]], backTip: [x + ROD_TIP.back[0], figY + ROD_TIP.back[1]] }
   }
 
+  // Where the fly comes to rest after the cast and sink.
   private restPos(s: GameState, a: Angler, landX: number, place: Place): [number, number] {
     return [landX, depthY(reachDepth(s, a.fly!), place.maxDepth)]
   }

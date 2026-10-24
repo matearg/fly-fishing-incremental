@@ -1,7 +1,6 @@
 import { JUNK, LOCATIONS, MATERIALS, PATTERNS, RELEASE, RODS, SPECIES, WADERS } from './data'
-import { basicRecipe } from './fishing/flies'
 import { LEGENDARY_IDS } from './progress/trophies'
-import { newGame, SAVE_VERSION, type Fly, type GameState, type Recipe } from './state'
+import { basicRecipe, newGame, SAVE_VERSION, type Fly, type GameState, type Recipe } from './state'
 import { storeAt } from './util/store'
 
 export const SAVE_KEY = 'flyfishing-save'
