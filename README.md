@@ -7,13 +7,16 @@ Built with TypeScript, Phaser 4 and Vite. 2D pixel art, side view.
 ## How to play
 
 - **Cast:** click the water (or press `Space`). Wait for a bite, then reel it in.
-- **Sell:** catches go into the basket. **Sell all** sells everything, junk included (junk is worth nothing or less), so drag junk to the trash first.
+- **Sell:** catches go into the basket. **Sell all** sells everything, junk included (junk is worth nothing or less), so open a stack and trash the junk first.
+- **Bonuses:** your first catch of each species pays a bounty, and a streak of the same species is worth more with each fish.
 - **Tie flies:** the pattern sets how deep the fly sinks (dry = surface, nymph = mid-water, streamer = deep); deeper water holds rarer fish. Materials improve the odds, size, wear, or depth. Each fly wears out after a few catches.
-- **Automate:** hire anglers, a tying bench, a junk sorter, and a fish buyer.
-- **Travel:** creek → river → big river → mountain lake → great lake, each with better fish.
+- **Power-ups:** the chum bucket draws rare fish for a minute. Now and then a hatch comes on, and dry flies get quick bites.
+- **Gear:** rods pay more for some tiers of fish; waders make the shop cheaper.
+- **Automate:** hire anglers, a tying bench, a junk sorter, a fish buyer, and more: bulk trash, catch and release, a Taxidermist who mounts legendary trophies, and a Guide for your anglers.
+- **Travel:** creek → river → big river → mountain lake → great lake, each with better fish. The species log tracks what you've caught.
 - **New Season:** reset your run for Fishing Licenses, which buy permanent head starts and unlock new species.
 
-Progress only happens while the game is open; there's no offline progress. The game autosaves to your browser's `localStorage`. `Esc` opens the menu.
+Progress only happens while the game is open; there's no offline progress. The game autosaves to your browser's `localStorage`. `Esc` opens the menu. On a phone, play with it held sideways.
 
 ## Running locally
 
@@ -39,11 +42,16 @@ src/
   scene/   Phaser scenes
     fishing/   fishing scene and its animation timing
     title/     title screen, menu, river backdrop
-  art/     pixel art drawn in code: pixel tools, font, logo, place looks
-    sprites/   anglers, fish, junk
+  art/     pixel art drawn in code: pixel tools, font, logo, icons, place looks
+    scenery/   procedural skylines, water, banks, props
+    sprites/   anglers, fish, flies, insects, junk, plaques
+  audio/   synthesized sounds and music, volume settings
   ui/      HTML/CSS side panel over the canvas
-  session.ts  ties the game state, saving, and scenes together
-docs/      design specs and the roadmap
+  main.ts     wires the loop, autosave, audio, and layout together
+  session.ts  which screen is up, and when a game is saved
+  layout.ts   desktop or phone (sideways/upright) layout
+  preview.ts  dev-only art and sound review page (/preview.html)
+docs/      the game's design spec
 ```
 
 Balance numbers live in `src/game/data.ts`.
