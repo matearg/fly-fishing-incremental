@@ -1,7 +1,7 @@
 import { HELPERS } from '../data'
 import { price, spend } from './economy'
 import { licenseEffects } from './license'
-import type { GameState } from '../state'
+import { newAngler, type GameState } from '../state'
 
 export type HelperKind = 'angler' | 'bench' | 'bulkTrash' | 'sorter' | 'buyer' | 'release' | 'taxidermist' | 'guide'
 
@@ -23,7 +23,7 @@ function baseCost(state: GameState, kind: HelperKind): number | null {
 export function buyHelper(state: GameState, kind: HelperKind): boolean {
   const cost = helperCost(state, kind)
   if (cost === null || !spend(state, cost)) return false
-  if (kind === 'angler') state.anglers.push({ auto: true, phase: 'idle', timerMs: 0, fly: null, pending: null })
+  if (kind === 'angler') state.anglers.push(newAngler(true))
   else if (kind === 'bench') state.bench++
   else state[kind] = true
   return true

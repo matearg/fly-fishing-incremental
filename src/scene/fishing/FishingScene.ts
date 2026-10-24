@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { JUNK, LOCATIONS, SPECIES, TIMING, TROPHY, type LocationId } from '../../game/data'
 import { placeSpecies } from '../../game/fishing/catch'
-import { flyStats } from '../../game/fishing/flies'
+import { reachDepth } from '../../game/fishing/flies'
 import { hashString, lcg } from '../../game/util/rand'
 import type { Angler, GameState, Pending } from '../../game/state'
 import { BODY_X, BODY_Y, FEET_Y, figureBitmaps, guideBitmap, ROD_TIP, type Pose } from '../../art/sprites/figures'
@@ -202,7 +202,7 @@ export class FishingScene extends Phaser.Scene {
 
   // Where the fly comes to rest after the cast and sink.
   private restPos(s: GameState, a: Angler, landX: number, place: Place): [number, number] {
-    return [landX, depthY(Math.min(flyStats(s, a.fly!).maxDepth, place.maxDepth), place.maxDepth)]
+    return [landX, depthY(reachDepth(s, a.fly!), place.maxDepth)]
   }
 
   // The line from the rod tip to the angler's fly (its last point), or null while no line is out.
@@ -214,7 +214,7 @@ export class FishingScene extends Phaser.Scene {
   // Where the angler's fly is, or null while no line is out.
   private flyPos(s: GameState, a: Angler, tr: Track, tip: Pt, backTip: Pt, landX: number, place: Place, t: number): Pt | null {
     if (a.phase === 'idle' || !a.fly) return null
-    const flyY = depthY(Math.min(flyStats(s, a.fly).maxDepth, place.maxDepth), place.maxDepth)
+    const flyY = depthY(reachDepth(s, a.fly), place.maxDepth)
     if (a.phase === 'bite') return [landX, flyY + Math.sin(t * 25) * 2] // the tug
     if (a.phase === 'reeling') {
       const k = 1 - a.timerMs / TIMING.reelMs

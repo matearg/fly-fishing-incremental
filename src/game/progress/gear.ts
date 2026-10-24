@@ -1,6 +1,6 @@
-import { LOCATIONS, RODS, WADERS, type LocationId, type RodDef } from '../data'
+import { RODS, WADERS, type LocationId, type RodDef } from '../data'
 import { placeSpecies, speciesWeight } from '../fishing/catch'
-import { flyStats } from '../fishing/flies'
+import { flyStats, reachDepth } from '../fishing/flies'
 import { purchase } from './economy'
 import type { GameState } from '../state'
 
@@ -40,7 +40,7 @@ export function rodGain(rod: RodDef, location: LocationId, maxDepth: number, odd
 // The owned rod that pays most for the player's fly here; ties go to the earlier rod.
 export function bestRod(state: GameState): string {
   const st = flyStats(state, state.recipe)
-  const depth = Math.min(st.maxDepth, LOCATIONS.find(l => l.id === state.location)!.maxDepth)
+  const depth = reachDepth(state, state.recipe)
   const gain = (r: RodDef) => rodGain(r, state.location, depth, st.oddsBonus, state.licenseSpecies)
   return RODS.filter(r => state.rods.includes(r.id)).reduce((b, r) => gain(r) > gain(b) ? r : b).id
 }

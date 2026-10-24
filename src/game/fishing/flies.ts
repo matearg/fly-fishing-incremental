@@ -1,4 +1,4 @@
-import { MATERIALS, PATTERNS } from '../data'
+import { LOCATIONS, MATERIALS, PATTERNS } from '../data'
 import { spend } from '../progress/economy'
 import { licenseEffects } from '../progress/license'
 import type { GameState, Recipe } from '../state'
@@ -19,6 +19,11 @@ export function flyStats(state: GameState, recipe: Recipe): FlyStats {
   return st
 }
 
+// How deep the fly fishes here: its own max depth, stopped by the place's floor.
+export function reachDepth(state: GameState, fly: Recipe): number {
+  return Math.min(flyStats(state, fly).maxDepth, LOCATIONS.find(l => l.id === state.location)!.maxDepth)
+}
+
 export function isDry(f: { patternId: string }): boolean {
   return PATTERNS.find(p => p.id === f.patternId)?.cls === 'dry'
 }
@@ -32,4 +37,9 @@ export function tieFly(state: GameState, recipe: Recipe = state.recipe): boolean
   if (!spend(state, st.tieCost)) return false
   state.flyBox.push({ patternId: recipe.patternId, materialIds: [...recipe.materialIds], wearLeft: st.wear })
   return true
+}
+
+// Never stuck: the recipe, else the free basic fly.
+export function tieAny(state: GameState): boolean {
+  return tieFly(state) || tieFly(state, basicRecipe())
 }

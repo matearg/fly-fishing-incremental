@@ -5,7 +5,7 @@ import { equippedRod } from '../progress/gear'
 import { noteCombo } from '../progress/combo'
 import { logCatch } from '../progress/log'
 import { mountTrophy } from '../progress/trophies'
-import { basicRecipe, isDry, tieFly } from './flies'
+import { isDry, tieAny, tieFly } from './flies'
 import type { Angler, GameState } from '../state'
 
 // Only the player fishes with the bought rods; helpers keep the plain one.
@@ -97,7 +97,7 @@ export function hatchSwap(state: GameState, rand: () => number): boolean {
   const i = state.flyBox.findIndex(isDry)
   if (i >= 0) p.fly = state.flyBox.splice(i, 1)[0]
   else {
-    if (!tieFly(state)) tieFly(state, basicRecipe())
+    tieAny(state)
     p.fly = state.flyBox.pop()!
   }
   if (p.phase === 'waiting') startWaiting(state, p, rand) // re-pick for the new fly, with the hatch's wait
@@ -109,7 +109,7 @@ export function castPlayer(state: GameState, rand: () => number): boolean {
   if (p.phase !== 'idle') return false
   if (!p.fly) {
     // Never stuck: box, then the recipe, then the free basic fly.
-    if (!state.flyBox.length && !tieFly(state)) tieFly(state, basicRecipe())
+    if (!state.flyBox.length) tieAny(state)
     p.fly = state.flyBox.shift()!
   }
   hatchSwap(state, rand)
