@@ -12,6 +12,7 @@ import type { CatchItem, GameState } from '../game/state'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS } from '../art/icons'
 import { catchImg, icon } from './icons'
 import { keepOpen, stackBasket, STACK_LIST_MAX, type Stack } from './basket'
+import { logPlaces } from './log'
 import { panelCue } from '../audio/cues'
 import type { SoundId } from '../audio/sounds'
 
@@ -83,6 +84,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
   let confirmSeason = false
   let stacks: Stack[] = []
   let openStack: string | null = null // key of the one tile whose catches are listed
+  let logOpen = false
 
   root.innerHTML = `
     <aside class="side">
@@ -95,6 +97,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       <section><h2>${icon('place', 'creek', PLACE_ICONS.creek, 1)}Places</h2><div data-sec="places"></div></section>
       <section><h2>${icon('ui', 'season', UI_ICONS.season, 1)}New Season</h2><div data-sec="season"></div></section>
       <section><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Licenses</h2><div data-sec="licenses"></div></section>
+      <section><h2>${icon('ui', 'license', UI_ICONS.license, 1)}Species log</h2><div data-sec="log"></div></section>
     </aside>
     <footer class="basket">
       <div data-sec="basketHead"></div>
@@ -168,6 +171,9 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       + SPECIES.filter(sp => sp.licenseCost).map(sp => s.licenseSpecies.includes(sp.id)
         ? owned(catchImg('fish', sp.id), sp.name, 'IN THE WATER', `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)
         : btn('licenseSpecies', sp.id, `${lbl(catchImg('fish', sp.id), `Release ${sp.name} at ${LOCATIONS.find(l => l.id === sp.location)!.name}`)}<b>${ticket(sp.licenseCost!)}</b>`, { disabled: s.licenses < sp.licenseCost! })).join(''),
+    log: s => btn('toggleLog', '', `Caught ${s.speciesLog.length} of ${SPECIES.length}`, { expanded: logOpen, cls: 'wide' })
+      + (logOpen ? logPlaces(s).map(p => `<p class="label">${p.name.toUpperCase()} ${p.logged}/${p.total}${p.locked ? ' · locked' : ''}</p>`
+        + p.rows.map(r => `<div class="row-catch">${r.logged ? `${catchImg('fish', r.id)}<span>${SPECIES.find(d => d.id === r.id)!.name}</span>` : `<span>???${r.legendary ? ' (Taxidermist)' : ''}</span>`}</div>`).join('')).join('') : ''),
     basketHead: s => {
       const bonus = (s.releaseBonus > 0 ? ` +${pct(s.releaseBonus)}` : '') + (s.trophies.length ? ` Trophies +${pct(trophyMult(s) - 1)}` : '')
       return btn('sell', '', `Sell all (${s.basket.length}) <b>${money(saleValue(s, true))}</b>${bonus}`, { disabled: !s.basket.length })
@@ -228,6 +234,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
       case 'trash': return act(s => trash(s, Number(id)))
       case 'trashStack': { const st = stacks.find(x => x.key === id); return st && act(s => trashStack(s, st.kind, st.defId)) }
       case 'toggleStack': openStack = openStack === id ? null : id; return render()
+      case 'toggleLog': logOpen = !logOpen; return render()
     }
   }
 
