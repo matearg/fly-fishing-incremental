@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { anglerCues, cueFrame, hatchCue, panelCue, type CueFrame } from './cues'
+import { anglerCues, comboCue, cueFrame, hatchCue, panelCue, type CueFrame } from './cues'
+import { COMBO } from '../game/data'
 import type { Pending, Phase } from '../game/state'
 
 const fish = (defId: string, kind: 'fish' | 'junk' = 'fish'): Pending => ({ kind, defId, value: 1, size: 1, location: 'creek' })
@@ -72,5 +73,15 @@ describe('power-up cues', () => {
     expect(hatchCue(0, 45000)).toEqual(['hatch'])
     expect(hatchCue(45000, 44750)).toEqual([])
     expect(hatchCue(250, 0)).toEqual([])
+  })
+})
+
+describe('comboCue', () => {
+  it('comboCue ticks when the streak grows past 1, rising a semitone a step, capped', () => {
+    expect(comboCue(1, 2)).toBe(1)
+    expect(comboCue(2, 3)).toBeCloseTo(2 ** (1 / 12))
+    expect(comboCue(10, 11)).toBeCloseTo(2 ** ((COMBO.maxSteps - 1) / 12))
+    expect(comboCue(20, 21)).toBeCloseTo(2 ** ((COMBO.maxSteps - 1) / 12))
+    expect([comboCue(0, 1), comboCue(3, 1), comboCue(2, 2)]).toEqual([null, null, null])
   })
 })
