@@ -119,7 +119,7 @@ export const HELPERS = {
 // each trophy (first legendary of a species, mounted by the Taxidermist) adds pctEach to every fish sold
 export const TROPHY = { pctEach: 0.1 }
 // the player's first catch of each non-legendary species pays mult × its base value
-export const BOUNTY = { mult: 5 }
+export const BOUNTY = { mult: 4 }
 // each fish in the player's same-species streak is worth pctStep more than the one before, up to maxSteps steps
 export const COMBO = { pctStep: 0.1, maxSteps: 10 }
 // the Guide adds oddsBonus to every hired angler's cast, on top of the fly's own
