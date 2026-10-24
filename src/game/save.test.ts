@@ -159,7 +159,7 @@ describe('catch & release fields', () => {
   })
   it('resets a bad combo', () => {
     const load = (combo: unknown) => { const raw = JSON.parse(serialize(newGame())); if (combo === undefined) delete raw.combo; else raw.combo = combo; return parseSave(JSON.stringify(raw))!.combo }
-    for (const bad of [{ defId: 'nope', count: 2 }, { defId: 'dace', count: -1 }, { defId: 'dace', count: 1.5 }, undefined, null, 3])
+    for (const bad of [{ defId: 'nope', count: 2 }, { defId: 'dace', count: -1 }, { defId: 'dace', count: 1.5 }, { defId: 'dace', count: 1e21 }, undefined, null, 3])
       expect(load(bad)).toEqual({ defId: null, count: 0 })
     expect(load({ defId: 'dace', count: 3 })).toEqual({ defId: 'dace', count: 3 })
   })
