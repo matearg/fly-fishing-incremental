@@ -92,7 +92,7 @@ function benchBar(s: GameState): string {
 
 export function mountPanel(root: HTMLElement, getState: () => GameState, act: Act, setState: (s: GameState) => void, play: (id: SoundId) => void, toTitle: () => void): { render(): void; closeMenu(): void } {
   let confirmSeason = false
-  let menuOpen = false // the phone layouts' full-screen menu; CSS ignores it on desktop
+  let menuOpen = false // the phone's full-screen menu; CSS ignores it on desktop
   let tab = 'basket'
   let stacks: Stack[] = []
   let openStack: string | null = null // key of the one tile whose catches are listed
@@ -129,13 +129,7 @@ export function mountPanel(root: HTMLElement, getState: () => GameState, act: Ac
   const sections: Record<string, (s: GameState) => string> = {
     money: moneyHtml,
     menuMoney: moneyHtml,
-    // Upright, the scene's corner texts and power-up titles live here instead (same conditions as FishingScene's HUD).
-    phoneTop: s => {
-      const helpers = s.anglers.length - 1, streak = s.combo.count >= 2 && s.combo.defId !== null
-      const info = [helpers > 0 && `Helpers ${helpers}`, LOCATIONS.find(l => l.id === s.location)!.name, streak && `×${s.combo.count} ${SPECIES.find(d => d.id === s.combo.defId)!.name}`,
-        s.chumMs > 0 && '<span class="ban">Chum!</span>', s.hatchMs > 0 && '<span class="ban">Hatch!</span>'] // inline, so the strip never grows past its band
-      return `<div class="money">${moneyHtml(s)}</div><p class="info">${info.filter(Boolean).join(' · ')}</p>`
-    },
+    phoneTop: s => `<div class="money">${moneyHtml(s)}</div>`,
     tabs: () => TABS.map(([id, label]) => btn('tab', id, label, { pressed: tab === id })).join(''),
     fly: s => {
       const f = s.anglers[0].fly

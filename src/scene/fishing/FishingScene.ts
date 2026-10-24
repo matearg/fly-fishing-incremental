@@ -10,7 +10,7 @@ import { BOUNTY_STYLE, logCardBitmap } from '../../art/sprites/logcard'
 import { bountyOf } from '../../game/progress/log'
 import { formatNumber } from '../../game/util/format'
 import { notePlaques, plaqueFrame, resumePlaques, type PlaqueQueue } from './plaque'
-import { figureSpots, fishingKeep, flyXs } from './spots'
+import { figureSpots, flyXs } from './spots'
 import type { Layout } from '../../layout'
 import { fishMouth, fishSideBitmaps, TIER_SCHOOL } from '../../art/sprites/fish'
 import { JUNK_SNAG, junkBitmap } from '../../art/sprites/junk'
@@ -28,7 +28,7 @@ import { addBitmap, addText, fineImage, TEXT_WHITE, TEXT_YELLOW } from '../textu
 import { foldX, glints, tailFrame, type Glint } from '../swim'
 import { anglerCues, comboCue, cueFrame, hatchCue, type CueFrame } from '../../audio/cues'
 import { HELPER_GAIN, type SoundId } from '../../audio/sounds'
-import { FISHING_ANCHOR, VIEW_H, VIEW_W, viewScroll } from '../view'
+import { FISHING_ANCHOR, FISHING_KEEP, VIEW_H, VIEW_W, viewScroll } from '../view'
 
 const WATER_Y = 110 // waterline; the place's horizon fills the sky above it
 const GROUND_Y = WATER_Y - 8 // the row the anglers stand on
@@ -306,10 +306,9 @@ export class FishingScene extends Phaser.Scene {
     const t = time / 1000
     if (this.place?.id !== s.location) { this.place = this.buildPlace(s.location); this.school = '' }
     const place = this.place
-    const lay = this.hooks.layout(), upright = lay === 'upright'
-    this.cameras.main.setScroll(...viewScroll(w, this.scale.height / FINE, fishingKeep(place.look, lay), FISHING_ANCHOR))
-    // On phones the HTML menu takes over the title icon; upright, the info strip shows the corner texts and banners.
-    this.menuButton.setVisible(lay === 'desktop').setX(w - 4)
+    this.cameras.main.setScroll(...viewScroll(w, this.scale.height / FINE, FISHING_KEEP, FISHING_ANCHOR))
+    // On phones the HTML menu takes over the title icon.
+    this.menuButton.setVisible(this.hooks.layout() === 'desktop').setX(w - 4)
     this.placeText.x = this.comboText.x = this.comboName.x = w - 22
     if (this.school !== schoolKey(s)) { this.school = schoolKey(s); this.buildSchool(s, place) }
 
@@ -332,8 +331,8 @@ export class FishingScene extends Phaser.Scene {
     const pitch = this.prevCombo === null ? null : comboCue(this.prevCombo, s.combo.count)
     if (pitch !== null) this.hooks.play('combo', 1, pitch)
     this.prevCombo = s.combo.count
-    this.drawPowerups(s, time, place, w, upright)
-    this.drawPlaque(s, time, w, upright)
+    this.drawPowerups(s, time, place, w)
+    this.drawPlaque(s, time, w)
     const frames = [cueFrame(p, ptr), cueFrame(h, htr)] as const
     for (const id of anglerCues(this.cues[0], frames[0])) this.hooks.play(id)
     for (const id of anglerCues(this.cues[1], frames[1])) this.hooks.play(id, HELPER_GAIN)
@@ -374,12 +373,12 @@ export class FishingScene extends Phaser.Scene {
     this.moveJunk(pending, p, ptr, aim)
 
     const helpers = s.anglers.length - 1
-    this.helperText.setVisible(helpers > 0 && !upright).setTexture(addText(this, `HELPERS: ${helpers}`, TEXT_WHITE))
-    this.placeText.setVisible(!upright).setTexture(addText(this, LOCATIONS.find(l => l.id === s.location)!.name.toUpperCase(), TEXT_WHITE))
+    this.helperText.setVisible(helpers > 0).setTexture(addText(this, `HELPERS: ${helpers}`, TEXT_WHITE))
+    this.placeText.setTexture(addText(this, LOCATIONS.find(l => l.id === s.location)!.name.toUpperCase(), TEXT_WHITE))
     // The combo counter, under the place name while a streak of 2 or more runs.
     const streak = s.combo.count >= 2 && s.combo.defId !== null
-    this.comboText.setVisible(streak && !upright).setY(this.placeText.y + this.placeText.height + 3)
-    this.comboName.setVisible(streak && !upright).setY(this.comboText.y + this.comboText.height + 1)
+    this.comboText.setVisible(streak).setY(this.placeText.y + this.placeText.height + 3)
+    this.comboName.setVisible(streak).setY(this.comboText.y + this.comboText.height + 1)
     if (streak) {
       this.comboText.setTexture(addText(this, `×${s.combo.count}`, TEXT_YELLOW))
       this.comboName.setTexture(addText(this, SPECIES.find(d => d.id === s.combo.defId)!.name.toUpperCase(), TEXT_WHITE))
@@ -387,11 +386,10 @@ export class FishingScene extends Phaser.Scene {
   }
 
   // Waving titles pinned to the top of the crop (chum above hatch when both are on), and insects over the water in a hatch.
-  private drawPowerups(s: GameState, time: number, place: Place, w: number, upright: boolean): void {
+  private drawPowerups(s: GameState, time: number, place: Place, w: number): void {
     const titles = [[this.banners.chum, s.chumMs > 0], [this.banners.hatch, s.hatchMs > 0]] as const
     let y = 24
-    for (const [letters, active] of titles) {
-      const on = active && !upright
+    for (const [letters, on] of titles) {
       const last = letters[letters.length - 1], x0 = Math.round((w - last.dx - last.img.width) / 2)
       letters.forEach((l, i) => l.img.setVisible(on).setPosition(x0 + l.dx, y + letterWave(i, time)))
       if (on) y += 20
@@ -403,8 +401,8 @@ export class FishingScene extends Phaser.Scene {
     })
   }
 
-  // The pop-up for a new log entry or trophy, centred under the power-up titles (upright they're in the info strip instead).
-  private drawPlaque(s: GameState, time: number, w: number, upright: boolean): void {
+  // The pop-up for a new log entry or trophy, centred under the power-up titles.
+  private drawPlaque(s: GameState, time: number, w: number): void {
     if (this.plaquesStale) { this.plaques = resumePlaques(this.plaques, s); this.plaquesStale = false }
     notePlaques(this.plaques!, s)
     const f = plaqueFrame(this.plaques!, time), { board, name, bonus } = this.plaque
@@ -419,7 +417,7 @@ export class FishingScene extends Phaser.Scene {
       bonus.setTexture(log ? addText(this, `+$${formatNumber(bountyOf(id))}`, BOUNTY_STYLE) : addText(this, `+${Math.round(TROPHY.pctEach * 100)}% SALES`, PLAQUE_STYLE))
       this.hooks.play(log ? 'logged' : 'trophy')
     }
-    const y = 28 + (upright ? 0 : 20 * [s.chumMs, s.hatchMs].filter(ms => ms > 0).length) + f.dy, x = Math.round(w / 2)
+    const y = 28 + 20 * [s.chumMs, s.hatchMs].filter(ms => ms > 0).length + f.dy, x = Math.round(w / 2)
     board.setPosition(x, Math.round(y)).setAlpha(f.alpha)
     name.setPosition(x, Math.round(y) + board.displayHeight + 2).setAlpha(f.alpha)
     bonus.setPosition(x, name.y + name.height + 2).setAlpha(f.alpha)

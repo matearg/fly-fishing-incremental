@@ -1,7 +1,6 @@
 import type { PlaceLook } from '../../art/places'
 import { BODY_X, ROD_TIP } from '../../art/sprites/figures'
-import type { Layout } from '../../layout'
-import { FISHING_KEEP, VIEW_W, type Rect } from '../view'
+import { VIEW_W } from '../view'
 
 export const BODY_W = 14 // a figure's body width, in world units
 
@@ -16,14 +15,4 @@ export function figureSpots(look: PlaceLook): { playerX: number; helperX: number
 export function flyXs(look: PlaceLook): { playerFlyX: number; helperFlyX: number } {
   const tipX = figureSpots(look).playerX - BODY_X + ROD_TIP.idle[0]
   return { playerFlyX: Math.min(VIEW_W - 40, tipX + 140), helperFlyX: tipX + 110 } // far enough that its line clears the bank face at depth
-}
-
-// Guide-to-fly span (205) + a fish's body past the fly (32) + 2; the same at every place since both come from playerX.
-export const UPRIGHT_KEEP_W = 239
-
-/** What the fishing camera must keep in view: upright phones crop to the Guide, the figures and the fly. */
-export function fishingKeep(look: PlaceLook, layout: Layout): Rect {
-  if (layout !== 'upright') return FISHING_KEEP
-  const x0 = Math.max(0, figureSpots(look).guideX - 2)
-  return { x0, y0: FISHING_KEEP.y0, x1: x0 + UPRIGHT_KEEP_W, y1: FISHING_KEEP.y1 }
 }

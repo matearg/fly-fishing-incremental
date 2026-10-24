@@ -2,9 +2,7 @@ import Phaser from 'phaser'
 import { FINE } from './art/pixels'
 import { FishingScene } from './scene/fishing/FishingScene'
 import { TitleScene } from './scene/title/TitleScene'
-import { TITLE_KEEP, VIEW_H, VIEW_W, viewSize } from './scene/view'
-import { fishingKeep, UPRIGHT_KEEP_W } from './scene/fishing/spots'
-import { placeLook } from './art/places'
+import { FISHING_KEEP, TITLE_KEEP, VIEW_H, VIEW_W, viewSize } from './scene/view'
 import { layoutFor, type Layout } from './layout'
 import { castPlayer, reelPlayer, tick } from './game/fishing/sim'
 import { localStore, SAVE_KEY } from './game/save'
@@ -64,11 +62,8 @@ addEventListener('resize', applyLayout)
 // Past a scene's zoom limit the crop stops and FIT shows thin bars instead of hiding what must stay in view.
 const cell = document.getElementById('game')!
 function fit(): void {
-  // Upright in game, #game takes the narrow crop's aspect so the river band fills the width with no bars.
-  cell.style.aspectRatio = layout === 'upright' && session.mode === 'game' ? `${UPRIGHT_KEEP_W} / ${VIEW_H}` : ''
   if (!cell.clientWidth || !cell.clientHeight) return
-  const keep = session.mode === 'title' ? TITLE_KEEP : fishingKeep(placeLook(session.state.location), layout)
-  const { w, h, clamped } = viewSize(cell.clientWidth, cell.clientHeight, keep)
+  const { w, h, clamped } = viewSize(cell.clientWidth, cell.clientHeight, session.mode === 'title' ? TITLE_KEEP : FISHING_KEEP)
   const mode = clamped ? Phaser.Scale.FIT : Phaser.Scale.ENVELOP
   game.scale.scaleMode = mode
   game.scale.displaySize.setAspectMode(mode)
