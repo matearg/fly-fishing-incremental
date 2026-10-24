@@ -153,6 +153,14 @@ describe('catch & release fields', () => {
     const s = newGame(); s.trophies = ['muskie', 'muskie', 'nope', SPECIES.find(d => d.tier === 'rare')!.id, 'arcticChar']
     expect(parseSave(serialize(s))!.trophies).toEqual(['muskie', 'arcticChar'])
   })
+  it('keeps only known species in the log, once each, plus mounted trophies', () => {
+    const s = newGame(); s.speciesLog = ['dace', 'dace', 'nope']; s.trophies = ['muskie']
+    expect(parseSave(serialize(s))!.speciesLog).toEqual(['dace', 'muskie'])
+  })
+  it('fills an empty log for old saves', () => {
+    const raw = JSON.parse(serialize(newGame())); delete raw.speciesLog
+    expect(parseSave(JSON.stringify(raw))!.speciesLog).toEqual([])
+  })
   it('an old save without the new helper fields loads with defaults', () => {
     const raw = JSON.parse(serialize(newGame())); delete raw.taxidermist; delete raw.guide; delete raw.trophies
     const s = parseSave(JSON.stringify(raw))!

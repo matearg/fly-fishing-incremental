@@ -21,8 +21,9 @@ export interface GameState {
   licenses: number; licenseLevels: Record<LicenseUpgradeId, number>; licenseSpecies: string[]
   chumMs: number; hatchMs: number; nextHatchMs: number // power-ups: time left (0 = off), and the countdown to the next hatch
   taxidermist: boolean; guide: boolean; trophies: string[] // trophies: mounted species ids, in mount order
+  speciesLog: string[] // species the player has ever logged, in log order; carries over New Season
 }
-export type Carry = Pick<GameState, 'licenses' | 'licenseLevels' | 'licenseSpecies'>
+export type Carry = Pick<GameState, 'licenses' | 'licenseLevels' | 'licenseSpecies' | 'speciesLog'>
 
 export const SAVE_VERSION = 1
 
@@ -43,5 +44,6 @@ export function newGame(carry?: Carry): GameState {
     licenses: carry?.licenses ?? 0, licenseLevels: { ...licenseLevels }, licenseSpecies: [...(carry?.licenseSpecies ?? [])],
     chumMs: 0, hatchMs: 0, nextHatchMs: HATCH.firstMs,
     taxidermist: false, guide: false, trophies: [],
+    speciesLog: [...(carry?.speciesLog ?? [])],
   }
 }

@@ -85,4 +85,8 @@ describe('New Season and catch & release', () => {
     const n = startNewSeason(s)
     expect([n.taxidermist, n.guide, n.trophies]).toEqual([false, false, []])
   })
+  it('New Season keeps the species log', () => {
+    const s = newGame(); s.speciesLog = ['dace']
+    expect(startNewSeason(s).speciesLog).toEqual(['dace'])
+  })
 })

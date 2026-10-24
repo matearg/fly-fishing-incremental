@@ -5,6 +5,7 @@ import { CHUM, GUIDE, HATCH, PATTERNS, SPECIES, TIERS, TIMING } from '../data'
 import { setRecipe, travel } from '../progress/economy'
 import { basicRecipe } from './flies'
 import { lcg, seqRand } from '../util/testutil'
+import { bountyOf } from '../progress/log'
 
 const r = seqRand(0.1, 0.3, 0.5)
 const run = (s: GameState, ms: number) => { for (let t = 0; t < ms; t += 100) tick(s, 100, r) }
@@ -283,6 +284,20 @@ describe('benchFull', () => {
     tick(s, 10, seqRand(0.5))
     expect(s.trophies).toEqual(['muskie'])
     expect(s.basket.map(c => c.defId)).toEqual(['muskie'])
+  })
+  it("the player's first catch of a species pays its bounty once", () => {
+    const s = newGame()
+    const land = () => { Object.assign(s.anglers[0], { phase: 'reeling', timerMs: 1, fly: { patternId: 'basicDry', materialIds: [], wearLeft: 3 }, pending: { kind: 'fish', defId: 'brookTrout', value: 8, size: 1, location: s.location } }); tick(s, 10, seqRand(0.5)) }
+    land()
+    expect([s.money, s.speciesLog]).toEqual([bountyOf('brookTrout'), ['brookTrout']])
+    land()
+    expect(s.money).toBe(bountyOf('brookTrout'))
+  })
+  it("a helper's catch never logs, pays or touches the combo", () => {
+    const s = newGame()
+    s.anglers.push({ auto: true, phase: 'reeling', timerMs: 1, fly: { patternId: 'basicDry', materialIds: [], wearLeft: 3 }, pending: { kind: 'fish', defId: 'brookTrout', value: 8, size: 1, location: s.location } })
+    tick(s, 10, seqRand(0.5))
+    expect([s.speciesLog, s.money]).toEqual([[], 0])
   })
   it('castOdds gives hired anglers the Guide bonus', () => {
     const s = newGame(), helper: Angler = { auto: true, phase: 'idle', timerMs: 0, fly: null, pending: null }

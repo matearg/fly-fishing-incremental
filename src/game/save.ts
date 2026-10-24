@@ -31,6 +31,7 @@ function sanitize(raw: GameState): GameState {
   if (!s.waders.includes(s.wearing)) s.wearing = WADERS[0].id
   s.licenseSpecies = s.licenseSpecies.filter(id => has(SPECIES, id))
   s.trophies = [...new Set(s.trophies.filter(id => LEGENDARY_IDS.includes(id)))]
+  s.speciesLog = [...new Set([...s.speciesLog.filter(id => has(SPECIES, id)), ...s.trophies])]
   if (!validRecipe(s.recipe)) s.recipe = basicRecipe()
   s.releaseBonus = Number.isFinite(s.releaseBonus) ? Math.min(RELEASE.cap, Math.max(0, s.releaseBonus)) : 0
   for (const k of ['chumMs', 'hatchMs', 'nextHatchMs'] as const) if (!(Number.isFinite(s[k]) && s[k] >= 0)) s[k] = d[k]

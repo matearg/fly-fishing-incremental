@@ -1,5 +1,6 @@
 import { SPECIES, TROPHY } from '../data'
 import type { GameState } from '../state'
+import { logSpecies } from './log'
 
 export const LEGENDARY_IDS = SPECIES.filter(s => s.tier === 'legendary').map(s => s.id)
 
@@ -7,6 +8,7 @@ export const LEGENDARY_IDS = SPECIES.filter(s => s.tier === 'legendary').map(s =
 export function mountTrophy(state: GameState, defId: string): boolean {
   if (!state.taxidermist || !LEGENDARY_IDS.includes(defId) || state.trophies.includes(defId)) return false
   state.trophies.push(defId)
+  logSpecies(state, defId)
   return true
 }
 

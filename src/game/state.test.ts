@@ -30,7 +30,7 @@ describe('newGame', () => {
   })
   it('license carry applies minute-0 upgrades', () => {
     const levels = { ...zero, startLocation: 2, startPattern: 1 }
-    const s = newGame({ licenses: 5, licenseLevels: levels, licenseSpecies: ['x'] })
+    const s = newGame({ licenses: 5, licenseLevels: levels, licenseSpecies: ['x'], speciesLog: [] })
     expect(s.unlockedLocations).toEqual(['creek', 'river', 'bigRiver'])
     expect(s.location).toBe('bigRiver')
     expect(s.unlockedPatterns).toEqual(PATTERNS.slice(0, 1 + licenseEffects(levels).startPatterns).map(p => p.id))
