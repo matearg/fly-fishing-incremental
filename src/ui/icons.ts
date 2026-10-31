@@ -7,13 +7,18 @@ import { JUNK_ART, junkBitmap } from '../art/sprites/junk'
 // Bitmaps become data URLs once, so the panel's HTML strings can carry <img> tags through patch/morph.
 const urls = new Map<string, { src: string; w: number; h: number }>()
 
+export function dataUrl(b: Bitmap): string {
+  const c = document.createElement('canvas')
+  c.width = b.w; c.height = b.h
+  c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(b.data), b.w, b.h), 0, 0)
+  return c.toDataURL()
+}
+
 export function img(key: string, make: () => Bitmap, scale = 2): string {
   let u = urls.get(key)
   if (!u) {
-    const b = make(), c = document.createElement('canvas')
-    c.width = b.w; c.height = b.h
-    c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(b.data), b.w, b.h), 0, 0)
-    u = { src: c.toDataURL(), w: b.w, h: b.h }
+    const b = make()
+    u = { src: dataUrl(b), w: b.w, h: b.h }
     urls.set(key, u)
   }
   return `<img class="ico" src="${u.src}" alt="" width="${u.w * scale}" height="${u.h * scale}">`

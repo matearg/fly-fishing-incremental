@@ -2,6 +2,7 @@
 import { JUNK, LICENSE_UPGRADES, LOCATIONS, MATERIALS, PATTERNS, RODS, SPECIES, WADERS } from './game/data'
 import { hashString } from './game/util/rand'
 import { FLY_ICONS, HELPER_ICONS, LICENSE_ICONS, MATERIAL_ICONS, PLACE_ICONS, ROD_ICONS, UI_ICONS, WADERS_ICONS, iconBitmap, type Icon } from './art/icons'
+import { FAVICONS } from './art/favicon'
 import { placeLook } from './art/places'
 import { bakeBank, bakeRiver } from './art/scenery/river'
 import { BANK_SURFACE, bakeSideBank } from './art/scenery/bank'
@@ -195,6 +196,14 @@ for (const [k, b] of insectBitmaps().entries()) {
   fillRect(card, 0, 0, card.w, card.h, placeLook('creek').water[1])
   blit(card, b, 2, 2)
   show(powerups, card, k ? 'wings down' : 'wings up', 4 / FINE)
+}
+
+// The tab icon at 8× and at real size, on a light and a dark tab bar.
+const favicons = section('Favicon (8×, then 1× on light and dark tabs)')
+for (const f of FAVICONS) show(favicons, iconBitmap(f), `${f.grid.length}px`, 8)
+for (const bg of ['#f1f3f4', '#35363a']) for (const f of FAVICONS) {
+  show(favicons, iconBitmap(f), `${f.grid.length}px`, 16 / f.grid.length)
+  ;(favicons.lastElementChild!.firstElementChild as HTMLCanvasElement).style.background = bg
 }
 
 // Panel icons on the journal paper, at 3×.
