@@ -9,12 +9,20 @@ import { localStore, SAVE_KEY } from './game/save'
 import type { GameState } from './game/state'
 import { Session } from './session'
 import { mountPanel } from './ui/panel'
+import { dataUrl } from './ui/icons'
+import { iconBitmap } from './art/icons'
+import { FAVICONS } from './art/favicon'
 import { SoundPlayer } from './audio/player'
 import { DEFAULT_MUSIC, musicStore, parseSound, serializeSound, soundGain, soundStore } from './audio/settings'
 import { TITLE_AMBIENCE } from './audio/sounds'
 import './ui/style.css'
 
 const session = new Session(localStore)
+
+for (const f of FAVICONS) {
+  const n = f.grid.length
+  document.head.append(Object.assign(document.createElement('link'), { rel: 'icon', type: 'image/png', sizes: `${n}x${n}`, href: dataUrl(iconBitmap(f)) }))
+}
 
 // The volumes live outside the save, so New Game, New Season and adopted saves never touch them.
 const sound = new SoundPlayer()
